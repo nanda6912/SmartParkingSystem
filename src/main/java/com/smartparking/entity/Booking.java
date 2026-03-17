@@ -17,6 +17,10 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @NotBlank(message = "Booking code is required")
+    @Column(name = "booking_code", nullable = true, unique = true, updatable = false, length = 5)
+    private String bookingCode;
+    
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parking_slot_id", nullable = false)
@@ -70,6 +74,14 @@ public class Booking {
     
     public void setId(Long id) {
         this.id = id;
+    }
+    
+    public String getBookingCode() {
+        return bookingCode;
+    }
+    
+    public void setBookingCode(String bookingCode) {
+        this.bookingCode = bookingCode;
     }
     
     public ParkingSlot getParkingSlot() {

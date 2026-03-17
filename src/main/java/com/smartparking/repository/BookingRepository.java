@@ -15,6 +15,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     Optional<Booking> findByVehicleNumber(String vehicleNumber);
     
+    Optional<Booking> findByBookingCode(String bookingCode);
+    
     List<Booking> findByIsActiveTrue();
     
     List<Booking> findByIsActiveFalse();

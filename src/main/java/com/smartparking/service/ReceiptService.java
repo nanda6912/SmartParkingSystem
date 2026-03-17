@@ -15,8 +15,8 @@ public class ReceiptService {
     @Autowired
     private BookingRepository bookingRepository;
     
-    public byte[] generateReceipt(Long bookingId) throws IOException {
-        Booking booking = bookingRepository.findById(bookingId)
+    public byte[] generateReceipt(String bookingCode) throws IOException {
+        Booking booking = bookingRepository.findByBookingCode(bookingCode)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -36,7 +36,7 @@ public class ReceiptService {
         receipt.append("        SMART PARKING RECEIPT        \n");
         receipt.append("========================================\n\n");
         
-        receipt.append("BOOKING ID: ").append(booking.getId()).append("\n");
+        receipt.append("BOOKING CODE: ").append(booking.getBookingCode()).append("\n");
         receipt.append("VEHICLE NUMBER: ").append(booking.getVehicleNumber()).append("\n");
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");

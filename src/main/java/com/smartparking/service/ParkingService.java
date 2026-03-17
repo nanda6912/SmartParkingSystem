@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +28,18 @@ public class ParkingService {
     
     @Autowired
     private BookingRepository bookingRepository;
+    
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int BOOKING_CODE_LENGTH = 5;
+    private final Random random = new Random();
+    
+    private String generateBookingCode() {
+        StringBuilder code = new StringBuilder(BOOKING_CODE_LENGTH);
+        for (int i = 0; i < BOOKING_CODE_LENGTH; i++) {
+            code.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
+        }
+        return code.toString();
+    }
     
     public List<ParkingSlotDTO> getAllSlots() {
         try {
@@ -111,11 +125,13 @@ public class ParkingService {
             }
             
             Booking booking = new Booking();
+            booking.setBookingCode(generateBookingCode());
             booking.setParkingSlot(slot);
             booking.setVehicleNumber(bookingRequest.getVehicleNumber().toUpperCase());
             booking.setCustomerName(bookingRequest.getCustomerName());
             booking.setPhoneNumber(bookingRequest.getPhoneNumber());
             booking.setVehicleType(bookingRequest.getVehicleType());
+            booking.setBookingTime(LocalDateTime.now());
             
             Booking savedBooking = bookingRepository.save(booking);
             
@@ -165,7 +181,7 @@ public class ParkingService {
     
     private BookingResponseDTO convertToResponseDTO(Booking booking) {
         BookingResponseDTO dto = new BookingResponseDTO();
-        dto.setBookingId(booking.getId());
+        dto.setBookingCode(booking.getBookingCode());
         dto.setSlotId(booking.getParkingSlot().getId());
         dto.setSlotNumber(booking.getParkingSlot().getSlotNumber());
         dto.setFloor(booking.getParkingSlot().getFloor());

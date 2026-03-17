@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 public class BookingResponseDTO {
     
-    private Long bookingId;
+    private String bookingCode;
     private Long slotId;
     private Integer slotNumber;
     private Integer floor;
@@ -27,12 +27,12 @@ public class BookingResponseDTO {
         this.message = message;
     }
     
-    public Long getBookingId() {
-        return bookingId;
+    public String getBookingCode() {
+        return bookingCode;
     }
     
-    public void setBookingId(Long bookingId) {
-        this.bookingId = bookingId;
+    public void setBookingCode(String bookingCode) {
+        this.bookingCode = bookingCode;
     }
     
     public Long getSlotId() {

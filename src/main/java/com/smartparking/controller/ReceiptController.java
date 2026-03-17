@@ -18,14 +18,14 @@ public class ReceiptController {
     @Autowired
     private ReceiptService receiptService;
     
-    @GetMapping("/download/{bookingId}")
-    public ResponseEntity<ByteArrayResource> downloadReceipt(@PathVariable Long bookingId) {
+    @GetMapping("/download/{bookingCode}")
+    public ResponseEntity<ByteArrayResource> downloadReceipt(@PathVariable String bookingCode) {
         try {
-            byte[] receiptData = receiptService.generateReceipt(bookingId);
+            byte[] receiptData = receiptService.generateReceipt(bookingCode);
             ByteArrayResource resource = new ByteArrayResource(receiptData);
             
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt_" + bookingId + ".txt")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt_" + bookingCode + ".txt")
                     .contentType(MediaType.TEXT_PLAIN)
                     .contentLength(receiptData.length)
                     .body(resource);
