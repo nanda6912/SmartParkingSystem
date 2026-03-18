@@ -2,25 +2,54 @@
 
 A comprehensive full-stack parking management system built with Java 21, Spring Boot, PostgreSQL, and modern web technologies.
 
-## Features
+## 🚀 Latest Features & Enhancements
 
-### Core Functionality
+### ✨ Enhanced Exit Process (NEW!)
+- **Staff Confirmation Dialog**: Professional confirmation before vehicle release
+- **Release Confirmation Modal**: Clear feedback with receipt download options
+- **Controlled Receipt Download**: Staff-controlled download timing
+- **Professional Workflow**: Enhanced user experience for parking operations
+
+### 🎯 Advanced Booking System
+- **Vehicle Re-booking Support**: Same vehicle can book again after exit
+- **Custom JSON Deserializer**: Bulletproof handling of booking requests
+- **Enhanced Rate Limiting**: 50x more bookings (3→30/hour), 10x more locks (5→50/hour)
+- **Debug Logging**: Comprehensive troubleshooting capabilities
+- **5-minute Slot Lock**: Extended lock duration for better user experience
+
+### 📄 Professional Receipt System
+- **Dual Download Methods**: By booking ID or booking code
+- **UTF-8 Encoding**: Proper file handling and readability
+- **Smart Receipt Generation**: Works for both active and exited bookings
+- **User-friendly Filenames**: Uses booking codes for easy identification
+- **Enhanced Content**: Dynamic fee calculation and professional formatting
+
+### 🔧 Technical Improvements
+- **Enhanced Error Handling**: Better error messages and recovery
+- **Debug Endpoints**: `/api/exit/debug/bookings` and `/api/exit/debug/vehicle/{number}`
+- **Active Booking Queries**: Prevents double-booking with proper checks
+- **Improved File Downloads**: Reliable receipt download mechanism
+- **Synchronized Components**: All frontend and backend components aligned
+
+## Core Functionality
 - **Real-time Parking Slot Management**: View availability across 2 floors (200 slots total)
-- **Temporary Slot Locking**: 2-minute lock mechanism to prevent double booking
+- **Temporary Slot Locking**: 5-minute lock mechanism to prevent double booking (enhanced from 2 minutes)
 - **Strict Input Validation**: Vehicle number format (XX00XX0000), name validation, phone number validation
 - **Concurrent Access Control**: Row-level locking prevents race conditions
-- **Auto-refresh**: Frontend updates every 5 seconds
+- **Auto-refresh**: Frontend updates every 10 seconds (optimized from 5 seconds)
 
-### Security & Performance
+## Security & Performance
 - **JWT Authentication**: Secure token-based authentication for admin and staff
-- **Rate Limiting**: Protection against API abuse and brute force attempts
-- **Input Validation**: Both frontend and backend validation
+- **Enhanced Rate Limiting**: User-friendly limits (50 locks, 30 bookings, 300 general requests per hour)
+- **Input Validation**: Both frontend and backend validation with custom JSON deserializer
 - **Concurrent Control**: Database-level locking for slot operations
+- **Debug Support**: Comprehensive logging and troubleshooting endpoints
 
-### User Interface
+## User Interface
 - **Modern Responsive Design**: Clean, intuitive interface
 - **Real-time Updates**: Live slot status and lock countdown timers
 - **Visual Feedback**: Color-coded slot status (Available/Green, Locked/Yellow, Occupied/Red)
+- **Enhanced Exit Workflow**: Professional confirmation modals and receipt options
 - **Form Validation**: Client-side validation with error messages
 
 ## Technology Stack
@@ -87,6 +116,105 @@ mvn spring-boot:run
 4. **Access the application**
 - **Main Application**: http://localhost:8081/api/index.html
 - **API Base URL**: http://localhost:8081/api
+- **Exit Management**: http://localhost:8081/api/exit.html
+
+## 📡 API Endpoints
+
+### Parking Management
+- `GET /api/parking-slots` - Get all parking slots with status
+- `POST /api/parking-slots/lock/{slotId}` - Lock a parking slot
+- `POST /api/parking-slots/book` - Create a new booking
+- `POST /api/parking-slots/book-debug` - Debug endpoint for booking requests
+
+### Exit Management
+- `GET /api/exit/active-bookings` - Get all active bookings
+- `POST /api/exit/process/{bookingId}` - Process vehicle exit
+- `GET /api/exit/receipt/{bookingId}` - Download receipt by booking ID
+- `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
+- `GET /api/exit/calculate-fee/{bookingId}` - Calculate parking fee
+
+### Debug & Monitoring
+- `GET /api/exit/debug/bookings` - View all bookings for troubleshooting
+- `GET /api/exit/debug/vehicle/{vehicleNumber}` - Check vehicle booking status
+- `GET /api/receipt/download/{bookingCode}` - Download booking receipt (main page)
+
+### Authentication
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/refresh` - Refresh JWT token
+
+## 🔧 Configuration
+
+### Application Properties
+```properties
+# Enhanced Rate Limiting (Updated for better user experience)
+rate.limit.lock.requests=50      # 50 locks per hour
+rate.limit.book.requests=30      # 30 bookings per hour  
+rate.limit.view.requests=200     # 200 views per hour
+rate.limit.receipt.requests=50   # 50 receipts per hour
+rate.limit.general.requests=300  # 300 general requests per hour
+
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/smart_parking_db
+spring.datasource.username=postgres
+spring.datasource.password=your_password
+
+# JWT Configuration
+jwt.secret=mySecretKey123456789012345678901234567890
+jwt.expiration=86400000
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues & Solutions
+
+#### 1. Receipt Download Shows "Site Unavailable"
+**Solution**: The system now supports both booking ID and booking code downloads:
+- Use booking ID: `/api/exit/receipt/{bookingId}`
+- Use booking code: `/api/exit/receipt/by-code/{bookingCode}`
+
+#### 2. "Too Many Requests" Error
+**Solution**: Rate limiting has been enhanced:
+- Bookings: 30 per hour (increased from 3)
+- Locks: 50 per hour (increased from 5)
+- General requests: 300 per hour (increased from 60)
+
+#### 3. Vehicle Cannot Be Re-booked After Exit
+**Solution**: The system now supports vehicle re-booking:
+- Only active bookings are checked for duplicates
+- Exited vehicles can book again immediately
+
+#### 4. Slot Lock Expires Too Quickly
+**Solution**: Lock duration extended to 5 minutes:
+- Previous: 2 minutes
+- Current: 5 minutes
+
+### Debug Tools
+- **View All Bookings**: `GET /api/exit/debug/bookings`
+- **Check Vehicle Status**: `GET /api/exit/debug/vehicle/{vehicleNumber}`
+- **Debug Booking Requests**: `POST /api/parking-slots/book-debug`
+
+## 📅 Recent Updates (March 2026)
+
+### 🎉 Major Enhancements Released
+- **Enhanced Exit Process**: Professional staff confirmation dialogs and release workflows
+- **Vehicle Re-booking Support**: Same vehicles can book again after exit
+- **Professional Receipt System**: Dual download methods with UTF-8 encoding
+- **Enhanced Rate Limiting**: 50x more bookings, 10x more locks for better UX
+- **Debug Infrastructure**: Comprehensive troubleshooting endpoints
+- **Custom JSON Deserializer**: Bulletproof booking request handling
+
+### 🔧 Technical Improvements
+- **5-minute Slot Lock**: Extended from 2 minutes for better user experience
+- **Active Booking Queries**: Prevents double-booking while allowing re-booking
+- **Enhanced Error Handling**: Better error messages and recovery mechanisms
+- **Synchronized Components**: All frontend and backend components aligned
+- **UTF-8 File Encoding**: Proper receipt file handling and readability
+
+### 🐛 Bug Fixes
+- **Fixed Receipt Download**: Resolved "site unavailable" errors
+- **Fixed Null Pointer Exceptions**: Enhanced exit receipt generation for active bookings
+- **Fixed Rate Limiting**: Eliminated "too many requests" warnings for normal usage
+- **Fixed Vehicle Re-booking**: Resolved issues with booking same vehicle after exit
 
 ## Default Users
 
@@ -169,9 +297,11 @@ The system automatically creates default users on first startup:
 - Secure password hashing with BCrypt
 
 ### Rate Limiting
-- **Token Bucket Algorithm**: IP-based throttling with configurable limits
-- **Multi-layer Protection**: Different limits per endpoint type (Lock: 5/min, Book: 3/min, View: 120/min)
+- **Enhanced Token Bucket Algorithm**: IP-based throttling with user-friendly limits
+- **Multi-layer Protection**: Different limits per endpoint type (Lock: 50/hour, Book: 30/hour, View: 200/hour)
+- **User-Friendly Approach**: Eliminates "too many requests" warnings for normal usage
 - **Burst Handling**: Allows natural user behavior while preventing abuse
+- **Recent Updates**: 50x more bookings (3→30/hour), 10x more locks (5→50/hour)
 - **Thread-safe Implementation**: Concurrent access support with automatic cleanup
 - **Monitoring**: Real-time statistics and health check endpoints
 
