@@ -184,9 +184,13 @@ public class ExitService {
         receipt.append("        SMART PARKING EXIT RECEIPT     \n");
         receipt.append("========================================\n\n");
         
-        // Use booking code if available, otherwise ID
-        String bookingIdentifier = booking.getBookingCode() != null ? 
-            booking.getBookingCode() : String.valueOf(booking.getId());
+        // Use booking code if available, otherwise use ID with prefix
+        String bookingIdentifier;
+        if (booking.getBookingCode() != null && !booking.getBookingCode().isEmpty()) {
+            bookingIdentifier = booking.getBookingCode();
+        } else {
+            bookingIdentifier = "ID-" + booking.getId();
+        }
         
         receipt.append("BOOKING CODE: ").append(bookingIdentifier).append("\n");
         receipt.append("VEHICLE NUMBER: ").append(booking.getVehicleNumber()).append("\n");
@@ -196,7 +200,7 @@ public class ExitService {
         receipt.append("SLOT NUMBER: ").append(booking.getParkingSlot().getSlotNumber()).append("\n");
         receipt.append("FLOOR: ").append(booking.getParkingSlot().getFloor()).append("\n");
         receipt.append("ENTRY TIME: ").append(booking.getBookingTime().format(FORMATTER)).append("\n");
-        receipt.append("EXIT TIME: ").append(booking.getExitTime().format(FORMATTER)).append("\n");
+        receipt.append("EXIT TIME: ").append(booking.getExitTime() != null ? booking.getExitTime().format(FORMATTER) : "Still Parked").append("\n");
         
         if (booking.getExitTime() != null) {
             Duration duration = Duration.between(booking.getBookingTime(), booking.getExitTime());
@@ -207,6 +211,16 @@ public class ExitService {
             receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours).append(" hours)\n");
             receipt.append("HOURLY RATE: ₹").append(HOURLY_RATE).append("\n");
             receipt.append("TOTAL AMOUNT: ₹").append(String.format("%.2f", fee)).append("\n");
+        } else {
+            // For active bookings that haven't exited yet
+            Duration duration = Duration.between(booking.getBookingTime(), LocalDateTime.now());
+            long totalMinutes = duration.toMinutes();
+            long hours = (totalMinutes + 59) / 60; // Round up
+            double currentFee = hours * HOURLY_RATE;
+            
+            receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours).append(" hours) [Ongoing]\n");
+            receipt.append("HOURLY RATE: ₹").append(HOURLY_RATE).append("\n");
+            receipt.append("CURRENT FEE: ₹").append(String.format("%.2f", currentFee)).append(" [Still Running]\n");
         }
         
         receipt.append("\n========================================\n");
@@ -247,6 +261,20 @@ public class ExitService {
             logger.error("Error getting exit statistics: {}", e.getMessage(), e);
             return Map.of("error", "Failed to get statistics");
         }
+    }
+    
+    /**
+     * Find active booking by vehicle number
+     */
+    public Optional<Booking> findActiveBookingByVehicleNumber(String vehicleNumber) {
+        return bookingRepository.findByVehicleNumberAndIsActiveTrue(vehicleNumber);
+    }
+    
+    /**
+     * Get all bookings for debugging
+     */
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
     
     /**

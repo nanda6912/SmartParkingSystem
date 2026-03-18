@@ -85,7 +85,7 @@ public class ParkingService {
             }
             
             slot.setStatus(SlotStatus.LOCKED);
-            slot.setLockUntil(LocalDateTime.now().plusMinutes(2));
+            slot.setLockUntil(LocalDateTime.now().plusMinutes(5)); // Increased from 2 to 5 minutes
             parkingSlotRepository.save(slot);
             
             ParkingSlotDTO slotDTO = convertToDTO(slot);
@@ -102,26 +102,43 @@ public class ParkingService {
     
     public BookingResponseDTO bookSlot(BookingRequestDTO bookingRequest) {
         try {
+            System.out.println("=== BOOKING REQUEST DEBUG ===");
+            System.out.println("Slot ID: " + bookingRequest.getSlotId());
+            System.out.println("Vehicle Number: " + bookingRequest.getVehicleNumber());
+            System.out.println("Customer Name: " + bookingRequest.getCustomerName());
+            System.out.println("Phone Number: " + bookingRequest.getPhoneNumber());
+            System.out.println("Vehicle Type: " + bookingRequest.getVehicleType());
+            
             Optional<ParkingSlot> slotOpt = parkingSlotRepository.findByIdWithLock(bookingRequest.getSlotId());
             if (slotOpt.isEmpty()) {
+                System.out.println("ERROR: Slot not found");
                 return new BookingResponseDTO("Slot not found");
             }
             
             ParkingSlot slot = slotOpt.get();
+            System.out.println("Slot found - Status: " + slot.getStatus() + ", Locked until: " + slot.getLockUntil());
             
             if (slot.getStatus() != SlotStatus.LOCKED) {
-                return new BookingResponseDTO("Slot is not locked for booking");
+                System.out.println("ERROR: Slot is not locked - Current status: " + slot.getStatus());
+                return new BookingResponseDTO("Slot is not locked. Please lock the slot first.");
             }
             
             if (slot.getLockUntil() != null && slot.getLockUntil().isBefore(LocalDateTime.now())) {
+                System.out.println("ERROR: Lock expired");
                 slot.setStatus(SlotStatus.AVAILABLE);
                 slot.setLockUntil(null);
                 parkingSlotRepository.save(slot);
                 return new BookingResponseDTO("Lock expired, slot is now available");
             }
             
-            if (bookingRepository.findByVehicleNumber(bookingRequest.getVehicleNumber().toUpperCase()).isPresent()) {
-                return new BookingResponseDTO("Vehicle number already exists");
+            // Check if vehicle is currently parked (only active bookings, not exited ones)
+            Optional<Booking> existingActiveBooking = bookingRepository.findByVehicleNumberAndIsActiveTrue(bookingRequest.getVehicleNumber().toUpperCase());
+            System.out.println("Checking vehicle: " + bookingRequest.getVehicleNumber().toUpperCase());
+            System.out.println("Existing active booking found: " + existingActiveBooking.isPresent());
+            
+            if (existingActiveBooking.isPresent()) {
+                System.out.println("Vehicle is currently parked, blocking booking");
+                return new BookingResponseDTO("Vehicle is currently parked");
             }
             
             Booking booking = new Booking();

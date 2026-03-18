@@ -1,5 +1,7 @@
 package com.smartparking.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.smartparking.enums.VehicleType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,6 +9,35 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class BookingRequestDTO {
+    
+    // Default constructor for JSON deserialization
+    public BookingRequestDTO() {
+    }
+    
+    // Custom creator for JSON deserialization
+    @JsonCreator
+    public BookingRequestDTO(
+        @JsonProperty("slotId") Long slotId,
+        @JsonProperty("vehicleNumber") String vehicleNumber,
+        @JsonProperty("customerName") String customerName,
+        @JsonProperty("phoneNumber") String phoneNumber,
+        @JsonProperty("vehicleType") String vehicleType
+    ) {
+        this.slotId = slotId;
+        this.vehicleNumber = vehicleNumber;
+        this.customerName = customerName;
+        this.phoneNumber = phoneNumber;
+        // Handle vehicle type conversion
+        if (vehicleType != null && !vehicleType.trim().isEmpty()) {
+            try {
+                this.vehicleType = VehicleType.valueOf(vehicleType.toUpperCase().trim());
+            } catch (IllegalArgumentException e) {
+                this.vehicleType = VehicleType.CAR; // Default fallback
+            }
+        } else {
+            this.vehicleType = VehicleType.CAR; // Default fallback
+        }
+    }
     
     @NotNull(message = "Slot ID is required")
     private Long slotId;
@@ -66,5 +97,18 @@ public class BookingRequestDTO {
     
     public void setVehicleType(VehicleType vehicleType) {
         this.vehicleType = vehicleType;
+    }
+    
+    // Custom setter for JSON deserialization with error handling
+    public void setVehicleType(String vehicleType) {
+        if (vehicleType == null || vehicleType.trim().isEmpty()) {
+            this.vehicleType = VehicleType.CAR; // Default fallback
+        } else {
+            try {
+                this.vehicleType = VehicleType.valueOf(vehicleType.toUpperCase().trim());
+            } catch (IllegalArgumentException e) {
+                this.vehicleType = VehicleType.CAR; // Default fallback for invalid values
+            }
+        }
     }
 }

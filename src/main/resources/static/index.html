@@ -709,7 +709,7 @@
                     console.log('Booking result:', result);
 
                     if (result.bookingCode) {
-                        this.showNotification(`Booking confirmed! Slot ${slotData.slotNumber} booked successfully.`, 'success', result.bookingCode);
+                        this.showNotification(`Booking confirmed! Slot ${slotData.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
                         this.closeBookingForm();
                         
                         // Reload slots to show updated status
@@ -757,26 +757,35 @@
                 return isValid;
             }
 
-            showNotification(message, type, bookingId = null) {
+            showNotification(message, type, bookingId = null, persistent = false) {
                 const notification = document.getElementById('notification');
                 
                 if (type === 'success' && bookingId) {
                     notification.innerHTML = `
                         <div>${message}</div>
-                        <button onclick="window.downloadReceipt('${bookingId}')" style="margin-top: 10px; padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            📄 Download Receipt
-                        </button>
+                        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+                            <button onclick="window.downloadReceipt('${bookingId}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                📄 Download Receipt
+                            </button>
+                            ${persistent ? '<button onclick="window.closeNotification()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
+                        </div>
                     `;
                 } else {
-                    notification.textContent = message;
+                    notification.innerHTML = `
+                        <div>${message}</div>
+                        ${persistent ? '<button onclick="window.closeNotification()" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
+                    `;
                 }
                 
                 notification.className = `notification ${type}`;
                 notification.classList.add('show');
-
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 8000); // Extended time for receipt download
+                
+                // Only auto-hide if not persistent
+                if (!persistent) {
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 8000);
+                }
             }
 
             showLoading() {
@@ -794,7 +803,7 @@
             }
         }
 
-        // Global function for receipt download
+        // Global functions
         window.downloadReceipt = function(bookingCode) {
             const link = document.createElement('a');
             link.href = `receipt/download/${bookingCode}`;
@@ -802,6 +811,11 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        };
+
+        window.closeNotification = function() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('show');
         };
 
         // Initialize the parking system when DOM is loaded

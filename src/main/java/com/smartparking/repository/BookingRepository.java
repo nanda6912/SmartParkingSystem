@@ -38,4 +38,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     @Query("SELECT b FROM Booking b WHERE b.bookingTime >= :date AND b.exitTime IS NOT NULL")
     List<Booking> findExitedBookingsFromDate(@Param("date") LocalDateTime date);
+    
+    /**
+     * Find active booking by vehicle number
+     */
+    Optional<Booking> findByVehicleNumberAndIsActiveTrue(String vehicleNumber);
 }

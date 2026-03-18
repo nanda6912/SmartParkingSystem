@@ -40,8 +40,24 @@ public class ParkingController {
     }
     
     @PostMapping("/book")
-    public ResponseEntity<BookingResponseDTO> bookSlot(@Valid @RequestBody BookingRequestDTO bookingRequest) {
+    public ResponseEntity<BookingResponseDTO> bookSlot(@RequestBody BookingRequestDTO bookingRequest) {
+        System.out.println("=== CONTROLLER DEBUG ===");
+        System.out.println("Received booking request: " + bookingRequest);
+        System.out.println("Slot ID: " + bookingRequest.getSlotId());
+        System.out.println("Vehicle Number: " + bookingRequest.getVehicleNumber());
+        System.out.println("Customer Name: " + bookingRequest.getCustomerName());
+        System.out.println("Phone Number: " + bookingRequest.getPhoneNumber());
+        System.out.println("Vehicle Type: " + bookingRequest.getVehicleType());
+        
         BookingResponseDTO response = parkingService.bookSlot(bookingRequest);
         return ResponseEntity.ok(response);
+    }
+    
+    // Debug endpoint to test raw request
+    @PostMapping("/book-debug")
+    public ResponseEntity<String> debugBook(@RequestBody String rawRequest) {
+        System.out.println("=== RAW REQUEST DEBUG ===");
+        System.out.println("Raw request: " + rawRequest);
+        return ResponseEntity.ok("Request received: " + rawRequest);
     }
 }

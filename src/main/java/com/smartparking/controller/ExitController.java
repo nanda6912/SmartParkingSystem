@@ -7,12 +7,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ContentDisposition;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.charset.StandardCharsets;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Controller for vehicle exit and fee management
@@ -93,23 +97,85 @@ public class ExitController {
         try {
             // Find booking by ID for exit receipt
             Booking booking = exitService.findBookingById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found"));
+                    .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
             
-            // Generate receipt content
+            // Generate receipt content (works for both active and exited bookings)
             String receiptContent = exitService.generateExitReceipt(booking);
             
-            // Create downloadable file
+            // Create downloadable file with proper encoding
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
             String filename = "exit_receipt_" + bookingId + "_" + LocalDateTime.now().format(formatter) + ".txt";
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.TEXT_PLAIN);
-            headers.setContentDispositionFormData("attachment", filename);
+            headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename).build());
+            headers.setContentLength(receiptContent.getBytes().length);
             
-            return new ResponseEntity<>(receiptContent.getBytes(), headers, HttpStatus.OK);
+            return new ResponseEntity<>(receiptContent.getBytes(StandardCharsets.UTF_8), headers, HttpStatus.OK);
             
+        } catch (RuntimeException e) {
+            // Log the error and return a proper response
+            System.err.println("Error generating receipt: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(("Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            // Log the error and return a proper response
+            System.err.println("Unexpected error generating receipt: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Internal error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+    
+    /**
+     * Debug endpoint to check vehicle booking status
+     */
+    @GetMapping("/debug/vehicle/{vehicleNumber}")
+    public ResponseEntity<String> checkVehicleStatus(@PathVariable String vehicleNumber) {
+        try {
+            Optional<Booking> activeBooking = exitService.findActiveBookingByVehicleNumber(vehicleNumber.toUpperCase());
+            StringBuilder result = new StringBuilder();
+            result.append("Vehicle: ").append(vehicleNumber.toUpperCase()).append("\n");
+            
+            if (activeBooking.isPresent()) {
+                Booking booking = activeBooking.get();
+                result.append("Status: Currently ACTIVE booking found\n");
+                result.append("Booking ID: ").append(booking.getId()).append("\n");
+                result.append("Booking Code: ").append(booking.getBookingCode()).append("\n");
+                result.append("Active: ").append(booking.getIsActive()).append("\n");
+                result.append("Exit Time: ").append(booking.getExitTime()).append("\n");
+            } else {
+                result.append("Status: No active booking found (booking allowed)\n");
+            }
+            
+            return ResponseEntity.ok(result.toString());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Debug endpoint to list all bookings
+     */
+    @GetMapping("/debug/bookings")
+    public ResponseEntity<String> debugBookings() {
+        try {
+            List<Booking> allBookings = exitService.getAllBookings();
+            StringBuilder result = new StringBuilder();
+            result.append("Total bookings: ").append(allBookings.size()).append("\n\n");
+            
+            for (Booking booking : allBookings) {
+                result.append("ID: ").append(booking.getId())
+                       .append(", Code: ").append(booking.getBookingCode())
+                       .append(", Vehicle: ").append(booking.getVehicleNumber())
+                       .append(", Active: ").append(booking.getIsActive())
+                       .append(", Exit Time: ").append(booking.getExitTime())
+                       .append("\n");
+            }
+            
+            return ResponseEntity.ok(result.toString());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
     

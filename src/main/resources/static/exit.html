@@ -501,9 +501,6 @@
                                 <button class="btn btn-calculate" onclick="calculateFee(${booking.bookingId})">
                                     💰 Calculate Fee
                                 </button>
-                                <button class="btn btn-receipt" onclick="downloadExitReceipt(${booking.bookingId})" style="display: none;" id="receipt-btn-${booking.bookingId}">
-                                    📄 Receipt
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -585,6 +582,13 @@
                     return;
                 }
                 
+                // Show confirmation dialog
+                const confirmed = confirm(`Are you sure you want to release the vehicle for booking ${this.currentBookingId}? This action cannot be undone.`);
+                
+                if (!confirmed) {
+                    return; // Staff cancelled the operation
+                }
+                
                 try {
                     this.showLoading();
                     
@@ -599,21 +603,19 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        this.showNotification(`Vehicle exit processed successfully! Amount: ₹${result.totalFee.toFixed(2)}`, 'success');
+                        // Close fee modal
                         this.closeFeeModal();
+                        
+                        // Show release confirmation with receipt options
+                        this.showReleaseConfirmation(result);
+                        
+                        // Update booking lists and statistics
                         this.loadActiveBookings();
                         this.loadStatistics();
                         
-                        // Show receipt button for processed booking
-                        const receiptBtn = document.getElementById(`receipt-btn-${this.currentBookingId}`);
-                        if (receiptBtn) {
-                            receiptBtn.style.display = 'inline-block';
-                        }
-                        
-                        // Auto-download receipt after successful exit
-                        setTimeout(() => {
-                            this.downloadExitReceipt(this.currentBookingId);
-                        }, 1000);
+                        // Store booking details for receipt
+                        this.currentBookingCode = result.bookingCode;
+                        this.currentBookingId = result.bookingId;
                     } else {
                         this.showNotification(result.message || 'Failed to process exit', 'error');
                     }
@@ -625,18 +627,70 @@
                 }
             }
 
+            showReleaseConfirmation(result) {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
+                        <h3 style="color: #28a745; margin-bottom: 20px;">✅ Vehicle Released Successfully!</h3>
+                        <p style="margin-bottom: 10px;"><strong>Booking Code:</strong> ${result.bookingCode || 'N/A'}</p>
+                        <p style="margin-bottom: 10px;"><strong>Total Amount:</strong> ₹${result.totalFee.toFixed(2)}</p>
+                        <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available.</p>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <p style="margin-bottom: 10px;"><strong>Would you like to download the receipt?</strong></p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="downloadReceiptAndClose('${result.bookingCode || this.currentBookingId}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                📄 Download Receipt
+                            </button>
+                            <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                window.currentReleaseModal = modal;
+            }
+
             downloadExitReceipt(bookingId) {
+                const filename = this.currentBookingCode || bookingId;
+                
+                // Create download link with proper encoding
                 const link = document.createElement('a');
                 link.href = `/api/exit/receipt/${bookingId}`;
-                link.download = `exit_receipt_${bookingId}.txt`;
+                link.download = `exit_receipt_${filename}.txt`;
+                link.style.display = 'none';
+                
+                // Add to DOM, click, and remove
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
+                
+                // Remove after a short delay to ensure download starts
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                }, 100);
             }
 
             closeFeeModal() {
                 document.getElementById('feeModal').style.display = 'none';
                 this.currentBookingId = null;
+                this.currentBookingCode = null;
             }
 
             showLoading() {
@@ -681,6 +735,37 @@
         function downloadExitReceipt(bookingId) {
             exitManagement.downloadExitReceipt(bookingId);
         }
+
+        // Global function for receipt download (same as booking page)
+        window.downloadExitReceipt = function(bookingCode) {
+            const link = document.createElement('a');
+            link.href = `/api/exit/receipt/${bookingCode}`;
+            link.download = `exit_receipt_${bookingCode}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // Global function for download and close
+        window.downloadReceiptAndClose = function(bookingCode) {
+            // Download receipt
+            window.downloadExitReceipt(bookingCode);
+            
+            // Show success message
+            setTimeout(() => {
+                alert('Receipt downloaded successfully!');
+                // Close the modal
+                window.closeReleaseConfirmation();
+            }, 500);
+        };
+
+        // Global function to close release confirmation
+        window.closeReleaseConfirmation = function() {
+            if (window.currentReleaseModal) {
+                document.body.removeChild(window.currentReleaseModal);
+                window.currentReleaseModal = null;
+            }
+        };
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
