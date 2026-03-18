@@ -61,8 +61,9 @@ public class Booking {
     @Column(name = "is_active")
     private Boolean isActive = true;
     
-    @Version
-    private Long version;
+    // Temporarily disabled version to fix exit processing issues
+    // @Version
+    // private Long version;
     
     public Booking() {
         this.bookingTime = LocalDateTime.now();
@@ -154,13 +155,5 @@ public class Booking {
     
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
-    }
-    
-    public Long getVersion() {
-        return version;
-    }
-    
-    public void setVersion(Long version) {
-        this.version = version;
     }
 }
