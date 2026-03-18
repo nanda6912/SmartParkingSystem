@@ -654,7 +654,7 @@
                         </div>
                         
                         <div style="display: flex; gap: 10px; justify-content: center;">
-                            <button onclick="downloadReceiptAndClose('${result.bookingCode || this.currentBookingId}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            <button onclick="downloadReceiptAndClose('${result.bookingId}', '${result.bookingCode}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
                                 📄 Download Receipt
                             </button>
                             <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
@@ -737,9 +737,19 @@
         }
 
         // Global function for receipt download (same as booking page)
-        window.downloadExitReceipt = function(bookingCode) {
+        window.downloadExitReceipt = function(bookingId) {
             const link = document.createElement('a');
-            link.href = `/api/exit/receipt/${bookingCode}`;
+            link.href = `/api/exit/receipt/${bookingId}`;
+            link.download = `exit_receipt_${bookingId}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // Global function for receipt download by booking code
+        window.downloadExitReceiptByCode = function(bookingCode) {
+            const link = document.createElement('a');
+            link.href = `/api/exit/receipt/by-code/${bookingCode}`;
             link.download = `exit_receipt_${bookingCode}.txt`;
             document.body.appendChild(link);
             link.click();
@@ -747,9 +757,9 @@
         };
 
         // Global function for download and close
-        window.downloadReceiptAndClose = function(bookingCode) {
-            // Download receipt
-            window.downloadExitReceipt(bookingCode);
+        window.downloadReceiptAndClose = function(bookingId, bookingCode) {
+            // Download receipt using booking code for better filename
+            window.downloadExitReceiptByCode(bookingCode);
             
             // Show success message
             setTimeout(() => {

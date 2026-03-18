@@ -127,6 +127,44 @@ public class ExitController {
         }
     }
     
+    @GetMapping("/receipt/by-code/{bookingCode}")
+    public ResponseEntity<byte[]> downloadExitReceiptByCode(@PathVariable String bookingCode) {
+        try {
+            // Find booking by code for exit receipt
+            List<Booking> bookings = exitService.getAllBookings();
+            Booking booking = bookings.stream()
+                    .filter(b -> bookingCode.equals(b.getBookingCode()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Booking not found with code: " + bookingCode));
+            
+            // Generate receipt content (works for both active and exited bookings)
+            String receiptContent = exitService.generateExitReceipt(booking);
+            
+            // Create downloadable file with proper encoding
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            String filename = "exit_receipt_" + bookingCode + "_" + LocalDateTime.now().format(formatter) + ".txt";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_PLAIN);
+            headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename).build());
+            headers.setContentLength(receiptContent.getBytes().length);
+            
+            return new ResponseEntity<>(receiptContent.getBytes(StandardCharsets.UTF_8), headers, HttpStatus.OK);
+            
+        } catch (RuntimeException e) {
+            // Log the error and return a proper response
+            System.err.println("Error generating receipt by code: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(("Error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            // Log the error and return a proper response
+            System.err.println("Unexpected error generating receipt by code: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Internal error: " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
+        }
+    }
+    
     /**
      * Debug endpoint to check vehicle booking status
      */
