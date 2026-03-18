@@ -469,8 +469,23 @@
                 try {
                     this.showLoading();
                     console.log(`Loading parking slots for floor ${this.currentFloor}...`);
-                    const response = await fetch(`parking-slots/floor/${this.currentFloor}`);
+                    
+                    let response = await fetch(`parking-slots/floor/${this.currentFloor}`);
                     console.log('Response status:', response.status);
+                    
+                    // Handle rate limiting with retry
+                    if (response.status === 429) {
+                        const retryAfter = parseInt(response.headers.get('Retry-After')) || 10;
+                        console.log(`Rate limited, retrying after ${retryAfter} seconds...`);
+                        
+                        // Show rate limit message
+                        this.showNotification(`Rate limit exceeded. Retrying in ${retryAfter} seconds...`, 'warning');
+                        
+                        // Wait and retry once
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        response = await fetch(`parking-slots/floor/${this.currentFloor}`);
+                        console.log('Retry response status:', response.status);
+                    }
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -775,7 +790,7 @@
             startAutoRefresh() {
                 setInterval(() => {
                     this.loadParkingSlots();
-                }, 5000);
+                }, 10000); // Increased from 5 seconds to 10 seconds
             }
         }
 

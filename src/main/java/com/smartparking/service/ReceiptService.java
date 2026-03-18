@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 @Service
 public class ReceiptService {
@@ -15,9 +16,23 @@ public class ReceiptService {
     @Autowired
     private BookingRepository bookingRepository;
     
-    public byte[] generateReceipt(String bookingCode) throws IOException {
-        Booking booking = bookingRepository.findByBookingCode(bookingCode)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+    public byte[] generateReceipt(String bookingIdentifier) throws IOException {
+        Booking booking;
+        
+        // Try to find by booking code first (new bookings)
+        Optional<Booking> bookingByCode = bookingRepository.findByBookingCode(bookingIdentifier);
+        if (bookingByCode.isPresent()) {
+            booking = bookingByCode.get();
+        } else {
+            // If not found by code, try to find by ID (legacy bookings)
+            try {
+                Long bookingId = Long.parseLong(bookingIdentifier);
+                booking = bookingRepository.findById(bookingId)
+                        .orElseThrow(() -> new RuntimeException("Booking not found"));
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Invalid booking identifier: " + bookingIdentifier);
+            }
+        }
         
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         
@@ -36,7 +51,11 @@ public class ReceiptService {
         receipt.append("        SMART PARKING RECEIPT        \n");
         receipt.append("========================================\n\n");
         
-        receipt.append("BOOKING CODE: ").append(booking.getBookingCode()).append("\n");
+        // Use booking code if available, otherwise fall back to ID for backward compatibility
+        String bookingIdentifier = booking.getBookingCode() != null ? 
+            booking.getBookingCode() : String.valueOf(booking.getId());
+        
+        receipt.append("BOOKING CODE: ").append(bookingIdentifier).append("\n");
         receipt.append("VEHICLE NUMBER: ").append(booking.getVehicleNumber()).append("\n");
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");

@@ -169,9 +169,11 @@ The system automatically creates default users on first startup:
 - Secure password hashing with BCrypt
 
 ### Rate Limiting
-- IP-based throttling on critical APIs
-- Protection against brute force attacks
-- Configurable request limits
+- **Token Bucket Algorithm**: IP-based throttling with configurable limits
+- **Multi-layer Protection**: Different limits per endpoint type (Lock: 5/min, Book: 3/min, View: 120/min)
+- **Burst Handling**: Allows natural user behavior while preventing abuse
+- **Thread-safe Implementation**: Concurrent access support with automatic cleanup
+- **Monitoring**: Real-time statistics and health check endpoints
 
 ### Data Validation
 - Server-side validation with Bean Validation
