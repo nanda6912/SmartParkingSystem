@@ -2,26 +2,26 @@ package com.smartparking.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-@Profile("prod") // Only apply in production
 public class ActuatorSecurityConfig {
 
     @Bean
+    @Order(1) // Ensure this security config has highest precedence
     public SecurityFilterChain actuatorSecurity(HttpSecurity http) throws Exception {
         // Configure actuator endpoints security
-        http.securityMatcher(request -> 
-                request.getRequestURI().startsWith("/actuator")
-            )
+        http.securityMatcher("/actuator/**")
             .authorizeHttpRequests(authorizeRequests -> 
                 authorizeRequests.anyRequest().authenticated()
             )
-            .httpBasic();
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .httpBasic(org.springframework.security.config.Customizer.withDefaults());
         
         return http.build();
     }
