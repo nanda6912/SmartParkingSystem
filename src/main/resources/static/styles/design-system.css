@@ -91,8 +91,7 @@
 }
 
 /* ===== TYPOGRAPHY ===== */
-@import url('https://fonts.googleapis.com/css2?family=Cambria:wght@300;400;500;600;700&display=swap');
-
+/* Using local Cambria font with fallbacks */
 body {
     font-family: var(--font-family-primary);
     font-size: var(--font-size-base);
@@ -609,6 +608,8 @@ p {
 .sidebar-nav-link:focus {
     background: var(--bg-tertiary);
     color: var(--text-primary);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
 
 .sidebar-nav-link.active {

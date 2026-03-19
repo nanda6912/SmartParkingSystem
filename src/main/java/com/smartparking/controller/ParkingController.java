@@ -4,14 +4,10 @@ import com.smartparking.dto.BookingRequestDTO;
 import com.smartparking.dto.BookingResponseDTO;
 import com.smartparking.dto.ParkingSlotDTO;
 import com.smartparking.service.ParkingService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
