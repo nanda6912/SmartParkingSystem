@@ -1,794 +1,3421 @@
 <!DOCTYPE html>
+
+
+
 <html lang="en">
+
+
+
 <head>
+
+
+
     <meta charset="UTF-8">
+
+
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Exit Management - Smart Parking</title>
+
+
+
+    <title>Vehicle Exit Management - Smart Parking System</title>
+
+
+
+    <link rel="stylesheet" href="/styles/design-system.css">
+
+
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+
+        /* Page-specific styles */
+
+
+
+        .main-container {
+
+
+
+            display: flex;
+
+
+
             min-height: 100vh;
-            padding: 20px;
+
+
+
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
+
+
+        
+
+
+
+        .content-area {
+
+
+
+            flex: 1;
+
+
+
+            display: flex;
+
+
+
+            flex-direction: column;
+
+
+
         }
 
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            text-align: center;
+
+
+        
+
+
+
+        .page-header {
+
+
+
+            background: var(--bg-secondary);
+
+
+
+            border-bottom: 1px solid var(--border-primary);
+
+
+
+            padding: var(--space-6);
+
+
+
+            margin-bottom: var(--space-6);
+
+
+
         }
 
-        .header h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+
+
+        
+
+
+
+        .page-title {
+
+
+
+            font-size: var(--font-size-2xl);
+
+
+
+            font-weight: 700;
+
+
+
+            color: var(--text-primary);
+
+
+
+            margin-bottom: var(--space-2);
+
+
+
+            font-family: 'Cambria', serif;
+
+
+
+            font-weight: bold;
+
+
+
         }
 
-        .header p {
-            color: #666;
-            font-size: 1.1em;
+
+
+        
+
+
+
+        .page-subtitle {
+
+
+
+            color: var(--text-secondary);
+
+
+
+            font-size: var(--font-size-base);
+
+
+
+            font-family: 'Cambria', serif;
+
+
+
         }
 
-        .stats-container {
+
+
+        
+
+
+
+        .stats-grid {
+
+
+
             display: grid;
+
+
+
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+
+
+
+            gap: var(--space-4);
+
+
+
+            margin-bottom: var(--space-6);
+
+
+
         }
+
+
+
+        
+
+
 
         .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+
+
+            background: var(--bg-secondary);
+
+
+
+            border: 1px solid var(--border-primary);
+
+
+
+            border-radius: var(--radius-md);
+
+
+
+            padding: var(--space-5);
+
+
+
             text-align: center;
+
+
+
+            transition: var(--transition-base);
+
+
+
         }
 
-        .stat-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+
+
+        
+
+
+
+        .stat-card:hover {
+
+
+
+            transform: translateY(-1px);
+
+
+
+            box-shadow: var(--shadow-md);
+
+
+
         }
+
+
+
+        
+
+
 
         .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
+
+
+
+            font-size: var(--font-size-3xl);
+
+
+
+            font-weight: 700;
+
+
+
+            color: var(--accent-primary);
+
+
+
+            margin-bottom: var(--space-2);
+
+
+
         }
 
-        .bookings-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+
+        
+
+
+
+        .stat-label {
+
+
+
+            font-size: var(--font-size-sm);
+
+
+
+            color: var(--text-tertiary);
+
+
+
+            text-transform: uppercase;
+
+
+
+            letter-spacing: 0.05em;
+
+
+
         }
 
-        .bookings-header {
+
+
+        
+
+
+
+        .table-container {
+
+
+
+            background: var(--bg-secondary);
+
+
+
+            border: 1px solid var(--border-primary);
+
+
+
+            border-radius: var(--radius-md);
+
+
+
+            overflow: hidden;
+
+
+
+            margin-bottom: var(--space-6);
+
+
+
+        }
+
+
+
+        
+
+
+
+        .table-header {
+
+
+
+            background: var(--bg-tertiary);
+
+
+
+            padding: var(--space-4) var(--space-6);
+
+
+
+            border-bottom: 1px solid var(--border-primary);
+
+
+
             display: flex;
+
+
+
             justify-content: space-between;
+
+
+
             align-items: center;
-            margin-bottom: 20px;
+
+
+
         }
 
-        .bookings-header h2 {
-            color: #333;
-            font-size: 1.8em;
+
+
+        
+
+
+
+        .table-title {
+
+
+
+            font-size: var(--font-size-lg);
+
+
+
+            font-weight: 600;
+
+
+
+            color: var(--text-primary);
+
+
+
         }
+
+
+
+        
+
+
 
         .refresh-btn {
-            background: #667eea;
-            color: white;
+
+
+
+            background: var(--btn-primary);
+
+
+
+            color: var(--text-inverse);
+
+
+
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+
+
+
+            padding: var(--space-2) var(--space-4);
+
+
+
+            border-radius: var(--radius-sm);
+
+
+
             cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s ease;
+
+
+
+            font-size: var(--font-size-sm);
+
+
+
+            transition: var(--transition-fast);
+
+
+
         }
+
+
+
+        
+
+
 
         .refresh-btn:hover {
-            background: #5a67d8;
-            transform: translateY(-2px);
+
+
+
+            background: var(--btn-primary-hover);
+
+
+
         }
 
-        .bookings-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
 
-        .bookings-table th {
-            background: #667eea;
-            color: white;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            border-radius: 8px 8px 0 0;
-        }
 
-        .bookings-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-        }
+        
 
-        .bookings-table tr:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
 
-        .booking-code {
-            font-weight: bold;
-            color: #667eea;
-        }
 
-        .duration {
-            color: #666;
-            font-size: 0.9em;
-        }
+        .modal-overlay {
 
-        .action-btns {
-            display: flex;
-            gap: 10px;
-        }
 
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
 
-        .btn-calculate {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-calculate:hover {
-            background: #218838;
-        }
-
-        .btn-process {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-process:hover {
-            background: #c82333;
-        }
-
-        .btn-receipt {
-            background: #17a2b8;
-            color: white;
-        }
-
-        .btn-receipt:hover {
-            background: #138496;
-        }
-
-        .modal {
             display: none;
+
+
+
             position: fixed;
-            z-index: 1000;
-            left: 0;
+
+
+
             top: 0;
+
+
+
+            left: 0;
+
+
+
             width: 100%;
+
+
+
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+
+
+
+            background: rgba(0, 0, 0, 0.5);
+
+
+
+            z-index: 1000;
+
+
+
+            align-items: center;
+
+
+
+            justify-content: center;
+
+
+
         }
+
+
+
+        
+
+
+
+        .modal-overlay.open {
+
+
+
+            display: flex;
+
+
+
+        }
+
+
+
+        
+
+
 
         .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 15px;
+
+
+
+            background: var(--bg-secondary);
+
+
+
+            border-radius: var(--radius-lg);
+
+
+
             width: 90%;
+
+
+
             max-width: 500px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+
+
+
+            max-height: 90vh;
+
+
+
+            overflow-y: auto;
+
+
+
         }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
 
-        .modal-header h3 {
-            color: #333;
-            margin: 0;
-        }
 
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        
 
-        .close:hover {
-            color: #000;
-        }
 
-        .fee-details {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
 
-        .fee-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            padding: 8px 0;
-        }
+        .empty-state {
 
-        .fee-row.total {
-            border-top: 2px solid #667eea;
-            font-weight: bold;
-            font-size: 1.2em;
-            color: #667eea;
-        }
 
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            z-index: 1001;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.3s ease;
-        }
 
-        .notification.show {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .notification.success {
-            background: #28a745;
-        }
-
-        .notification.error {
-            background: #dc3545;
-        }
-
-        .notification.warning {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .loading {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .loading.show {
-            display: flex;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .no-bookings {
             text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2em;
+
+
+
+            padding: var(--space-16) var(--space-8);
+
+
+
+            color: var(--text-tertiary);
+
+
+
         }
+
+
+
+        
+
+
+
+        .empty-state-icon {
+
+
+
+            width: 120px;
+
+
+
+            height: 120px;
+
+
+
+            margin: 0 auto var(--space-6);
+
+
+
+            opacity: 0.3;
+
+
+
+        }
+
+
+
+        
+
+
+
+        .empty-state-title {
+
+
+
+            font-size: var(--font-size-lg);
+
+
+
+            font-weight: 600;
+
+
+
+            color: var(--text-secondary);
+
+
+
+            margin-bottom: var(--space-3);
+
+
+
+        }
+
+
+
+        
+
+
 
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
 
-            .stats-container {
+
+
+            .stats-grid {
+
+
+
                 grid-template-columns: 1fr;
+
+
+
             }
 
-            .bookings-table {
-                font-size: 0.9em;
-            }
 
-            .action-btns {
-                flex-direction: column;
-            }
 
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-                padding: 20px;
-            }
         }
+
+
+
     </style>
+
+
+
 </head>
+
+
+
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🚗 Vehicle Exit Management</h1>
-            <p>Manage vehicle exits and calculate parking fees</p>
-        </div>
 
-        <!-- Statistics -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>📊 Today's Exits</h3>
-                <div class="stat-value" id="todayExits">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>💰 Today's Revenue</h3>
-                <div class="stat-value" id="todayRevenue">₹0</div>
-            </div>
-            <div class="stat-card">
-                <h3>🚗 Active Bookings</h3>
-                <div class="stat-value" id="activeBookings">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>💵 Hourly Rate</h3>
-                <div class="stat-value" id="hourlyRate">₹20</div>
-            </div>
-        </div>
 
-        <!-- Bookings Container -->
-        <div class="bookings-container">
-            <div class="bookings-header">
-                <h2>📋 Active Bookings</h2>
-                <button class="refresh-btn" onclick="loadActiveBookings()">🔄 Refresh</button>
-            </div>
 
-            <table class="bookings-table" id="bookingsTable">
-                <thead>
-                    <tr>
-                        <th>Booking Code</th>
-                        <th>Vehicle Number</th>
-                        <th>Customer Name</th>
-                        <th>Slot</th>
-                        <th>Entry Time</th>
-                        <th>Duration</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="bookingsTableBody">
-                    <!-- Bookings will be loaded here -->
-                </tbody>
-            </table>
+    <!-- Progress Bar -->
 
-            <div class="no-bookings" id="noBookings" style="display: none;">
-                <p>🅿️ No active bookings found</p>
-            </div>
-        </div>
+
+
+    <div class="progress-bar" id="progressBar" style="display: none;">
+
+
+
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+
+
+
     </div>
 
-    <!-- Fee Calculation Modal -->
-    <div id="feeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>💰 Fee Calculation</h3>
-                <span class="close" onclick="closeFeeModal()">&times;</span>
-            </div>
-            <div class="fee-details" id="feeDetails">
-                <!-- Fee details will be loaded here -->
-            </div>
-            <div class="action-btns" style="justify-content: center; margin-top: 20px;">
-                <button class="btn btn-process" onclick="processExit()">🚗 Process Exit & Release Slot</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Loading -->
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-    </div>
 
-    <!-- Notification -->
-    <div class="notification" id="notification"></div>
+
+
+
+
+    <!-- Authentication Check -->
+
+
 
     <script>
+
+
+
+        // Check if user is authenticated for exit access
+
+
+
+        console.log('Exit page - checking authentication...');
+
+
+
+        const exitAuth = sessionStorage.getItem('exitAuthenticated');
+
+
+
+        console.log('Exit authentication status:', exitAuth);
+
+
+
+        
+
+
+
+        if (!exitAuth) {
+
+
+
+            console.log('Not authenticated, redirecting to auth.html');
+
+
+
+            window.location.href = '/auth.html';
+
+
+
+        } else {
+
+
+
+            console.log('Exit authentication successful');
+
+
+
+        }
+
+
+
+    </script>
+
+
+
+    
+
+
+
+    <div class="main-container">
+
+
+
+        <!-- Main Content Area -->
+
+
+
+        <main class="main-content-full">
+
+
+
+            <!-- Page Header -->
+
+
+
+            <div class="page-header">
+
+
+
+                <h1 class="page-title">Vehicle Exit Management</h1>
+
+
+
+                <p class="page-subtitle">Process vehicle exits and calculate parking fees</p>
+
+
+
+                <div style="margin-top: var(--space-4);">
+
+
+
+                    <button onclick="logout()" class="btn btn-primary">🚪 Logout</button>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- Statistics Grid -->
+
+
+
+            <div class="stats-grid">
+
+
+
+                <div class="stat-card">
+
+
+
+                    <div class="stat-value" id="todayExits">0</div>
+
+
+
+                    <div class="stat-label">Today's Exits</div>
+
+
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+
+
+                    <div class="stat-value" id="activeBookings">0</div>
+
+
+
+                    <div class="stat-label">Active Bookings</div>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+
+            <!-- Active Bookings Table -->
+
+
+
+            <div class="table-container">
+
+
+
+                <div class="table-header">
+
+
+
+                    <h2 class="table-title">🅿️ Active Bookings</h2>
+
+
+
+                    <button class="refresh-btn" onclick="loadActiveBookings()">🔄 Refresh</button>
+
+
+
+                </div>
+
+
+
+                <div id="activeBookingsContent">
+
+
+
+                    <!-- Table will be populated here -->
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </main>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- Modal Overlay -->
+
+
+
+    <div class="modal-overlay" id="feeModal">
+
+
+
+        <div class="modal">
+
+
+
+            <div class="modal-header">
+
+
+
+                <h2 class="modal-title">Parking Fee Calculation</h2>
+
+
+
+                <button class="modal-close" onclick="closeFeeModal()">&times;</button>
+
+
+
+            </div>
+
+
+
+            <div class="modal-body" id="feeModalBody">
+
+
+
+                <!-- Fee details will be populated here -->
+
+
+
+            </div>
+
+
+
+            <div class="modal-footer">
+
+
+
+                <button type="button" class="btn btn-secondary" onclick="closeFeeModal()">Cancel</button>
+
+
+
+                <button type="button" class="btn btn-primary" id="processExitBtn" onclick="processExit()">Process Exit</button>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <!-- Notification -->
+
+
+
+    <div class="notification" id="notification"></div>
+
+
+
+
+
+
+
+    <script>
+
+
+
         class ExitManagement {
+
+
+
             constructor() {
+
+
+
                 this.currentBookingId = null;
+
+
+
                 this.init();
+
+
+
             }
+
+
+
+
+
+
 
             init() {
+
+
+
                 this.loadActiveBookings();
+
+
+
                 this.loadStatistics();
+
+
+
                 // Auto-refresh every 30 seconds
+
+
+
                 setInterval(() => {
+
+
+
                     this.loadActiveBookings();
+
+
+
                     this.loadStatistics();
+
+
+
                 }, 30000);
+
+
+
             }
+
+
+
+
+
+
 
             async loadActiveBookings() {
+
+
+
                 try {
-                    this.showLoading();
+
+
+
+                    this.showSkeletonLoader();
+
+
+
+                    this.showProgressBar();
+
+
+
                     const response = await fetch('/api/exit/active-bookings');
+
+
+
                     
+
+
+
                     if (!response.ok) {
+
+
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
+
+
                     }
+
+
+
                     
+
+
+
                     const bookings = await response.json();
+
+
+
                     this.renderBookings(bookings);
+
+
+
                 } catch (error) {
+
+
+
                     console.error('Error loading active bookings:', error);
+
+
+
                     this.showNotification('Error loading bookings: ' + error.message, 'error');
+
+
+
                 } finally {
-                    this.hideLoading();
+
+
+
+                    this.hideProgressBar();
+
+
+
                 }
+
+
+
             }
+
+
+
+
+
+
 
             async loadStatistics() {
+
+
+
                 try {
+
+
+
                     const response = await fetch('/api/exit/stats');
+
+
+
                     
+
+
+
                     if (!response.ok) {
+
+
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
+
+
                     }
+
+
+
                     
+
+
+
                     const stats = await response.json();
+
+
+
                     this.updateStatistics(stats);
+
+
+
                 } catch (error) {
+
+
+
                     console.error('Error loading statistics:', error);
+
+
+
                 }
+
+
+
             }
+
+
+
+
+
+
 
             renderBookings(bookings) {
-                const tbody = document.getElementById('bookingsTableBody');
-                const noBookings = document.getElementById('noBookings');
+
+
+
+                const content = document.getElementById('activeBookingsContent');
+
+
+
                 
+
+
+
                 if (bookings.length === 0) {
-                    tbody.innerHTML = '';
-                    noBookings.style.display = 'block';
+
+
+
+                    content.innerHTML = `
+
+
+
+                        <div class="empty-state">
+
+
+
+                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+
+
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+
+
+
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5" />
+
+
+
+                            </svg>
+
+
+
+                            <div class="empty-state-title">No Active Bookings</div>
+
+
+
+                            <div class="empty-state-description">There are currently no vehicles parked in the system.</div>
+
+
+
+                        </div>
+
+
+
+                    `;
+
+
+
                     return;
+
+
+
                 }
+
+
+
                 
-                noBookings.style.display = 'none';
-                tbody.innerHTML = bookings.map(booking => this.createBookingRow(booking)).join('');
+
+
+
+                content.innerHTML = `
+
+
+
+                    <table class="table">
+
+
+
+                        <thead>
+
+
+
+                            <tr>
+
+
+
+                                <th>Booking Code</th>
+
+
+
+                                <th>Vehicle Number</th>
+
+
+
+                                <th>Customer Name</th>
+
+
+
+                                <th>Slot</th>
+
+
+
+                                <th>Entry Time</th>
+
+
+
+                                <th>Duration</th>
+
+
+
+                                <th>Actions</th>
+
+
+
+                            </tr>
+
+
+
+                        </thead>
+
+
+
+                        <tbody>
+
+
+
+                            ${bookings.map(booking => this.createBookingRow(booking)).join('')}
+
+
+
+                        </tbody>
+
+
+
+                    </table>
+
+
+
+                `;
+
+
+
             }
+
+
+
+
+
+
 
             createBookingRow(booking) {
+
+
+
                 return `
+
+
+
                     <tr>
-                        <td class="booking-code">${booking.bookingCode}</td>
+
+
+
+                        <td><strong>${booking.bookingCode}</strong></td>
+
+
+
                         <td>${booking.vehicleNumber}</td>
+
+
+
                         <td>${booking.customerName}</td>
-                        <td>F${booking.floor}-S${booking.slotNumber}</td>
+
+
+
+                        <td><span class="status-badge status-available">F${booking.floor}-S${booking.slotNumber}</span></td>
+
+
+
                         <td>${booking.bookingTime}</td>
-                        <td class="duration">${booking.durationMinutes} min</td>
+
+
+
+                        <td>${booking.durationMinutes} min</td>
+
+
+
                         <td>
-                            <div class="action-btns">
-                                <button class="btn btn-calculate" onclick="calculateFee(${booking.bookingId})">
-                                    💰 Calculate Fee
-                                </button>
-                            </div>
+
+
+
+                            <button class="btn btn-sm btn-primary" onclick="calculateFee(${booking.bookingId})">
+
+
+
+                                💰 Calculate Fee
+
+
+
+                            </button>
+
+
+
                         </td>
+
+
+
                     </tr>
+
+
+
                 `;
+
+
+
             }
+
+
+
+
+
+
 
             updateStatistics(stats) {
+
+
+
                 document.getElementById('todayExits').textContent = stats.todayExits || 0;
-                document.getElementById('todayRevenue').textContent = '₹' + (stats.todayRevenue || 0).toFixed(2);
+
+
+
                 document.getElementById('activeBookings').textContent = stats.activeBookings || 0;
-                document.getElementById('hourlyRate').textContent = '₹' + (stats.hourlyRate || 20);
+
+
+
             }
+
+
+
+
+
+
 
             async calculateFee(bookingId) {
+
+
+
                 try {
+
+
+
                     this.currentBookingId = bookingId;
+
+
+
                     this.showLoading();
+
+
+
                     
+
+
+
                     const response = await fetch(`/api/exit/calculate-fee/${bookingId}`);
+
+
+
                     
+
+
+
                     if (!response.ok) {
+
+
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
+
+
                     }
+
+
+
                     
+
+
+
                     const feeDetails = await response.json();
+
+
+
+                    
+
+
+
+                    // Store the complete booking details for later use
+
+
+
+                    this.currentBookingDetails = {
+
+
+
+                        bookingId: bookingId,
+
+
+
+                        bookingCode: feeDetails.bookingCode,
+
+
+
+                        vehicleNumber: feeDetails.vehicleNumber,
+
+
+
+                        customerName: feeDetails.customerName,
+
+
+
+                        phoneNumber: feeDetails.phoneNumber,
+
+
+
+                        vehicleType: feeDetails.vehicleType,
+
+
+
+                        entryTime: feeDetails.entryTime,
+
+
+
+                        slotNumber: feeDetails.slotNumber,
+
+
+
+                        floor: feeDetails.floor,
+
+
+
+                        duration: feeDetails.duration,
+
+
+
+                        totalFee: feeDetails.totalFee,
+
+
+
+                        hoursCharged: feeDetails.hoursCharged
+
+
+
+                    };
+
+
+
+                    
+
+
+
+                    console.log('=== BOOKING DETAILS STORED ===');
+
+
+
+                    console.log('Stored booking details:', this.currentBookingDetails);
+
+
+
+                    console.log('=== END BOOKING DETAILS ===');
+
+
+
+                    
+
+
+
                     this.showFeeModal(feeDetails);
+
+
+
                 } catch (error) {
+
+
+
                     console.error('Error calculating fee:', error);
+
+
+
                     this.showNotification('Error calculating fee: ' + error.message, 'error');
+
+
+
                 } finally {
+
+
+
                     this.hideLoading();
+
+
+
                 }
+
+
+
             }
+
+
+
+
+
+
 
             showFeeModal(feeDetails) {
+
+
+
                 const modal = document.getElementById('feeModal');
-                const feeDetailsDiv = document.getElementById('feeDetails');
+
+
+
+                const feeModalBody = document.getElementById('feeModalBody');
+
+
+
                 
-                feeDetailsDiv.innerHTML = `
-                    <div class="fee-row">
-                        <span>Booking Code:</span>
-                        <span><strong>${feeDetails.bookingCode}</strong></span>
+
+
+
+                feeModalBody.innerHTML = `
+
+
+
+                    <div style="display: grid; gap: var(--space-4);">
+
+
+
+                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+
+
+
+                            <span style="font-weight: 600; color: var(--text-secondary);">Booking Code:</span>
+
+
+
+                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.bookingCode}</span>
+
+
+
+                        </div>
+
+
+
+                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+
+
+
+                            <span style="font-weight: 600; color: var(--text-secondary);">Vehicle Number:</span>
+
+
+
+                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.vehicleNumber}</span>
+
+
+
+                        </div>
+
+
+
+                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+
+
+
+                            <span style="font-weight: 600; color: var(--text-secondary);">Entry Time:</span>
+
+
+
+                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.entryTime}</span>
+
+
+
+                        </div>
+
+
+
+                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
+
+
+
+                            <span style="font-weight: 600; color: var(--text-secondary);">Duration:</span>
+
+
+
+                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.duration}</span>
+
+
+
+                        </div>
+
+
+
+                        <div style="display: flex; justify-content: space-between; padding: var(--space-4); background: var(--status-available-bg); border: 1px solid var(--status-available-border); border-radius: var(--radius-sm);">
+
+
+
+                            <span style="font-weight: 600; color: var(--status-available-text);">Total Fee:</span>
+
+
+
+                            <span style="font-weight: 700; color: var(--status-available-text); font-size: var(--font-size-xl);">₹${feeDetails.totalFee}</span>
+
+
+
+                        </div>
+
+
+
                     </div>
-                    <div class="fee-row">
-                        <span>Vehicle Number:</span>
-                        <span>${feeDetails.vehicleNumber}</span>
-                    </div>
-                    <div class="fee-row">
-                        <span>Customer Name:</span>
-                        <span>${feeDetails.customerName}</span>
-                    </div>
-                    <div class="fee-row">
-                        <span>Entry Time:</span>
-                        <span>${feeDetails.entryTime}</span>
-                    </div>
-                    <div class="fee-row">
-                        <span>Exit Time:</span>
-                        <span>${feeDetails.exitTime}</span>
-                    </div>
-                    <div class="fee-row">
-                        <span>Duration:</span>
-                        <span>${feeDetails.totalMinutes} minutes (${feeDetails.hoursCharged} hours)</span>
-                    </div>
-                    <div class="fee-row">
-                        <span>Hourly Rate:</span>
-                        <span>₹${feeDetails.hourlyRate}</span>
-                    </div>
-                    <div class="fee-row total">
-                        <span>Total Amount:</span>
-                        <span>₹${feeDetails.totalFee.toFixed(2)}</span>
-                    </div>
+
+
+
                 `;
+
+
+
                 
-                modal.style.display = 'block';
+
+
+
+                modal.classList.add('open');
+
+
+
             }
+
+
+
+
+
+
 
             async processExit() {
+
+
+
+                console.log('processExit method called');
+
+
+
+                console.log('Current booking ID:', this.currentBookingId);
+
+
+
+                
+
+
+
                 if (!this.currentBookingId) {
+
+
+
+                    console.log('No current booking ID - returning');
+
+
+
                     return;
+
+
+
                 }
+
+
+
                 
+
+
+
                 // Show confirmation dialog
+
+
+
                 const confirmed = confirm(`Are you sure you want to release the vehicle for booking ${this.currentBookingId}? This action cannot be undone.`);
+
+
+
+                console.log('User confirmed:', confirmed);
+
+
+
                 
+
+
+
                 if (!confirmed) {
+
+
+
+                    console.log('User cancelled - returning');
+
+
+
                     return; // Staff cancelled the operation
+
+
+
                 }
+
+
+
                 
+
+
+
                 try {
+
+
+
                     this.showLoading();
+
+
+
+                    console.log('Sending request to process exit...');
+
+
+
                     
+
+
+
                     const response = await fetch(`/api/exit/process/${this.currentBookingId}`, {
+
+
+
                         method: 'POST'
+
+
+
                     });
+
+
+
                     
+
+
+
+                    console.log('Response status:', response.status);
+
+
+
+                    
+
+
+
                     if (!response.ok) {
+
+
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
+
+
                     }
+
+
+
                     
+
+
+
                     const result = await response.json();
+
+
+
+                    console.log('Process result:', result);
+
+
+
                     
+
+
+
                     if (result.success) {
-                        // Close fee modal
-                        this.closeFeeModal();
-                        
-                        // Show release confirmation with receipt options
-                        this.showReleaseConfirmation(result);
-                        
-                        // Update booking lists and statistics
-                        this.loadActiveBookings();
-                        this.loadStatistics();
-                        
-                        // Store booking details for receipt
+
+
+
+                        // Store booking details for receipt BEFORE notifying
+
+
+
                         this.currentBookingCode = result.bookingCode;
+
+
+
                         this.currentBookingId = result.bookingId;
+
+
+
+                        
+
+
+
+                        // Create detailed exit data with COMPLETE booking information
+
+                        const exitData = {
+
+
+
+                            bookingId: result.bookingId,
+
+
+
+                            bookingCode: result.bookingCode || 'N/A',
+
+
+
+                            processedAt: new Date().toISOString(),
+
+
+
+                            exitTime: new Date().toLocaleString('en-US', { 
+
+
+
+                                hour: '2-digit', 
+
+
+
+                                minute: '2-digit',
+
+
+
+                                hour12: true 
+
+
+
+                            }),
+
+
+
+                            // Use stored booking details (original data from booking)
+
+                            vehicleNumber: this.currentBookingDetails?.vehicleNumber || result.vehicleNumber || 'Unknown',
+
+
+
+                            customerName: this.currentBookingDetails?.customerName || result.customerName || 'Unknown',
+
+
+
+                            phoneNumber: this.currentBookingDetails?.phoneNumber || result.phoneNumber || 'Unknown',
+
+
+
+                            vehicleType: this.currentBookingDetails?.vehicleType || result.vehicleType || 'Unknown',
+
+
+
+                            slotNumber: this.currentBookingDetails?.slotNumber || result.slotNumber || 'Unknown',
+
+
+
+                            floor: this.currentBookingDetails?.floor || result.floor || 'Unknown',
+
+
+
+                            totalFee: this.currentBookingDetails?.totalFee || result.totalFee || 0,
+
+
+
+                            entryTime: this.currentBookingDetails?.entryTime || result.entryTime || 'Unknown',
+
+
+
+                            duration: this.currentBookingDetails?.duration || result.duration || 'Unknown',
+
+
+
+                            hoursCharged: this.currentBookingDetails?.hoursCharged || result.hoursCharged || 0
+
+
+
+                        };
+
+
+
+                        
+
+
+
+                        console.log('=== REAL EXIT DATA BEING STORED ===');
+
+
+
+                        console.log('Exit data:', exitData);
+
+
+
+                        console.log('=== END REAL EXIT DATA ===');
+
+
+
+                        
+
+
+
+                        // Store the real exit data for admin dashboard
+
+
+
+                        localStorage.setItem('latestExitData', JSON.stringify(exitData));
+
+
+
+                        
+
+
+
+                        // Close fee modal (but preserve booking data)
+
+
+
+                        this.closeFeeModalWithoutClearing();
+
+
+
+                        
+
+
+
+                        // Show release confirmation with receipt options
+
+
+
+                        this.showReleaseConfirmation(result);
+
+
+
+                        
+
+
+
+                        // Update booking lists and statistics
+
+
+
+                        this.loadActiveBookings();
+
+
+
+                        this.loadStatistics();
+
+
+
+                        
+
+
+
+                        // Notify admin page of the update (AFTER setting booking details)
+
+
+
+                        this.notifyAdminPageUpdate();
+
+
+
+                        
+
+
+
+                        // Clear booking data after notification is sent
+
+
+
+                        setTimeout(() => {
+
+
+
+                            this.currentBookingId = null;
+
+
+
+                            this.currentBookingCode = null;
+
+
+
+                        }, 2000); // Clear after 2 seconds
+
+
+
                     } else {
+
+
+
                         this.showNotification(result.message || 'Failed to process exit', 'error');
+
+
+
                     }
+
+
+
                 } catch (error) {
+
+
+
                     console.error('Error processing exit:', error);
+
+
+
                     this.showNotification('Error processing exit: ' + error.message, 'error');
+
+
+
                 } finally {
+
+
+
                     this.hideLoading();
+
+
+
                 }
+
+
+
             }
+
+
+
+
+
+
 
             showReleaseConfirmation(result) {
+
+
+
                 const modal = document.createElement('div');
+
+
+
                 modal.style.cssText = `
+
+
+
                     position: fixed;
+
+
+
                     top: 0;
+
+
+
                     left: 0;
+
+
+
                     width: 100%;
+
+
+
                     height: 100%;
+
+
+
                     background: rgba(0, 0, 0, 0.5);
+
+
+
                     display: flex;
+
+
+
                     justify-content: center;
+
+
+
                     align-items: center;
+
+
+
                     z-index: 10000;
+
+
+
                 `;
+
+
+
                 
+
+
+
                 modal.innerHTML = `
+
+
+
                     <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
+
+
+
                         <h3 style="color: #28a745; margin-bottom: 20px;">✅ Vehicle Released Successfully!</h3>
+
+
+
                         <p style="margin-bottom: 10px;"><strong>Booking Code:</strong> ${result.bookingCode || 'N/A'}</p>
+
+
+
                         <p style="margin-bottom: 10px;"><strong>Total Amount:</strong> ₹${result.totalFee.toFixed(2)}</p>
+
+
+
                         <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available.</p>
+
+
+
                         
+
+
+
                         <div style="margin-bottom: 20px;">
+
+
+
                             <p style="margin-bottom: 10px;"><strong>Would you like to download the receipt?</strong></p>
+
+
+
                         </div>
+
+
+
                         
+
+
+
                         <div style="display: flex; gap: 10px; justify-content: center;">
+
+
+
                             <button onclick="downloadReceiptAndClose('${result.bookingId}', '${result.bookingCode}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+
+
+
                                 📄 Download Receipt
+
+
+
                             </button>
+
+
+
                             <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+
+
+
                                 Cancel
+
+
+
                             </button>
+
+
+
                         </div>
+
+
+
                     </div>
+
+
+
                 `;
+
+
+
                 
+
+
+
                 document.body.appendChild(modal);
+
+
+
                 window.currentReleaseModal = modal;
+
+
+
             }
+
+
+
+
+
+
 
             downloadExitReceipt(bookingId) {
-                const filename = this.currentBookingCode || bookingId;
+
+
+
+                console.log('=== Testing exit receipt download ===');
+
+
+
+                console.log('Booking ID:', bookingId);
+
+
+
                 
-                // Create download link with proper encoding
-                const link = document.createElement('a');
-                link.href = `/api/exit/receipt/${bookingId}`;
-                link.download = `exit_receipt_${filename}.txt`;
-                link.style.display = 'none';
-                
-                // Add to DOM, click, and remove
-                document.body.appendChild(link);
-                link.click();
-                
-                // Remove after a short delay to ensure download starts
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                }, 100);
+
+
+
+                // Test if the endpoint exists
+
+
+
+                fetch(`/api/exit/receipt/${bookingId}`)
+
+
+
+                    .then(response => {
+
+
+
+                        console.log('Exit receipt download endpoint status:', response.status);
+
+
+
+                        if (response.ok) {
+
+
+
+                            console.log('Exit receipt download endpoint working');
+
+
+
+                            // Create download link with proper encoding
+
+
+
+                            const link = document.createElement('a');
+
+
+
+                            link.href = `/api/exit/receipt/${bookingId}`;
+
+
+
+                            link.download = `exit_receipt_${bookingId}.txt`;
+
+
+
+                            link.style.display = 'none';
+
+
+
+                            document.body.appendChild(link);
+
+
+
+                            link.click();
+
+
+
+                            document.body.removeChild(link);
+
+
+
+                        } else {
+
+
+
+                            console.error('Exit receipt download endpoint failed:', response.status);
+
+
+
+                            alert('Exit receipt download not available. Status: ' + response.status);
+
+
+
+                        }
+
+
+
+                    })
+
+
+
+                    .catch(error => {
+
+
+
+                        console.error('Exit receipt download error:', error);
+
+
+
+                        alert('Exit receipt download error: ' + error.message);
+
+
+
+                    });
+
+
+
             }
+
+
+
+
+
+
 
             closeFeeModal() {
-                document.getElementById('feeModal').style.display = 'none';
+
+
+
+                const modal = document.getElementById('feeModal');
+
+
+
+                modal.classList.remove('open');
+
+
+
                 this.currentBookingId = null;
+
+
+
                 this.currentBookingCode = null;
+
+
+
             }
+
+
+
+            
+
+
+
+            closeFeeModalWithoutClearing() {
+
+
+
+                const modal = document.getElementById('feeModal');
+
+
+
+                modal.classList.remove('open');
+
+
+
+                // Don't clear booking data - preserve it for notification
+
+
+
+            }
+
+
+
+
+
+
+
+            showSkeletonLoader() {
+
+
+
+                const content = document.getElementById('activeBookingsContent');
+
+
+
+                content.innerHTML = '';
+
+
+
+                
+
+
+
+                // Create skeleton loader for table
+
+
+
+                const skeletonTable = document.createElement('div');
+
+
+
+                skeletonTable.innerHTML = `
+
+
+
+                    <div style="display: flex; justify-content: space-between; padding: var(--space-4);">
+
+
+
+                        <div class="skeleton skeleton-text large" style="width: 200px;"></div>
+
+
+
+                        <div class="skeleton skeleton-text small" style="width: 80px;"></div>
+
+
+
+                    </div>
+
+
+
+                    <div style="border-top: 1px solid var(--border-primary); margin-top: var(--space-2);">
+
+
+
+                        ${Array(5).fill('').map(() => `
+
+
+
+                            <div style="display: flex; padding: var(--space-4); border-bottom: 1px solid var(--border-primary);">
+
+
+
+                                ${Array(6).fill('').map(() => '<div class="skeleton skeleton-text" style="flex: 1; margin: 0 var(--space-2);"></div>').join('')}
+
+
+
+                            </div>
+
+
+
+                        `).join('')}
+
+
+
+                    </div>
+
+
+
+                `;
+
+
+
+                content.appendChild(skeletonTable);
+
+
+
+            }
+
+
+
+            
+
+
+
+            showProgressBar() {
+
+
+
+                const progressBar = document.getElementById('progressBar');
+
+
+
+                const progressFill = document.getElementById('progressBarFill');
+
+
+
+                
+
+
+
+                progressBar.style.display = 'block';
+
+
+
+                progressFill.style.width = '0%';
+
+
+
+                
+
+
+
+                // Simulate progress
+
+
+
+                let progress = 0;
+
+
+
+                const interval = setInterval(() => {
+
+
+
+                    progress += 10;
+
+
+
+                    progressFill.style.width = progress + '%';
+
+
+
+                    
+
+
+
+                    if (progress >= 100) {
+
+
+
+                        clearInterval(interval);
+
+
+
+                    }
+
+
+
+                }, 100);
+
+
+
+            }
+
+
+
+            
+
+
+
+            hideProgressBar() {
+
+
+
+                const progressBar = document.getElementById('progressBar');
+
+
+
+                progressBar.style.display = 'none';
+
+
+
+            }
+
+
+
+
+
+
 
             showLoading() {
-                document.getElementById('loading').classList.add('show');
+
+
+
+                this.showSkeletonLoader();
+
+
+
+                this.showProgressBar();
+
+
+
             }
+
+
+
+
+
+
 
             hideLoading() {
-                document.getElementById('loading').classList.remove('show');
+
+
+
+                this.hideProgressBar();
+
+
+
             }
+
+
+
+
+
+
 
             showNotification(message, type = 'success') {
+
+
+
                 const notification = document.getElementById('notification');
+
+
+
                 notification.textContent = message;
+
+
+
                 notification.className = `notification ${type}`;
+
+
+
                 notification.classList.add('show');
 
+
+
+
+
+
+
                 setTimeout(() => {
+
+
+
                     notification.classList.remove('show');
+
+
+
                 }, 5000);
+
+
+
             }
+
+
+
+            
+
+
+
+            notifyAdminPageUpdate() {
+
+                console.log('=== notifyAdminPageUpdate called ===');
+
+                console.log('Current booking ID:', this.currentBookingId);
+
+                console.log('Current booking code:', this.currentBookingCode);
+
+                
+
+                if (!this.currentBookingId) {
+
+                    console.error('No currentBookingId set, cannot notify admin page');
+
+                    return;
+
+                }
+
+                
+
+                // Prevent multiple notifications for the same exit
+
+                const notificationKey = `exit_notified_${this.currentBookingId}`;
+
+                const alreadyNotified = sessionStorage.getItem(notificationKey);
+
+                
+
+                if (alreadyNotified) {
+
+                    console.log('=== EXIT ALREADY NOTIFIED, SKIPPING DUPLICATE NOTIFICATION ===');
+
+                    return;
+
+                }
+
+                
+
+                // Mark this exit as notified
+
+                sessionStorage.setItem(notificationKey, 'true');
+
+                
+
+                // Get the real exit data that was already stored
+
+                const storedExitData = localStorage.getItem('latestExitData');
+
+                let exitData;
+
+                
+
+                if (storedExitData) {
+
+                    try {
+
+                        exitData = JSON.parse(storedExitData);
+
+                        console.log('Using stored real exit data:', exitData);
+
+                    } catch (error) {
+
+                        console.error('Error parsing stored exit data:', error);
+
+                        exitData = null;
+
+                    }
+
+                }
+
+                
+
+                // Create a single, clean notification message
+
+                const message = {
+
+                    type: 'vehicle_exit',
+
+                    timestamp: Date.now(),
+
+                    bookingId: this.currentBookingId,
+
+                    data: {
+
+                        bookingId: this.currentBookingId,
+
+                        bookingCode: this.currentBookingCode || 'N/A',
+
+                        exitData: exitData
+
+                    }
+
+                };
+
+                
+
+                console.log('=== SENDING CLEAN NOTIFICATION ===');
+
+                console.log('Notification data:', message);
+
+                
+
+                // Use only one reliable method: BroadcastChannel + localStorage
+
+                try {
+
+                    const channel = new BroadcastChannel('parking_updates');
+
+                    channel.postMessage(message);
+
+                    channel.close();
+
+                    console.log('BroadcastChannel message sent');
+
+                } catch (error) {
+
+                    console.log('BroadcastChannel not supported:', error);
+
+                }
+
+                
+
+                // Single localStorage update (no multiple setTimeouts)
+
+                localStorage.setItem('adminPageUpdate', JSON.stringify(message));
+
+                localStorage.setItem('latestExitData', JSON.stringify(exitData));
+
+                
+
+                console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
+
+                
+
+                // Clear the notification flag after a delay
+
+                setTimeout(() => {
+
+                    sessionStorage.removeItem(notificationKey);
+
+                }, 5000);
+
+            }
+
+
+
         }
+
+
+
+
+
+
 
         // Global functions
+
+
+
         let exitManagement;
 
+
+
+
+
+
+
         function loadActiveBookings() {
+
+
+
             exitManagement.loadActiveBookings();
+
+
+
         }
+
+
+
+
+
+
 
         function calculateFee(bookingId) {
+
+
+
             exitManagement.calculateFee(bookingId);
+
+
+
         }
+
+
+
+
+
+
 
         function processExit() {
+
+
+
+            console.log('Process exit button clicked');
+
+
+
+            console.log('Current booking ID:', exitManagement.currentBookingId);
+
+
+
             exitManagement.processExit();
+
+
+
         }
+
+
+
+
+
+
 
         function closeFeeModal() {
+
+
+
             exitManagement.closeFeeModal();
+
+
+
         }
+
+
+
+
+
+
 
         function downloadExitReceipt(bookingId) {
-            exitManagement.downloadExitReceipt(bookingId);
+
+
+
+            console.log('=== Testing exit receipt download by ID ===');
+
+
+
+            console.log('Booking ID:', bookingId);
+
+
+
+            
+
+
+
+            // Test if the endpoint exists
+
+
+
+            fetch(`/api/exit/receipt/${bookingId}`)
+
+
+
+                .then(response => {
+
+
+
+                    console.log('Exit receipt download endpoint status:', response.status);
+
+
+
+                    if (response.ok) {
+
+
+
+                        console.log('Exit receipt download endpoint working');
+
+
+
+                        const link = document.createElement('a');
+
+
+
+                        link.href = `/api/exit/receipt/${bookingId}`;
+
+
+
+                        link.download = `exit_receipt_${bookingId}.txt`;
+
+
+
+                        link.style.display = 'none';
+
+
+
+                        document.body.appendChild(link);
+
+
+
+                        link.click();
+
+
+
+                        document.body.removeChild(link);
+
+
+
+                    } else {
+
+
+
+                        console.error('Exit receipt download endpoint failed:', response.status);
+
+
+
+                        alert('Exit receipt download not available. Status: ' + response.status);
+
+
+
+                    }
+
+
+
+                })
+
+
+
+                .catch(error => {
+
+
+
+                    console.error('Exit receipt download error:', error);
+
+
+
+                    alert('Exit receipt download error: ' + error.message);
+
+
+
+                });
+
+
+
         }
 
-        // Global function for receipt download (same as booking page)
-        window.downloadExitReceipt = function(bookingId) {
-            const link = document.createElement('a');
-            link.href = `/api/exit/receipt/${bookingId}`;
-            link.download = `exit_receipt_${bookingId}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
+
+
+
+
+
 
         // Global function for receipt download by booking code
+
+
+
         window.downloadExitReceiptByCode = function(bookingCode) {
-            const link = document.createElement('a');
-            link.href = `/api/exit/receipt/by-code/${bookingCode}`;
-            link.download = `exit_receipt_${bookingCode}.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+
+
+
+            console.log('=== Testing exit receipt download by code ===');
+
+
+
+            console.log('Booking Code:', bookingCode);
+
+
+
+            
+
+
+
+            // Test if the endpoint exists
+
+
+
+            fetch(`/api/exit/receipt/by-code/${bookingCode}`)
+
+
+
+                .then(response => {
+
+
+
+                    console.log('Exit receipt download by code endpoint status:', response.status);
+
+
+
+                    if (response.ok) {
+
+
+
+                        console.log('Exit receipt download by code endpoint working');
+
+
+
+                        const link = document.createElement('a');
+
+
+
+                        link.href = `/api/exit/receipt/by-code/${bookingCode}`;
+
+
+
+                        link.download = `exit_receipt_${bookingCode}.txt`;
+
+
+
+                        link.style.display = 'none';
+
+
+
+                        document.body.appendChild(link);
+
+
+
+                        link.click();
+
+
+
+                        document.body.removeChild(link);
+
+
+
+                    } else {
+
+
+
+                        console.error('Exit receipt download by code endpoint failed:', response.status);
+
+
+
+                        alert('Exit receipt download by code not available. Status: ' + response.status);
+
+
+
+                    }
+
+
+
+                })
+
+
+
+                .catch(error => {
+
+
+
+                    console.error('Exit receipt download by code error:', error);
+
+
+
+                    alert('Exit receipt download by code error: ' + error.message);
+
+
+
+                });
+
+
+
         };
+
+
+
+
+
+
 
         // Global function for download and close
+
+
+
         window.downloadReceiptAndClose = function(bookingId, bookingCode) {
+
+
+
             // Download receipt using booking code for better filename
+
+
+
             window.downloadExitReceiptByCode(bookingCode);
+
+
+
             
+
+
+
             // Show success message
+
+
+
             setTimeout(() => {
+
+
+
                 alert('Receipt downloaded successfully!');
+
+
+
                 // Close the modal
+
+
+
                 window.closeReleaseConfirmation();
+
+
+
             }, 500);
+
+
+
         };
+
+
+
+
+
+
 
         // Global function to close release confirmation
+
+
+
         window.closeReleaseConfirmation = function() {
+
+
+
             if (window.currentReleaseModal) {
+
+
+
                 document.body.removeChild(window.currentReleaseModal);
+
+
+
                 window.currentReleaseModal = null;
+
+
+
             }
+
+
+
         };
 
+
+
+
+
+
+
+        // Test function for debugging
+
+
+
+        function testAdminSync() {
+
+
+
+            console.log('Testing admin synchronization...');
+
+
+
+            const testData = {
+
+
+
+                type: 'vehicle_exit',
+
+
+
+                timestamp: Date.now(),
+
+
+
+                data: {
+
+
+
+                    bookingId: 'TEST-123',
+
+
+
+                    bookingCode: 'TEST-456'
+
+
+
+                }
+
+
+
+            };
+
+
+
+            
+
+
+
+            localStorage.setItem('adminPageUpdate', JSON.stringify(testData));
+
+
+
+            localStorage.setItem('adminPageUpdate_' + Date.now(), JSON.stringify(testData));
+
+
+
+            
+
+
+
+            console.log('Test data sent:', testData);
+
+
+
+        }
+
+
+
+
+
+
+
         // Initialize on page load
+
+
+
         document.addEventListener('DOMContentLoaded', function() {
+
+
+
             exitManagement = new ExitManagement();
+
+
+
         });
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('feeModal');
-            if (event.target === modal) {
-                closeFeeModal();
-            }
+
+
+        
+
+
+
+        // Logout function
+
+
+
+        function logout() {
+
+
+
+            sessionStorage.removeItem('exitAuthenticated');
+
+
+
+            window.location.href = '/auth.html';
+
+
+
         }
+
+
+
+
+
+
+
+        // Close modal when clicking outside
+
+
+
+        window.onclick = function(event) {
+
+
+
+            const modal = document.getElementById('feeModal');
+
+
+
+            if (event.target === modal) {
+
+
+
+                modal.classList.remove('open');
+
+
+
+            }
+
+
+
+        }
+
+
+
     </script>
+
+
+
 </body>
+
+
+
 </html>
+
+
+

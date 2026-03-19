@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Parking System</title>
+    <link rel="stylesheet" href="/styles/design-system.css">
+    <style>
+        /* Page-specific styles */
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .page-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+        
+        .page-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+            font-family: 'Cambria', serif;
+            font-weight: bold;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: var(--font-size-base);
+            font-family: 'Cambria', serif;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: var(--space-6);
+            transition: var(--transition-base);
+        }
+        
+        .card:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Cambria', serif;
+            font-weight: bold;
+            margin-bottom: var(--space-3);
+        }
+        
+        .card-value {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .card-description {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+        }
+        
+        .table-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: var(--space-6);
+        }
+        
+        .table-header {
+            background: var(--bg-tertiary);
+            padding: var(--space-4) var(--space-6);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Cambria', serif;
+            font-weight: bold;
+        }
+        
+        .refresh-btn {
+            background: var(--btn-primary);
+            color: var(--text-inverse);
+            border: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            transition: var(--transition-fast);
+        }
+        
+        .refresh-btn:hover {
+            background: var(--btn-primary-hover);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--text-tertiary);
+        }
+        
+        .error {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--status-booked-text);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: var(--space-16) var(--space-8);
+            color: var(--text-tertiary);
+        }
+        
+        .empty-state-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto var(--space-6);
+            opacity: 0.3;
+        }
+        
+        .empty-state-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+        }
+        
+        .auto-refresh {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            text-align: center;
+            padding: var(--space-4);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar" style="display: none;">
+        <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+
+    <!-- Authentication Check -->
+    <script>
+        // Check if user is authenticated for admin access
+        console.log('Admin page - checking authentication...');
+        const adminAuth = sessionStorage.getItem('adminAuthenticated');
+        console.log('Admin authentication status:', adminAuth);
+        
+        if (!adminAuth) {
+            console.log('Not authenticated, redirecting to auth.html');
+            window.location.href = '/auth.html';
+        } else {
+            console.log('Admin authentication successful');
+        }
+    </script>
+    
+    <div class="main-container">
+        <!-- Main Content Area -->
+        <main class="main-content-full">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">Admin Dashboard</h1>
+                <p class="page-subtitle">Parking Management System - Administrator Panel</p>
+                <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center;">
+                    <button onclick="logout()" class="btn btn-primary">🚪 Logout</button>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboardContent">
+                <!-- Statistics Cards -->
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-title">💰 Today's Revenue</div>
+                        <div class="card-value" id="todayRevenue">₹0.00</div>
+                        <div class="card-description">Total earnings today</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">🚗 Today's Exits</div>
+                        <div class="card-value" id="todayExits">0</div>
+                        <div class="card-description">Vehicles processed today</div>
+                    </div>
+                </div>
+
+                <!-- Today's Vehicle Exits Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">📋 Today's Vehicle Exits</h2>
+                        <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+                    </div>
+                    <div id="exitsTableContent">
+                        <!-- Table will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto-refresh indicator -->
+            <div class="auto-refresh">
+                🔄 Auto-refresh every 10 seconds (real-time updates)
+            </div>
+        </main>
+    </div>
+
+    <script>
+        class AdminDashboard {
+            constructor() {
+                this.autoRefreshInterval = null;
+                this.init();
+            }
+
+            init() {
+                this.loadDashboard();
+                this.startAutoRefresh();
+                this.setupLocalStorageListener();
+            }
+
+            showSkeletonLoader() {
+                const content = document.getElementById('exitsTableContent');
+                content.innerHTML = '';
+                
+                // Create skeleton loader for table
+                const skeletonTable = document.createElement('div');
+                skeletonTable.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; padding: var(--space-4);">
+                        <div class="skeleton skeleton-text large" style="width: 200px;"></div>
+                        <div class="skeleton skeleton-text small" style="width: 80px;"></div>
+                    </div>
+                    <div style="border-top: 1px solid var(--border-primary); margin-top: var(--space-2);">
+                        ${Array(5).fill('').map(() => `
+                            <div style="display: flex; padding: var(--space-4); border-bottom: 1px solid var(--border-primary);">
+                                ${Array(7).fill('').map(() => '<div class="skeleton skeleton-text" style="flex: 1; margin: 0 var(--space-2);"></div>').join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                content.appendChild(skeletonTable);
+            }
+            
+            showProgressBar() {
+                const progressBar = document.getElementById('progressBar');
+                const progressFill = document.getElementById('progressBarFill');
+                
+                progressBar.style.display = 'block';
+                progressFill.style.width = '0%';
+                
+                // Simulate progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressFill.style.width = progress + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 100);
+            }
+            
+            hideProgressBar() {
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.display = 'none';
+            }
+
+            async loadDashboard() {
+                console.log('=== loadDashboard called ===');
+                try {
+                    this.showSkeletonLoader();
+                    this.showProgressBar();
+                    
+                    console.log('Fetching admin dashboard data...');
+                    // Add cache-busting parameter to prevent caching
+                    const timestamp = Date.now();
+                    const response = await fetch(`/api/exit/admin/today-stats?t=${timestamp}`);
+                    
+                    console.log('API response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('=== RAW DASHBOARD DATA RECEIVED ===');
+                    console.log('Total exits:', data.totalExits);
+                    console.log('Total revenue:', data.totalRevenue);
+                    console.log('Exits array:', data.exits);
+                    console.log('Full data object:', data);
+                    console.log('=== END RAW DATA ===');
+                    
+                    // Try to get detailed exits from localStorage (stored when vehicles are processed)
+                    const storedExits = this.getStoredExits();
+                    console.log('=== STORED EXITS DATA ===');
+                    console.log('Stored exits count:', storedExits.length);
+                    console.log('Sample stored exit:', storedExits[0]);
+                    console.log('=== END STORED EXITS ===');
+                    
+                    // Fetch detailed exits list from API as backup
+                    console.log('Fetching detailed exits list...');
+                    const exitsResponse = await fetch(`/api/exit/stats?t=${timestamp}`);
+                    
+                    if (exitsResponse.ok) {
+                        const exitsData = await exitsResponse.json();
+                        console.log('=== EXITS DATA RECEIVED ===');
+                        console.log('Raw exits data:', exitsData);
+                        console.log('Data type:', typeof exitsData);
+                        console.log('Is array:', Array.isArray(exitsData));
+                        console.log('Keys:', Object.keys(exitsData));
+                        console.log('=== END EXITS DATA ===');
+                        
+                        // Process exits data to show detailed information
+                        let processedExits = [];
+                        
+                        // Check different possible data structures
+                        if (exitsData.exits && Array.isArray(exitsData.exits)) {
+                            processedExits = exitsData.exits;
+                            console.log('Using exits.exits array');
+                        } else if (Array.isArray(exitsData)) {
+                            processedExits = exitsData;
+                            console.log('Using direct array');
+                        } else if (exitsData.todayExits && Array.isArray(exitsData.todayExits)) {
+                            processedExits = exitsData.todayExits;
+                            console.log('Using todayExits array');
+                        } else if (exitsData.exitsProcessed && Array.isArray(exitsData.exitsProcessed)) {
+                            processedExits = exitsData.exitsProcessed;
+                            console.log('Using exitsProcessed array');
+                        } else {
+                            console.log('No detailed exits data found in API response');
+                            console.log('Available data structure:', JSON.stringify(exitsData, null, 2));
+                            
+                            // Use stored exits from localStorage as primary source
+                            processedExits = storedExits;
+                            console.log('Using stored exits from localStorage');
+                        }
+                        
+                        // Merge API data with stored data for completeness
+                        if (storedExits.length > 0) {
+                            // Prefer stored data since it contains real exit details
+                            data.exits = storedExits;
+                            console.log('Using stored exits as primary source -', storedExits.length, 'exits found');
+                        } else {
+                            data.exits = processedExits;
+                            console.log('Using API exits as fallback -', processedExits.length, 'exits found');
+                        }
+                    } else {
+                        console.log('Failed to fetch exits list, using stored exits');
+                        data.exits = storedExits;
+                        console.log('Using stored exits as fallback -', storedExits.length, 'exits found');
+                    }
+                    
+                    console.log('Final exits count for display:', data.exits.length);
+                    console.log('Sample exit data for display:', data.exits[0]);
+                    
+                    this.updateDashboard(data);
+                    
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                    this.showError();
+                } finally {
+                    this.hideProgressBar();
+                }
+            }
+
+            updateDashboard(data) {
+                console.log('=== updateDashboard called with data ===', data);
+                
+                // Update statistics cards
+                const revenueElement = document.getElementById('todayRevenue');
+                const exitsElement = document.getElementById('todayExits');
+                
+                if (revenueElement) {
+                    revenueElement.textContent = `₹${data.totalRevenue.toFixed(2)}`;
+                    console.log('Updated revenue to:', `₹${data.totalRevenue.toFixed(2)}`);
+                }
+                
+                if (exitsElement) {
+                    exitsElement.textContent = data.totalExits;
+                    console.log('Updated exits to:', data.totalExits);
+                }
+                
+                // Update exits table
+                this.updateExitsTable(data.exits || []);
+            }
+
+            updateExitsTable(exits) {
+                const content = document.getElementById('exitsTableContent');
+                
+                if (exits.length === 0) {
+                    content.innerHTML = `
+                        <div class="empty-state">
+                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div class="empty-state-title">No Exit Records Available</div>
+                            <div class="empty-state-description">
+                                No vehicle exits have been processed today.<br>
+                                <small style="color: var(--text-tertiary);">Process vehicle exits from the Exit Management page to see records here.</small>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                content.innerHTML = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Booking Code</th>
+                                <th>Vehicle Number</th>
+                                <th>Customer Name</th>
+                                <th>Phone Number</th>
+                                <th>Vehicle Type</th>
+                                <th>Entry Time</th>
+                                <th>Exit Time</th>
+                                <th>Slot</th>
+                                <th>Duration</th>
+                                <th>Fee</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${exits.map(exit => `
+                                <tr>
+                                    <td><strong>${exit.bookingCode || 'N/A'}</strong></td>
+                                    <td>${exit.vehicleNumber || 'Unknown'}</td>
+                                    <td>${exit.customerName || 'Unknown'}</td>
+                                    <td>${exit.phoneNumber || 'Unknown'}</td>
+                                    <td>${exit.vehicleType || 'Unknown'}</td>
+                                    <td>${exit.entryTime || 'Unknown'}</td>
+                                    <td>${exit.exitTime || 'Unknown'}</td>
+                                    <td>${exit.slotNumber || 'Unknown'} (F${exit.floor || '?'})</td>
+                                    <td>${exit.duration || 'Unknown'}</td>
+                                    <td><strong>₹${(exit.totalFee || 0).toFixed(2)}</strong></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            showError() {
+                const content = document.getElementById('exitsTableContent');
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="empty-state-title">Failed to Load Data</div>
+                        <div class="empty-state-description">Unable to fetch dashboard information. Please try again.</div>
+                    </div>
+                `;
+            }
+
+            setupLocalStorageListener() {
+                console.log('=== Setting up admin page listeners ===');
+                
+                // Track processed notifications to prevent duplicates
+                this.processedNotifications = new Set();
+                
+                // Method 1: BroadcastChannel for modern browsers
+                try {
+                    const channel = new BroadcastChannel('parking_updates');
+                    channel.onmessage = (event) => {
+                        console.log('BroadcastChannel message received:', event.data);
+                        if (event.data.type === 'vehicle_exit') {
+                            const notificationKey = `${event.data.bookingId}_${event.data.timestamp}`;
+                            if (!this.processedNotifications.has(notificationKey)) {
+                                this.processedNotifications.add(notificationKey);
+                                console.log('Vehicle exit detected via BroadcastChannel, refreshing dashboard...');
+                                this.loadDashboard();
+                                this.showUpdateNotification('Vehicle exit processed - Dashboard updated');
+                            } else {
+                                console.log('Duplicate notification ignored:', notificationKey);
+                            }
+                        }
+                    };
+                    console.log('BroadcastChannel listener set up successfully');
+                } catch (error) {
+                    console.log('BroadcastChannel not supported, using localStorage polling:', error);
+                }
+                
+                // Method 2: Enhanced localStorage listener
+                let lastUpdateTime = 0;
+                
+                // Listen for storage events (cross-tab)
+                window.addEventListener('storage', (e) => {
+                    console.log('Storage event triggered:', e.key, e.newValue);
+                    if (e.key === 'adminPageUpdate' && e.newValue) {
+                        try {
+                            const updateData = JSON.parse(e.newValue);
+                            console.log('Storage event received:', updateData);
+                            
+                            if (updateData.type === 'vehicle_exit' && updateData.timestamp > lastUpdateTime) {
+                                const notificationKey = `${updateData.bookingId}_${updateData.timestamp}`;
+                                if (!this.processedNotifications.has(notificationKey)) {
+                                    lastUpdateTime = updateData.timestamp;
+                                    this.processedNotifications.add(notificationKey);
+                                    
+                                    // Store detailed exit data
+                                    if (updateData.data && updateData.data.exitData) {
+                                        this.storeExitData(updateData.data.exitData);
+                                    }
+                                    
+                                    console.log('Vehicle exit detected via storage event, refreshing dashboard...');
+                                    this.loadDashboard();
+                                    this.showUpdateNotification('Vehicle exit processed - Dashboard updated');
+                                } else {
+                                    console.log('Duplicate storage event ignored:', notificationKey);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error parsing storage event:', error);
+                        }
+                    } else if (e.key === 'latestExitData' && e.newValue) {
+                        // Handle direct exit data storage
+                        try {
+                            const exitData = JSON.parse(e.newValue);
+                            console.log('Latest exit data received:', exitData);
+                            this.storeExitData(exitData);
+                            this.loadDashboard();
+                        } catch (error) {
+                            console.error('Error parsing latest exit data:', error);
+                        }
+                    }
+                });
+                
+                // Method 3: Simplified polling for same-tab updates (fallback)
+                console.log('Setting up simplified storage polling...');
+                this.storagePollInterval = setInterval(() => {
+                    try {
+                        const updateData = localStorage.getItem('adminPageUpdate');
+                        if (updateData) {
+                            const parsed = JSON.parse(updateData);
+                            if (parsed.type === 'vehicle_exit' && parsed.timestamp > lastUpdateTime) {
+                                const notificationKey = `${parsed.bookingId}_${parsed.timestamp}`;
+                                if (!this.processedNotifications.has(notificationKey)) {
+                                    lastUpdateTime = parsed.timestamp;
+                                    this.processedNotifications.add(notificationKey);
+                                    
+                                    // Store detailed exit data
+                                    if (parsed.data && parsed.data.exitData) {
+                                        this.storeExitData(parsed.data.exitData);
+                                    }
+                                    
+                                    console.log('Vehicle exit detected via polling, refreshing dashboard...');
+                                    this.loadDashboard();
+                                    this.showUpdateNotification('Vehicle exit processed - Dashboard updated');
+                                } else {
+                                    console.log('Duplicate polling ignored:', notificationKey);
+                                }
+                            }
+                        }
+                        
+                        // Check for latest exit data (but don't process if already handled)
+                        const latestExitData = localStorage.getItem('latestExitData');
+                        if (latestExitData) {
+                            try {
+                                const exitData = JSON.parse(latestExitData);
+                                const exitTime = new Date(exitData.processedAt).getTime();
+                                if (exitTime > lastUpdateTime) {
+                                    const notificationKey = `${exitData.bookingId}_${exitTime}`;
+                                    if (!this.processedNotifications.has(notificationKey)) {
+                                        lastUpdateTime = exitTime;
+                                        this.processedNotifications.add(notificationKey);
+                                        this.storeExitData(exitData);
+                                        this.loadDashboard();
+                                    } else {
+                                        console.log('Duplicate latest exit data ignored:', notificationKey);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Error parsing latest exit data in polling:', error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error in storage polling:', error);
+                    }
+                }, 2000); // Reduced frequency to every 2 seconds
+                
+                console.log('Admin page listeners setup complete');
+            }
+            
+            getStoredExits() {
+                try {
+                    const storedExits = localStorage.getItem('processedExits');
+                    if (storedExits) {
+                        const exits = JSON.parse(storedExits);
+                        console.log('=== DEBUGGING STORED EXITS FILTERING ===');
+                        console.log('Raw stored exits:', exits);
+                        console.log('Number of raw exits:', exits.length);
+                        
+                        // For now, return ALL exits to ensure data is displayed
+                        // We can add date filtering later once data is showing
+                        console.log('=== RETURNING ALL EXITS FOR DISPLAY ===');
+                        console.log('Exits to display:', exits);
+                        console.log('Number of exits to display:', exits.length);
+                        console.log('=== END DEBUGGING ===');
+                        
+                        return exits; // Return all exits for now
+                    }
+                    console.log('No stored exits found in localStorage');
+                    return [];
+                } catch (error) {
+                    console.error('Error getting stored exits:', error);
+                    return [];
+                }
+            }
+            
+            storeExitData(exitData) {
+                try {
+                    // Get ALL stored exits (not just today's) for merging
+                    const allStoredExits = localStorage.getItem('processedExits');
+                    let existingExits = [];
+                    
+                    if (allStoredExits) {
+                        existingExits = JSON.parse(allStoredExits);
+                    }
+                    
+                    // Check if this exit already exists (prevent duplicates)
+                    const isDuplicate = existingExits.some(existing => 
+                        existing.bookingId === exitData.bookingId || 
+                        (existing.bookingCode === exitData.bookingCode && existing.vehicleNumber === exitData.vehicleNumber)
+                    );
+                    
+                    if (isDuplicate) {
+                        console.log('=== EXIT ALREADY EXISTS, SKIPPING DUPLICATE ===');
+                        console.log('Duplicate exit data:', exitData);
+                        return; // Don't add duplicate
+                    }
+                    
+                    const updatedExits = [exitData, ...existingExits];
+                    
+                    // Keep only last 50 exits to prevent storage bloat
+                    const limitedExits = updatedExits.slice(0, 50);
+                    
+                    localStorage.setItem('processedExits', JSON.stringify(limitedExits));
+                    console.log('=== STORING EXIT DATA ===');
+                    console.log('New exit data:', exitData);
+                    console.log('Total stored exits after adding:', limitedExits.length);
+                    console.log('=== END STORING ===');
+                } catch (error) {
+                    console.error('Error storing exit data:', error);
+                }
+            }
+
+            showUpdateNotification(message) {
+                // Create a temporary notification for real-time updates
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--status-available-bg);
+                    color: var(--status-available-text);
+                    border: 1px solid var(--status-available-border);
+                    padding: var(--space-3) var(--space-4);
+                    border-radius: var(--radius-md);
+                    font-size: var(--font-size-sm);
+                    font-weight: 500;
+                    z-index: 1000;
+                    opacity: 0;
+                    transform: translateX(100%);
+                    transition: all 0.3s ease;
+                    box-shadow: var(--shadow-md);
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.style.opacity = '1';
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            startAutoRefresh() {
+                // Refresh dashboard every 10 seconds for real-time updates
+                this.autoRefreshInterval = setInterval(() => this.loadDashboard(), 10000);
+            }
+
+            stopAutoRefresh() {
+                if (this.autoRefreshInterval) {
+                    clearInterval(this.autoRefreshInterval);
+                }
+                if (this.storagePollInterval) {
+                    clearInterval(this.storagePollInterval);
+                }
+            }
+        }
+        
+        // Test function for debugging
+        function testDashboardUpdate() {
+            console.log('=== Testing dashboard update manually ===');
+            adminDashboard.loadDashboard();
+        }
+        
+        // Test function to simulate exit notification
+        function testExitNotification() {
+            console.log('=== Testing exit notification ===');
+            const testData = {
+                type: 'vehicle_exit',
+                timestamp: Date.now(),
+                data: {
+                    bookingId: 'TEST-123',
+                    bookingCode: 'TEST-456'
+                }
+            };
+            
+            localStorage.setItem('adminPageUpdate', JSON.stringify(testData));
+            console.log('Test notification sent:', testData);
+        }
+        
+        // Test function to debug stored exits
+        function debugStoredExits() {
+            console.log('=== DEBUGGING STORED EXITS ===');
+            
+            // Check processedExits
+            const processedExits = localStorage.getItem('processedExits');
+            console.log('processedExits in localStorage:', processedExits);
+            
+            if (processedExits) {
+                try {
+                    const exits = JSON.parse(processedExits);
+                    console.log('Parsed exits:', exits);
+                    console.log('Number of exits:', exits.length);
+                    exits.forEach((exit, index) => {
+                        console.log(`Exit ${index + 1}:`, {
+                            bookingCode: exit.bookingCode,
+                            vehicleNumber: exit.vehicleNumber,
+                            customerName: exit.customerName,
+                            phoneNumber: exit.phoneNumber,
+                            vehicleType: exit.vehicleType,
+                            entryTime: exit.entryTime,
+                            exitTime: exit.exitTime,
+                            slotNumber: exit.slotNumber,
+                            floor: exit.floor,
+                            duration: exit.duration,
+                            totalFee: exit.totalFee,
+                            hoursCharged: exit.hoursCharged,
+                            processedAt: exit.processedAt
+                        });
+                    });
+                } catch (error) {
+                    console.error('Error parsing processedExits:', error);
+                }
+            } else {
+                console.log('No processedExits found in localStorage');
+            }
+            
+            // Check latestExitData
+            const latestExitData = localStorage.getItem('latestExitData');
+            console.log('latestExitData in localStorage:', latestExitData);
+            
+            if (latestExitData) {
+                try {
+                    const latestExit = JSON.parse(latestExitData);
+                    console.log('Latest exit:', latestExit);
+                } catch (error) {
+                    console.error('Error parsing latestExitData:', error);
+                }
+            } else {
+                console.log('No latestExitData found in localStorage');
+            }
+            
+            console.log('=== END DEBUG ===');
+        }
+        
+        // Test function to manually add complete test data
+        function addTestData() {
+            const testExit = {
+                bookingId: 999,
+                bookingCode: 'TEST999',
+                vehicleNumber: 'TEST123',
+                customerName: 'Test Customer',
+                phoneNumber: '1234567890',
+                vehicleType: 'CAR',
+                entryTime: '10:00 AM',
+                exitTime: '12:00 PM',
+                slotNumber: '15',
+                floor: '1',
+                duration: '2 hours',
+                totalFee: 80,
+                hoursCharged: 2,
+                processedAt: new Date().toISOString()
+            };
+            
+            adminDashboard.storeExitData(testExit);
+            console.log('Complete test data added:', testExit);
+        }
+        
+        // Function to clear duplicate data
+        function clearDuplicates() {
+            console.log('=== CLEARING DUPLICATE DATA ===');
+            const storedExits = localStorage.getItem('processedExits');
+            if (storedExits) {
+                const exits = JSON.parse(storedExits);
+                const uniqueExits = [];
+                const seen = new Set();
+                
+                exits.forEach(exit => {
+                    const key = `${exit.bookingId}_${exit.bookingCode}_${exit.vehicleNumber}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        uniqueExits.push(exit);
+                    }
+                });
+                
+                localStorage.setItem('processedExits', JSON.stringify(uniqueExits));
+                console.log('Cleared duplicates. Original count:', exits.length, 'Unique count:', uniqueExits.length);
+                console.log('=== END CLEARING DUPLICATES ===');
+                
+                // Refresh dashboard
+                adminDashboard.loadDashboard();
+            }
+        }
+        
+        // Initialize dashboard
+        const adminDashboard = new AdminDashboard();
+        
+        // Logout function
+        function logout() {
+            sessionStorage.removeItem('adminAuthenticated');
+            window.location.href = '/auth.html';
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            adminDashboard.stopAutoRefresh();
+        });
+    </script>
+</body>
+</html>

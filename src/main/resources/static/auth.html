@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication - Smart Parking System</title>
+    <link rel="stylesheet" href="/styles/design-system.css">
+    <style>
+        /* Page-specific styles */
+        body {
+            background: var(--bg-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: var(--space-6);
+        }
+        
+        .auth-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 450px;
+            padding: var(--space-8);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+        
+        .page-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+            font-family: 'Cambria', serif;
+            font-weight: bold;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: var(--font-size-base);
+            font-family: 'Cambria', serif;
+        }
+        
+        .role-toggle {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-6);
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .role-btn {
+            flex: 1;
+            padding: var(--space-4) var(--space-5);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-tertiary);
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            text-align: center;
+        }
+        
+        .role-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+        
+        .role-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+            background: var(--bg-tertiary);
+        }
+        
+        .auth-form {
+            margin-bottom: var(--space-6);
+        }
+        
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+        
+        .form-label {
+            display: block;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            transition: var(--transition-fast);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-tertiary);
+        }
+        
+        .error-message {
+            color: var(--status-booked-text);
+            font-size: var(--font-size-sm);
+            margin-top: var(--space-2);
+            display: none;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: var(--space-4) var(--space-6);
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+        
+        .btn-primary {
+            background: var(--btn-primary);
+            color: var(--text-inverse);
+        }
+        
+        .btn-primary:hover {
+            background: var(--btn-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+        
+        .back-link a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+            font-size: var(--font-size-sm);
+            transition: var(--transition-fast);
+        }
+        
+        .back-link a:hover {
+            color: var(--accent-primary);
+        }
+        
+        .notification {
+            margin-bottom: var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            display: none;
+        }
+        
+        .notification.error {
+            background: var(--status-booked-bg);
+            color: var(--status-booked-text);
+            border: 1px solid var(--status-booked-border);
+        }
+        
+        .notification.success {
+            background: var(--status-available-bg);
+            color: var(--status-available-text);
+            border: 1px solid var(--status-available-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1 class="auth-title">🔐 Authentication</h1>
+            <p class="auth-subtitle">Enter credentials to access the system</p>
+            <div class="role-toggle">
+                <button class="role-btn active" onclick="toggleRole('exit')" id="exitRoleBtn">🚗 Exit Management</button>
+                <button class="role-btn" onclick="toggleRole('admin')" id="adminRoleBtn">⚙️ Admin Dashboard</button>
+            </div>
+        </div>
+
+        <form id="authForm" onsubmit="handleAuth(event)" class="auth-form">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" class="form-input" required placeholder="Enter username">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" class="form-input" required placeholder="Enter password">
+            </div>
+
+            <div id="error" class="notification error" style="display: none;"></div>
+            <div id="success" class="notification success" style="display: none;"></div>
+
+            <button type="submit" class="btn btn-primary">🚀 Authenticate & Access</button>
+        </form>
+
+        <div class="back-link">
+            <a href="/index.html">← Back to Booking</a>
+        </div>
+    </div>
+
+    <script>
+        let currentRole = 'exit';
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear any existing authentication
+            sessionStorage.removeItem('exitAuthenticated');
+            sessionStorage.removeItem('adminAuthenticated');
+        });
+        
+        // Toggle role function
+        function toggleRole(role) {
+            currentRole = role;
+            
+            // Update button states
+            document.getElementById('exitRoleBtn').classList.toggle('active', role === 'exit');
+            document.getElementById('adminRoleBtn').classList.toggle('active', role === 'admin');
+            
+            // Clear form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+        
+        function handleAuth(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Clear previous messages
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+            
+            // Debug logging
+            console.log('Auth attempt:', { username, password, role: currentRole });
+            
+            // Validate inputs
+            if (!username || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+            
+            // Role-based authentication
+            let isAuthenticated = false;
+            
+            if (currentRole === 'exit') {
+                if (username === 'exit' && password === 'exit456') {
+                    isAuthenticated = true;
+                    sessionStorage.setItem('exitAuthenticated', 'true');
+                    console.log('Exit authentication successful');
+                }
+            } else if (currentRole === 'admin') {
+                if (username === 'admin' && password === 'admin789') {
+                    isAuthenticated = true;
+                    sessionStorage.setItem('adminAuthenticated', 'true');
+                    console.log('Admin authentication successful');
+                }
+            }
+            
+            if (isAuthenticated) {
+                showSuccess('Authentication successful! Redirecting...');
+                console.log('Redirecting to:', currentRole);
+                
+                setTimeout(() => {
+                    if (currentRole === 'exit') {
+                        window.location.href = '/exit.html';
+                    } else if (currentRole === 'admin') {
+                        window.location.href = '/admin.html';
+                    }
+                }, 1500);
+            } else {
+                console.log('Authentication failed');
+                showError('Invalid credentials. Please try again.');
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

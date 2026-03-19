@@ -3,6 +3,7 @@ package com.smartparking.controller;
 import com.smartparking.entity.Booking;
 import com.smartparking.service.ExitService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,12 +12,13 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Controller for vehicle exit and fee management
@@ -166,8 +168,88 @@ public class ExitController {
     }
     
     /**
-     * Debug endpoint to check vehicle booking status
+     * Get today's exit statistics for exit page
      */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getTodayStats() {
+        try {
+            LocalDate today = LocalDate.now();
+            
+            // Get all bookings
+            List<Booking> allBookings = exitService.getAllBookings();
+            
+            // Filter today's exits
+            List<Booking> todayExits = allBookings.stream()
+                    .filter(booking -> booking.getExitTime() != null)
+                    .filter(booking -> booking.getExitTime().toLocalDate().equals(today))
+                    .collect(Collectors.toList());
+            
+            // Get active bookings
+            List<Booking> activeBookings = allBookings.stream()
+                    .filter(booking -> booking.getIsActive() != null && booking.getIsActive())
+                    .collect(Collectors.toList());
+            
+            // Calculate total revenue for today
+            double todayRevenue = todayExits.stream()
+                    .mapToDouble(booking -> booking.getParkingFee() != null ? booking.getParkingFee() : 0.0)
+                    .sum();
+            
+            // Prepare response
+            Map<String, Object> stats = new java.util.HashMap<>();
+            stats.put("todayExits", todayExits.size());
+            stats.put("todayRevenue", todayRevenue);
+            stats.put("activeBookings", activeBookings.size());
+            stats.put("hourlyRate", 20.0); // Default hourly rate
+            
+            return ResponseEntity.ok(stats);
+            
+        } catch (Exception e) {
+            System.err.println("Error fetching today's stats: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch today's statistics"));
+        }
+    }
+    
+    /**
+     * Get today's statistics for admin dashboard
+     */
+    @GetMapping("/admin/today-stats")
+    public ResponseEntity<Map<String, Object>> getTodayStatsForAdmin() {
+        try {
+            LocalDate today = LocalDate.now();
+            
+            // Get all bookings
+            List<Booking> allBookings = exitService.getAllBookings();
+            
+            // Filter today's exits
+            List<Booking> todayExits = allBookings.stream()
+                    .filter(booking -> booking.getExitTime() != null)
+                    .filter(booking -> booking.getExitTime().toLocalDate().equals(today))
+                    .collect(Collectors.toList());
+            
+            // Get active bookings
+            List<Booking> activeBookings = allBookings.stream()
+                    .filter(booking -> booking.getIsActive() != null && booking.getIsActive())
+                    .collect(Collectors.toList());
+            
+            // Calculate total revenue for today
+            double todayRevenue = todayExits.stream()
+                    .mapToDouble(booking -> booking.getParkingFee() != null ? booking.getParkingFee() : 0.0)
+                    .sum();
+            
+            // Prepare response
+            Map<String, Object> stats = new java.util.HashMap<>();
+            stats.put("date", today.toString());
+            stats.put("totalExits", todayExits.size());
+            stats.put("totalRevenue", todayRevenue);
+            stats.put("activeBookings", activeBookings.size());
+            
+            return ResponseEntity.ok(stats);
+            
+        } catch (Exception e) {
+            System.err.println("Error fetching today's stats: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch today's statistics"));
+        }
+    }
     @GetMapping("/debug/vehicle/{vehicleNumber}")
     public ResponseEntity<String> checkVehicleStatus(@PathVariable String vehicleNumber) {
         try {
@@ -213,20 +295,7 @@ public class ExitController {
             
             return ResponseEntity.ok(result.toString());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Get exit statistics
-     */
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Object>> getExitStats() {
-        try {
-            Map<String, Object> stats = exitService.getExitStatistics();
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 }
