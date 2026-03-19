@@ -21,6 +21,7 @@ public class ActuatorSecurityConfig {
                 authorizeRequests.anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless API endpoints
             .httpBasic(org.springframework.security.config.Customizer.withDefaults());
         
         return http.build();
