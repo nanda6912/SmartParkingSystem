@@ -732,27 +732,7 @@
             }
         }
         
-        // Test function for debugging
-        function testDashboardUpdate() {
-            console.log('=== Testing dashboard update manually ===');
-            adminDashboard.loadDashboard();
-        }
-        
-        // Test function to simulate exit notification
-        function testExitNotification() {
-            console.log('=== Testing exit notification ===');
-            const testData = {
-                type: 'vehicle_exit',
-                timestamp: Date.now(),
-                data: {
-                    bookingId: 'TEST-123',
-                    bookingCode: 'TEST-456'
-                }
-            };
-            
-            localStorage.setItem('adminPageUpdate', JSON.stringify(testData));
-            console.log('Test notification sent:', testData);
-        }
+        // Initialize dashboard
         
         // Test function to debug stored exits
         function debugStoredExits() {
@@ -771,92 +751,18 @@
                         console.log(`Exit ${index + 1}:`, {
                             bookingCode: exit.bookingCode,
                             vehicleNumber: exit.vehicleNumber,
-                            customerName: exit.customerName,
-                            phoneNumber: exit.phoneNumber,
-                            vehicleType: exit.vehicleType,
-                            entryTime: exit.entryTime,
-                            exitTime: exit.exitTime,
-                            slotNumber: exit.slotNumber,
-                            floor: exit.floor,
-                            duration: exit.duration,
-                            totalFee: exit.totalFee,
-                            hoursCharged: exit.hoursCharged,
-                            processedAt: exit.processedAt
-                        });
-                    });
-                } catch (error) {
-                    console.error('Error parsing processedExits:', error);
-                }
-            } else {
-                console.log('No processedExits found in localStorage');
-            }
-            
-            // Check latestExitData
-            const latestExitData = localStorage.getItem('latestExitData');
-            console.log('latestExitData in localStorage:', latestExitData);
-            
-            if (latestExitData) {
-                try {
-                    const latestExit = JSON.parse(latestExitData);
-                    console.log('Latest exit:', latestExit);
-                } catch (error) {
-                    console.error('Error parsing latestExitData:', error);
-                }
-            } else {
-                console.log('No latestExitData found in localStorage');
-            }
-            
-            console.log('=== END DEBUG ===');
-        }
-        
-        // Test function to manually add complete test data
-        function addTestData() {
-            const testExit = {
-                bookingId: 999,
-                bookingCode: 'TEST999',
-                vehicleNumber: 'TEST123',
-                customerName: 'Test Customer',
-                phoneNumber: '1234567890',
-                vehicleType: 'CAR',
-                entryTime: '10:00 AM',
-                exitTime: '12:00 PM',
-                slotNumber: '15',
-                floor: '1',
-                duration: '2 hours',
-                totalFee: 80,
-                hoursCharged: 2,
-                processedAt: new Date().toISOString()
-            };
-            
-            adminDashboard.storeExitData(testExit);
-            console.log('Complete test data added:', testExit);
-        }
-        
-        // Function to clear duplicate data
-        function clearDuplicates() {
-            console.log('=== CLEARING DUPLICATE DATA ===');
-            const storedExits = localStorage.getItem('processedExits');
-            if (storedExits) {
-                const exits = JSON.parse(storedExits);
-                const uniqueExits = [];
-                const seen = new Set();
-                
-                exits.forEach(exit => {
-                    const key = `${exit.bookingId}_${exit.bookingCode}_${exit.vehicleNumber}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        uniqueExits.push(exit);
                     }
-                });
-                
-                localStorage.setItem('processedExits', JSON.stringify(uniqueExits));
-                console.log('Cleared duplicates. Original count:', exits.length, 'Unique count:', uniqueExits.length);
-                console.log('=== END CLEARING DUPLICATES ===');
-                
-                // Refresh dashboard
-                adminDashboard.loadDashboard();
+                }
+            } catch (error) {
+                console.error('Error parsing latest exit data in polling:', error);
             }
         }
+    } catch (error) {
+        console.error('Error in storage polling:', error);
+    }
+}, 2000); // Reduced frequency to every 2 seconds
+
+}
         
         // Initialize dashboard
         const adminDashboard = new AdminDashboard();

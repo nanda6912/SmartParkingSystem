@@ -185,8 +185,8 @@
 <body>
     <div class="auth-container">
         <div class="auth-header">
-            <h1 class="auth-title">🔐 Authentication</h1>
-            <p class="auth-subtitle">Enter credentials to access the system</p>
+            <h1 class="page-title">🔐 Authentication</h1>
+            <p class="page-subtitle">Enter credentials to access the system</p>
             <div class="role-toggle">
                 <button class="role-btn active" onclick="toggleRole('exit')" id="exitRoleBtn">🚗 Exit Management</button>
                 <button class="role-btn" onclick="toggleRole('admin')" id="adminRoleBtn">⚙️ Admin Dashboard</button>
@@ -220,9 +220,22 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            // Clear any existing authentication
-            sessionStorage.removeItem('exitAuthenticated');
-            sessionStorage.removeItem('adminAuthenticated');
+            // Check existing authentication and redirect if already authenticated
+            const exitAuth = sessionStorage.getItem('exitAuthenticated');
+            const adminAuth = sessionStorage.getItem('adminAuthenticated');
+            
+            // Admin takes precedence over exit if both exist
+            if (adminAuth) {
+                console.log('Admin user already authenticated, redirecting to admin.html');
+                window.location.href = '/admin.html';
+                return;
+            }
+            
+            if (exitAuth) {
+                console.log('Exit user already authenticated, redirecting to exit.html');
+                window.location.href = '/exit.html';
+                return;
+            }
         });
         
         // Toggle role function
@@ -250,8 +263,8 @@
             document.getElementById('error').style.display = 'none';
             document.getElementById('success').style.display = 'none';
             
-            // Debug logging
-            console.log('Auth attempt:', { username, password, role: currentRole });
+            // Debug logging (non-sensitive)
+            console.log('Auth attempt for role:', currentRole);
             
             // Validate inputs
             if (!username || !password) {
@@ -259,7 +272,9 @@
                 return;
             }
             
-            // Role-based authentication
+            // Role-based authentication (client-side for demo - TODO: Move to server-side API-based auth)
+            // SECURITY NOTE: This is client-side authentication for demo purposes only.
+            // Production should use server-side authentication with JWT tokens and proper session management.
             let isAuthenticated = false;
             
             if (currentRole === 'exit') {

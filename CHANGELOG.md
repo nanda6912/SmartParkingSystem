@@ -16,13 +16,13 @@
 - **Live Statistics**: Today's exits, revenue, and active bookings
 - **Professional Tables**: Clean, organized data presentation
 
-### � Enhanced Exit Management Interface
+### 🔧 Enhanced Exit Management Interface
 - **Streamlined Statistics**: Removed Today's Revenue (admin-only feature)
 - **Focused Functionality**: Today's Exits and Active Bookings only
 - **Release Operations**: Professional vehicle release workflow
 - **Receipt Downloads**: Easy exit receipt generation and download
 
-### �📊 Real-time Data Synchronization
+### 🔄 Real-time Data Synchronization
 - **Multi-method Communication**: BroadcastChannel, localStorage events, and polling
 - **Duplicate Prevention**: Advanced notification deduplication using sessionStorage and Sets
 - **Complete Exit Data**: Phone numbers, vehicle types, and all booking details preserved
@@ -39,7 +39,7 @@
 ### 🎯 Advanced Booking System
 - **Vehicle Re-booking Support**: Same vehicle can book again after exit
 - **Custom JSON Deserializer**: Bulletproof handling of booking requests
-- **Enhanced Rate Limiting**: 50x more bookings (3→30/hour), 10x more locks (5→50/hour)
+- **Enhanced Rate Limiting**: 10x more bookings (3→30/hour), 10x more locks (5→50/hour)
 - **Debug Logging**: Comprehensive troubleshooting capabilities
 - **5-minute Slot Lock**: Extended lock duration for better user experience
 

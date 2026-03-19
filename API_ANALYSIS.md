@@ -118,9 +118,9 @@ Target page → Check sessionStorage → Allow access or redirect to auth.html
 
 ## 📊 **SUMMARY**
 
-- **✅ 8/11 endpoints confirmed working**
+- **✅ 9/12 endpoints confirmed working**
 - **❌ 1 endpoint missing (404)**
-- **❓ 2 endpoints untested**
+- **❓ 3 endpoints untested**
 - **✅ All redirects working**
 - **✅ Real-time sync working**
 - **✅ Authentication flow working**

@@ -91,11 +91,10 @@
 }
 
 /* ===== TYPOGRAPHY ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cambria:wght@300;400;500;600;700&display=swap');
 
 body {
-    font-family: var(--font-family);
+    font-family: var(--font-family-primary);
     font-size: var(--font-size-base);
     line-height: 1.6;
     color: var(--text-primary);
@@ -281,7 +280,7 @@ p {
     align-items: center;
     justify-content: center;
     padding: var(--space-3) var(--space-5);
-    font-family: var(--font-family);
+    font-family: var(--font-family-primary);
     font-size: var(--font-size-sm);
     font-weight: 500;
     text-decoration: none;
@@ -361,7 +360,7 @@ p {
 .form-input {
     width: 100%;
     padding: var(--space-3) var(--space-4);
-    font-family: var(--font-family);
+    font-family: var(--font-family-primary);
     font-size: var(--font-size-base);
     color: var(--text-primary);
     background: var(--bg-secondary);
@@ -511,9 +510,12 @@ p {
     background: var(--bg-secondary);
 }
 
-.parking-slot:hover {
+.parking-slot:hover,
+.parking-slot:focus {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
 
 .parking-slot.available {
@@ -603,7 +605,8 @@ p {
     font-weight: 500;
 }
 
-.sidebar-nav-link:hover {
+.sidebar-nav-link:hover,
+.sidebar-nav-link:focus {
     background: var(--bg-tertiary);
     color: var(--text-primary);
 }
@@ -613,13 +616,6 @@ p {
     color: var(--accent-primary);
     font-weight: 600;
     border-left: 3px solid var(--accent-primary);
-}
-
-.main-content {
-    margin-left: 280px;
-    padding: var(--space-6);
-    min-height: 100vh;
-    background: var(--bg-primary);
 }
 
 /* ===== BREADCRUMBS ===== */
@@ -763,7 +759,7 @@ p {
     display: none; /* Hidden by default */
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 1100;
     backdrop-filter: blur(2px);
 }
 
@@ -899,9 +895,12 @@ p {
     border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
-.role-btn:hover {
+.role-btn:hover,
+.role-btn:focus {
     color: var(--text-primary);
     background: var(--bg-tertiary);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
 }
 
 .role-btn.active {
