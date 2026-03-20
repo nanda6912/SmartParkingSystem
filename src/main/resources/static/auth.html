@@ -318,84 +318,51 @@
                         password: password,
                         role: role
                     })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.success) {
+                        // Validate redirect URL for security
+                        const redirectUrl = result.redirectUrl;
+                        if (redirectUrl && (redirectUrl.startsWith('/') || redirectUrl.startsWith(window.location.origin))) {
+                            // Store session info consistently with sessionStorage
+                            sessionStorage.setItem('user', JSON.stringify({
+                                username: result.user.username,
+                                role: result.user.role,
+                                name: result.user.name,
+                                authenticated: true,
+                                timestamp: new Date().toISOString()
+                            }));
+
+                            // Set role-specific authentication flag
+                            sessionStorage.setItem(result.user.role + 'Authenticated', 'true');
+
+                            showSuccess('Authentication successful! Redirecting...');
+
+                            // Redirect to appropriate page
+                            setTimeout(() => {
+                                window.location.href = redirectUrl;
+                            }, 1000);
+                        } else {
+                            console.error('Invalid redirect URL:', redirectUrl);
+                            showError('Invalid redirect destination. Please contact administrator.');
+                        }
+                    } else {
+                        showError(result.message || 'Authentication failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Authentication error:', error);
+                    showError('Authentication service unavailable. Please contact administrator.');
+                })
+                .finally(() => {
+                    hideLoading();
                 });
-                
-                // For now, fall back to client-side validation if server endpoint doesn't exist
-                if (response.status === 404) {
-                    console.log('Server endpoint not found, using client-side validation');
-                    performClientSideAuth(username, password, role);
-                    return;
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Store session info consistently with sessionStorage
-                    sessionStorage.setItem('user', JSON.stringify({
-                        username: result.user.username,
-                        role: result.user.role,
-                        name: result.user.name,
-                        authenticated: true,
-                        timestamp: new Date().toISOString()
-                    }));
-                    
-                    // Set role-specific authentication flag
-                    sessionStorage.setItem(result.user.role + 'Authenticated', 'true');
-                    
-                    showSuccess('Authentication successful! Redirecting...');
-                    
-                    // Redirect to appropriate page
-                    setTimeout(() => {
-                        window.location.href = result.redirectUrl;
-                    }, 1000);
-                    
-                } else {
-                    showError(result.message || 'Authentication failed');
-                }
-                
-            } catch (error) {
-                console.error('Authentication error:', error);
-                // Fall back to client-side validation
-                performClientSideAuth(username, password, role);
-            } finally {
-                hideLoading();
-            }
-        }
-        
-        function performClientSideAuth(username, password, role) {
-            // Simple hardcoded authentication (for demo purposes)
-            const validCredentials = {
-                'exit': { username: 'exit', password: 'exit456', redirect: '/exit.html' },
-                'admin': { username: 'admin', password: 'admin123', redirect: '/admin.html' }
-            };
-            
-            const expectedCredentials = validCredentials[role];
-            
-            if (expectedCredentials && 
-                username === expectedCredentials.username && 
-                password === expectedCredentials.password) {
-                
-                // Store session info consistently with sessionStorage
-                sessionStorage.setItem('user', JSON.stringify({
-                    username: username,
-                    role: role,
-                    authenticated: true,
-                    timestamp: new Date().toISOString()
-                }));
-                
-                // Set role-specific authentication flag
-                sessionStorage.setItem(role + 'Authenticated', 'true');
-                
-                showSuccess('Authentication successful! Redirecting...');
-                
-                // Redirect to appropriate page
-                setTimeout(() => {
-                    window.location.href = expectedCredentials.redirect;
-                }, 1000);
-                
-            } else {
-                showError('Invalid username, password, or role');
-            }
         }
         
         function showLoading() {

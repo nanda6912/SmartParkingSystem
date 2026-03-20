@@ -269,8 +269,8 @@ public class DataSyncService {
         
         // Ensure parking fee is properly calculated
         Integer parkingFee = booking.getParkingFee();
-        if (parkingFee == null || parkingFee == 0) {
-            // Calculate fee if not set with proper rounding
+        if (parkingFee == null) {
+            // Calculate fee only if not set (preserve intentional zero fees)
             parkingFee = Math.toIntExact(Math.round(calculateParkingFee(booking.getBookingTime(), booking.getExitTime())));
         }
         bookingMap.put("parkingFee", parkingFee);

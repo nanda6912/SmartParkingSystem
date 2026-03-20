@@ -24,11 +24,14 @@ export JWT_SECRET="$(openssl rand -base64 32)"
 # Using OpenSSL (recommended)
 openssl rand -base64 32
 
-# Using Java KeyTool
-keytool -genseckey -alias jwtkey -keyalg AES -keysize 256 -storetype JCEKS
-
 # Using Python
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Using PowerShell (Windows)
+Add-Type -AssemblyName System.Security; [System.Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes(32))
 ```
 
 #### 2. Set Environment Variables
@@ -113,7 +116,7 @@ This file contains actual configuration values and should **NOT** be committed t
 ### Security Headers
 - X-Content-Type-Options: nosniff
 - X-Frame-Options: DENY
-- X-XSS-Protection: enabled
+- Content-Security-Policy: strict-dynamic 'self' 'unsafe-inline' https:; frame-ancestors 'none'
 - Cache-Control: no-cache for sensitive data
 
 ## Emergency Procedures

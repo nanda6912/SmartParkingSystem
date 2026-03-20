@@ -113,16 +113,31 @@ function showReleaseConfirmation(exitDetails) {
 }
 
 window.downloadReceiptAndClose = function(bookingId, bookingCode) {
-    // Download receipt using booking code for better filename
-    window.downloadExitReceiptByCode(bookingCode);
-    
-    // Show success message
-    setTimeout(() => {
-        alert('Receipt downloaded successfully!');
+    // Verify download function exists
+    if (typeof window.downloadExitReceiptByCode === 'function') {
+        // Download receipt using booking code for better filename
+        window.downloadExitReceiptByCode(bookingCode)
+            .then(() => {
+                // Show success message after download completes
+                alert('Receipt downloaded successfully!');
+                
+                // Close the modal
+                window.closeReleaseConfirmation();
+            })
+            .catch(error => {
+                console.error('Receipt download failed:', error);
+                alert('Receipt download failed. Please try again.');
+                
+                // Still close the modal even on error
+                window.closeReleaseConfirmation();
+            });
+    } else {
+        console.error('Download function not available');
+        alert('Receipt download function not available. Please refresh the page.');
         
         // Close the modal
         window.closeReleaseConfirmation();
-    }, 500);
+    }
 };
 
 window.closeReleaseConfirmation = function() {

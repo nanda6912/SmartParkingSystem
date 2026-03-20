@@ -2835,21 +2835,17 @@
 
 
 
-            fetch(`/api/exit/receipt/by-code/${bookingCode}`)
+            return fetch(`/api/exit/receipt/by-code/${bookingCode}`)
 
 
 
                 .then(response => {
-
-
 
                     console.log('Exit receipt download by code endpoint status:', response.status);
 
 
 
                     if (response.ok) {
-
-
 
                         console.log('Exit receipt download by code endpoint working');
 
@@ -2861,9 +2857,13 @@
 
                         alert('Exit receipt download by code not available. Status: ' + response.status);
 
+                        throw new Error('Download failed');
+
                     }
 
                 })
+
+
 
                 .then(receiptText => {
 
@@ -2897,17 +2897,18 @@
 
                 })
 
+
+
                 .catch(error => {
 
                     console.error('Exit receipt download by code error:', error);
 
-
-
                     alert('Exit receipt download by code error: ' + error.message);
 
-
+                    throw error; // Re-throw for proper error handling
 
                 });
+
 
 
 
@@ -3075,7 +3076,6 @@
 
 
             exitManagement = new ExitManagement();
-            exitManagement.init();
 
 
 

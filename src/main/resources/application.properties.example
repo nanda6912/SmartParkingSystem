@@ -1,7 +1,7 @@
-# Database Configuration - Replace with your actual values
-spring.datasource.url=jdbc:postgresql://localhost:5432/smart_parking_db
-spring.datasource.username=postgres
-spring.datasource.password=your_secure_password_here
+# Database Configuration - Use environment variables for production
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/smart_parking_db}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD}
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA Configuration
@@ -18,8 +18,8 @@ logging.level.org.hibernate.type.descriptor.sql=TRACE
 # Server Configuration
 server.port=8081
 
-# JWT Configuration - Generate a cryptographically strong secret for production
-jwt.secret=your_jwt_secret_key_minimum_256_bits_long
+# JWT Configuration - Use environment variable for production
+jwt.secret=${JWT_SECRET}
 jwt.expiration=86400000
 
 # Cache Configuration
