@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class ExitService {
     
-    private static final Logger logger = LoggerFactory.getLogger(ExitService.class);
+    private static final Logger log = LoggerFactory.getLogger(ExitService.class);
     private static final double HOURLY_RATE = 20.0;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
@@ -46,7 +46,7 @@ public class ExitService {
                     .collect(Collectors.toList());
                     
         } catch (Exception e) {
-            logger.error("Error getting active bookings for exit: {}", e.getMessage(), e);
+            log.error("Error getting active bookings for exit: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
@@ -93,7 +93,7 @@ public class ExitService {
             return feeDetails;
             
         } catch (Exception e) {
-            logger.error("Error calculating fee for booking {}: {}", bookingId, e.getMessage(), e);
+            log.error("Error calculating fee for booking {}: {}", bookingId, e.getMessage(), e);
             throw new RuntimeException("Failed to calculate fee: " + e.getMessage());
         }
     }
@@ -162,18 +162,18 @@ public class ExitService {
                 exitDetails.put("floor", slot.getFloor());
                 exitDetails.put("slotReleased", true);
                 
-                logger.info("Vehicle exit processed: Booking ID {}, Vehicle {}, Fee {}", 
+                log.info("Vehicle exit processed: Booking ID {}, Vehicle {}, Fee {}", 
                         bookingId, savedBooking.getVehicleNumber(), fee);
                 
                 return exitDetails;
                 
             } catch (Exception e) {
-                logger.error("Error saving booking during exit processing: {}", e.getMessage(), e);
+                log.error("Error saving booking during exit processing: {}", e.getMessage(), e);
                 throw new RuntimeException("Failed to process exit: " + e.getMessage());
             }
             
         } catch (Exception e) {
-            logger.error("Error processing exit for booking {}: {}", bookingId, e.getMessage(), e);
+            log.error("Error processing exit for booking {}: {}", bookingId, e.getMessage(), e);
             throw new RuntimeException("Failed to process exit: " + e.getMessage());
         }
     }
@@ -261,7 +261,7 @@ public class ExitService {
             return stats;
             
         } catch (Exception e) {
-            logger.error("Error getting exit statistics: {}", e.getMessage(), e);
+            log.error("Error getting exit statistics: {}", e.getMessage(), e);
             return Map.of("error", "Failed to get statistics");
         }
     }
@@ -331,13 +331,13 @@ public class ExitService {
             result.put("releasedSlots", releasedSlots);
             result.put("message", "Cleaned up " + removedCount + " old bookings with invalid codes");
             
-            logger.info("Cleanup completed: Removed {} bookings, released slots: {}", 
+            log.info("Cleanup completed: Removed {} bookings, released slots: {}", 
                     removedCount, releasedSlots);
             
             return result;
             
         } catch (Exception e) {
-            logger.error("Error during cleanup: {}", e.getMessage(), e);
+            log.error("Error during cleanup: {}", e.getMessage(), e);
             return Map.of("success", false, "error", "Cleanup failed: " + e.getMessage());
         }
     }

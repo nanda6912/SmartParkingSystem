@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class RateLimitingService {
     
-    private static final Logger logger = LoggerFactory.getLogger(RateLimitingService.class);
+    private static final Logger log = LoggerFactory.getLogger(RateLimitingService.class);
     
     // Different buckets for different endpoint types
     private final ConcurrentHashMap<String, TokenBucket> lockBuckets = new ConcurrentHashMap<>();
@@ -93,7 +93,7 @@ public class RateLimitingService {
     }
     
     /**
-     * Core rate limiting logic with error handling
+     * Core rate limiting loggeric with error handling
      */
     private boolean checkRateLimit(String ipAddress, ConcurrentHashMap<String, TokenBucket> buckets,
                                   int requestsPerMinute, double windowSizeMinutes, String endpointType) {
@@ -102,7 +102,7 @@ public class RateLimitingService {
             
             // Validate input
             if (ipAddress == null || ipAddress.trim().isEmpty()) {
-                logger.warn("Invalid IP address provided for rate limiting");
+                log.warn("Invalid IP address provided for rate limiting");
                 blockedRequests.incrementAndGet();
                 return false;
             }
@@ -111,7 +111,7 @@ public class RateLimitingService {
             TokenBucket bucket = buckets.computeIfAbsent(ipAddress, ip -> {
                 double refillRate = requestsPerMinute / windowSizeMinutes;
                 TokenBucket newBucket = new TokenBucket(requestsPerMinute, refillRate);
-                logger.debug("Created new {} bucket for IP {}: capacity={}, rate={}/min", 
+                log.debug("Created new {} bucket for IP {}: capacity={}, rate={}/min", 
                         endpointType, ip, requestsPerMinute, requestsPerMinute);
                 return newBucket;
             });
@@ -121,19 +121,19 @@ public class RateLimitingService {
             
             if (allowed) {
                 allowedRequests.incrementAndGet();
-                logger.debug("Rate limit check PASSED for {} - IP: {}, tokens: {}", 
+                log.debug("Rate limit check PASSED for {} - IP: {}, tokens: {}", 
                         endpointType, ipAddress, bucket.getAvailableTokens());
             } else {
                 blockedRequests.incrementAndGet();
                 long timeToNext = bucket.getTimeToNextToken();
-                logger.warn("Rate limit EXCEEDED for {} - IP: {}, timeToNext: {}ms", 
+                log.warn("Rate limit EXCEEDED for {} - IP: {}, timeToNext: {}ms", 
                         endpointType, ipAddress, timeToNext);
             }
             
             return allowed;
             
         } catch (Exception e) {
-            logger.error("Error in rate limiting for {}: IP={}, error={}", endpointType, ipAddress, e.getMessage(), e);
+            log.error("Error in rate limiting for {}: IP={}, error={}", endpointType, ipAddress, e.getMessage(), e);
             // Fail open - allow request if rate limiting fails
             allowedRequests.incrementAndGet();
             return true;
@@ -153,7 +153,7 @@ public class RateLimitingService {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error getting time to next token: {}", e.getMessage());
+            log.error("Error getting time to next token: {}", e.getMessage());
         }
         return 60000; // Default: 1 minute
     }
@@ -190,11 +190,11 @@ public class RateLimitingService {
             totalRemoved += cleanupBuckets(generalBuckets, cutoffTime, "GENERAL");
             
             if (totalRemoved > 0) {
-                logger.info("Rate limiting cleanup: removed {} old buckets", totalRemoved);
+                log.info("Rate limiting cleanup: removed {} old buckets", totalRemoved);
             }
             
         } catch (Exception e) {
-            logger.error("Error during rate limiting cleanup: {}", e.getMessage(), e);
+            log.error("Error during rate limiting cleanup: {}", e.getMessage(), e);
         }
     }
     
@@ -209,7 +209,7 @@ public class RateLimitingService {
         }
         
         if (removed > 0) {
-            logger.debug("Cleaned up {} {} buckets", removed, type);
+            log.debug("Cleaned up {} {} buckets", removed, type);
         }
         
         return removed;

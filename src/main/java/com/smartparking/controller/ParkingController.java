@@ -41,22 +41,42 @@ public class ParkingController {
     
     @PostMapping("/lock/{slotId}")
     public ResponseEntity<BookingResponseDTO> lockSlot(@PathVariable Long slotId) {
-        BookingResponseDTO response = parkingService.lockSlot(slotId);
-        return ResponseEntity.ok(response);
+        try {
+            log.debug("Locking slot: {}", slotId);
+            BookingResponseDTO response = parkingService.lockSlot(slotId);
+            log.debug("Slot {} locked successfully", slotId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Business logic error locking slot {}: {}", slotId, e.getMessage());
+            return ResponseEntity.badRequest().body(new BookingResponseDTO("Failed to lock slot: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Unexpected error locking slot {}: {}", slotId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(new BookingResponseDTO("Internal server error while locking slot"));
+        }
     }
     
     @PostMapping("/book")
     public ResponseEntity<BookingResponseDTO> bookSlot(@RequestBody BookingRequestDTO bookingRequest) {
-        System.out.println("=== CONTROLLER DEBUG ===");
-        System.out.println("Received booking request: " + bookingRequest);
-        System.out.println("Slot ID: " + bookingRequest.getSlotId());
-        System.out.println("Vehicle Number: " + bookingRequest.getVehicleNumber());
-        System.out.println("Customer Name: " + bookingRequest.getCustomerName());
-        System.out.println("Phone Number: " + bookingRequest.getPhoneNumber());
-        System.out.println("Vehicle Type: " + bookingRequest.getVehicleType());
-        
-        BookingResponseDTO response = parkingService.bookSlot(bookingRequest);
-        return ResponseEntity.ok(response);
+        try {
+            log.debug("Booking slot: {}", bookingRequest.getSlotId());
+            log.debug("Vehicle number: {}", bookingRequest.getVehicleNumber());
+            
+            BookingResponseDTO response = parkingService.bookSlot(bookingRequest);
+            
+            if (response.getBookingCode() != null) {
+                log.debug("Slot booked successfully with booking code: {}", response.getBookingCode());
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("Booking failed for slot {}: {}", bookingRequest.getSlotId(), response.getMessage());
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (RuntimeException e) {
+            log.error("Business logic error booking slot {}: {}", bookingRequest.getSlotId(), e.getMessage());
+            return ResponseEntity.badRequest().body(new BookingResponseDTO("Failed to book slot: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Unexpected error booking slot {}: {}", bookingRequest.getSlotId(), e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(new BookingResponseDTO("Internal server error while booking slot"));
+        }
     }
     
     // Debug endpoint to test raw request
