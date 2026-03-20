@@ -275,10 +275,42 @@
             // Production authentication - server-side only
             // All authentication must be implemented server-side
             
-            // Production mode - server-side authentication required
-            console.error('Server-side authentication required. Please implement server-side JWT or session-based authentication.');
-            showError('Server-side authentication required. Please contact administrator.');
-            return;
+            // Call server-side authentication endpoint
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    role: currentRole
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store authentication in sessionStorage
+                    sessionStorage.setItem('authenticated', 'true');
+                    sessionStorage.setItem('userRole', currentRole);
+                    sessionStorage.setItem('username', username);
+                    
+                    console.log(currentRole + ' authentication successful');
+                    
+                    // Redirect based on role
+                    if (currentRole === 'exit') {
+                        window.location.href = '/exit.html';
+                    } else if (currentRole === 'admin') {
+                        window.location.href = '/admin.html';
+                    }
+                } else {
+                    showError(data.message || 'Authentication failed');
+                }
+            })
+            .catch(error => {
+                console.error('Authentication error:', error);
+                showError('Authentication service error. Please try again.');
+            });
             
             // TODO: Implement server-side authentication
             // 1. Send credentials to /api/auth/login endpoint
