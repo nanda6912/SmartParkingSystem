@@ -2731,31 +2731,7 @@
 
 
 
-                        const link = document.createElement('a');
-
-
-
-                        link.href = `/api/exit/receipt/${bookingId}`;
-
-
-
-                        link.download = `exit_receipt_${bookingId}.txt`;
-
-
-
-                        link.style.display = 'none';
-
-
-
-                        document.body.appendChild(link);
-
-
-
-                        link.click();
-
-
-
-                        document.body.removeChild(link);
+                        return response.text(); // Get the text content
 
 
 
@@ -2779,9 +2755,41 @@
 
 
 
+                .then(receiptText => {
+
+                    if (receiptText) {
+
+                        const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+
+                        const link = document.createElement('a');
+
+                        const url = URL.createObjectURL(blob);
+
+                        link.href = url;
+
+                        link.download = `exit_receipt_${bookingId}.txt`;
+
+                        link.style.display = 'none';
+
+                        document.body.appendChild(link);
+
+                        link.click();
+
+                        setTimeout(() => {
+
+                            document.body.removeChild(link);
+
+                            URL.revokeObjectURL(url);
+
+                        }, 100);
+
+                    }
+
+                })
+
+
+
                 .catch(error => {
-
-
 
                     console.error('Exit receipt download error:', error);
 
@@ -2845,59 +2853,51 @@
 
                         console.log('Exit receipt download by code endpoint working');
 
-
-
-                        const link = document.createElement('a');
-
-
-
-                        link.href = `/api/exit/receipt/by-code/${bookingCode}`;
-
-
-
-                        link.download = `exit_receipt_${bookingCode}.txt`;
-
-
-
-                        link.style.display = 'none';
-
-
-
-                        document.body.appendChild(link);
-
-
-
-                        link.click();
-
-
-
-                        document.body.removeChild(link);
-
-
+                        return response.text(); // Get the text content
 
                     } else {
 
-
-
                         console.error('Exit receipt download by code endpoint failed:', response.status);
-
-
 
                         alert('Exit receipt download by code not available. Status: ' + response.status);
 
-
-
                     }
-
-
 
                 })
 
+                .then(receiptText => {
 
+                    if (receiptText) {
+
+                        const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+
+                        const link = document.createElement('a');
+
+                        const url = URL.createObjectURL(blob);
+
+                        link.href = url;
+
+                        link.download = `exit_receipt_${bookingCode}.txt`;
+
+                        link.style.display = 'none';
+
+                        document.body.appendChild(link);
+
+                        link.click();
+
+                        setTimeout(() => {
+
+                            document.body.removeChild(link);
+
+                            URL.revokeObjectURL(url);
+
+                        }, 100);
+
+                    }
+
+                })
 
                 .catch(error => {
-
-
 
                     console.error('Exit receipt download by code error:', error);
 
