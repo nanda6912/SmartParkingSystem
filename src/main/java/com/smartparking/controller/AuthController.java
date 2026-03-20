@@ -1,15 +1,23 @@
 package com.smartparking.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Authentication Controller
@@ -20,8 +28,22 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:8081")
 public class AuthController {
     
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Value("${auth.exit.user:exit}")
+    private String authExitUser;
+    
+    @Value("${auth.exit.password:exit456}")
+    private String authExitPass;
+    
+    @Value("${auth.admin.user:admin}")
+    private String authAdminUser;
+    
+    @Value("${auth.admin.password:admin789}")
+    private String authAdminPass;
     
     /**
      * Authenticate user and return session info
@@ -31,39 +53,44 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            // For demo purposes, validate hardcoded credentials
-            if (!isValidCredentials(loginRequest.getUsername(), loginRequest.getPassword(), loginRequest.getRole())) {
+            // Validate credentials and get authoritative role from server
+            String authoritativeRole = getRoleForUser(loginRequest.getUsername());
+            if (authoritativeRole == null || !isValidCredentials(loginRequest.getUsername(), loginRequest.getPassword(), authoritativeRole)) {
                 return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Invalid credentials"
                 ));
             }
             
-            // Create authentication token (for demo purposes)
+            // Create authentication token with server-determined role
+            List<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + authoritativeRole.toUpperCase()));
+            
             UsernamePasswordAuthenticationToken authToken = 
                 new UsernamePasswordAuthenticationToken(
-                    loginRequest.getUsername() + ":" + loginRequest.getRole(),
+                    loginRequest.getUsername(),
                     null,
-                    java.util.Collections.emptyList()
+                    authorities
                 );
             
             // Set authentication context
             SecurityContextHolder.getContext().setAuthentication(authToken);
             
-            // Return success response
+            // Return success response with server-determined role
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Authentication successful");
             response.put("username", loginRequest.getUsername());
-            response.put("role", loginRequest.getRole());
+            response.put("role", authoritativeRole); // Use server-determined role
             response.put("timestamp", java.time.LocalDateTime.now().toString());
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            log.error("Authentication error in AuthController.authenticate", e);
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
-                "message", "Authentication failed: " + e.getMessage()
+                "message", "Authentication failed"
             ));
         }
     }
@@ -73,15 +100,35 @@ public class AuthController {
      * In production, this should check against a user database
      */
     private boolean isValidCredentials(String username, String password, String role) {
-        // Demo credentials - same as the removed auth-demo.html
+        // Handle null or empty role up front
+        if (role == null || role.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Use externalized configuration instead of hardcoded credentials
         switch (role.toLowerCase()) {
             case "exit":
-                return "exit".equals(username) && "exit456".equals(password);
+                return authExitUser.equals(username) && authExitPass.equals(password);
             case "admin":
-                return "admin".equals(username) && "admin789".equals(password);
+                return authAdminUser.equals(username) && authAdminPass.equals(password);
             default:
                 return false;
         }
+    }
+    
+    /**
+     * Get authoritative role for a username (server-side determination)
+     * In production, this should check against a user database or directory service
+     */
+    private String getRoleForUser(String username) {
+        // For demo purposes, determine role based on username
+        // In production, this should query a database or user directory
+        if (authExitUser.equals(username)) {
+            return "exit";
+        } else if (authAdminUser.equals(username)) {
+            return "admin";
+        }
+        return null; // Unknown user
     }
     
     /**
@@ -103,18 +150,31 @@ public class AuthController {
     public ResponseEntity<?> checkAuthStatus() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         
-        if (auth != null && auth.isAuthenticated()) {
-            String[] userInfo = auth.getName().split(":");
-            return ResponseEntity.ok(Map.of(
-                "authenticated", true,
-                "username", userInfo.length > 0 ? userInfo[0] : "unknown",
-                "role", userInfo.length > 1 ? userInfo[1] : "unknown"
-            ));
-        } else {
+        // Reject anonymous principals
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             return ResponseEntity.ok(Map.of(
                 "authenticated", false
             ));
         }
+        
+        // Extract username and role safely
+        String username = auth.getName();
+        String role = null;
+        
+        // Get role from authorities
+        if (!auth.getAuthorities().isEmpty()) {
+            role = auth.getAuthorities().iterator().next().getAuthority();
+            // Remove ROLE_ prefix if present
+            if (role != null && role.startsWith("ROLE_")) {
+                role = role.substring(5);
+            }
+        }
+        
+        return ResponseEntity.ok(Map.of(
+            "authenticated", true,
+            "username", username,
+            "role", role != null ? role.toLowerCase() : "unknown"
+        ));
     }
     
     /**

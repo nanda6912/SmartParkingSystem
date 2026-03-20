@@ -221,20 +221,20 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             // Check existing authentication and redirect if already authenticated
-            const exitAuth = sessionStorage.getItem('exitAuthenticated');
-            const adminAuth = sessionStorage.getItem('adminAuthenticated');
+            const authenticated = sessionStorage.getItem('authenticated');
+            const userRole = sessionStorage.getItem('userRole');
             
-            // Admin takes precedence over exit if both exist
-            if (adminAuth) {
-                console.log('Admin user already authenticated, redirecting to admin.html');
-                window.location.href = '/admin.html';
-                return;
-            }
-            
-            if (exitAuth) {
-                console.log('Exit user already authenticated, redirecting to exit.html');
-                window.location.href = '/exit.html';
-                return;
+            if (authenticated === 'true' && userRole) {
+                // Redirect based on stored role
+                if (userRole === 'exit') {
+                    console.log('Exit user already authenticated, redirecting to exit.html');
+                    window.location.href = '/exit.html';
+                    return;
+                } else if (userRole === 'admin') {
+                    console.log('Admin user already authenticated, redirecting to admin.html');
+                    window.location.href = '/admin.html';
+                    return;
+                }
             }
         });
         
@@ -287,20 +287,25 @@
                     role: currentRole
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     // Store authentication in sessionStorage
                     sessionStorage.setItem('authenticated', 'true');
-                    sessionStorage.setItem('userRole', currentRole);
-                    sessionStorage.setItem('username', username);
+                    sessionStorage.setItem('userRole', data.role); // Use server-determined role
+                    sessionStorage.setItem('username', data.username);
                     
-                    console.log(currentRole + ' authentication successful');
+                    console.log(data.role + ' authentication successful');
                     
                     // Redirect based on role
-                    if (currentRole === 'exit') {
+                    if (data.role === 'exit') {
                         window.location.href = '/exit.html';
-                    } else if (currentRole === 'admin') {
+                    } else if (data.role === 'admin') {
                         window.location.href = '/admin.html';
                     }
                 } else {
