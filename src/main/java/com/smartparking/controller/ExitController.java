@@ -2,6 +2,7 @@ package com.smartparking.controller;
 
 import com.smartparking.entity.Booking;
 import com.smartparking.service.ExitService;
+import com.smartparking.service.DataSyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +30,9 @@ public class ExitController {
     
     @Autowired
     private ExitService exitService;
+    
+    @Autowired
+    private DataSyncService dataSyncService;
     
     /**
      * Get all active bookings for exit management
@@ -65,8 +69,21 @@ public class ExitController {
     @PostMapping("/process/{bookingId}")
     public ResponseEntity<Map<String, Object>> processExit(@PathVariable Long bookingId) {
         try {
+            // Process the exit using existing service
             Map<String, Object> exitDetails = exitService.processExit(bookingId);
-            return ResponseEntity.ok(exitDetails);
+            
+            // Convert to sync format and store for synchronization
+            Map<String, Object> syncExitData = convertExitDetailsToSyncFormat(exitDetails);
+            dataSyncService.addExitRecord(syncExitData);
+            
+            // Return combined response with sync status
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("exitDetails", exitDetails);
+            response.put("syncStatus", "updated");
+            response.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+            
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                 "error", "Failed to process exit",
@@ -297,5 +314,28 @@ public class ExitController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Convert exit details to sync format
+     */
+    private Map<String, Object> convertExitDetailsToSyncFormat(Map<String, Object> exitDetails) {
+        Map<String, Object> syncData = new java.util.HashMap<>();
+        
+        // Extract relevant fields
+        syncData.put("id", exitDetails.get("id"));
+        syncData.put("bookingCode", exitDetails.get("bookingCode"));
+        syncData.put("vehicleNumber", exitDetails.get("vehicleNumber"));
+        syncData.put("customerName", exitDetails.get("customerName"));
+        syncData.put("phoneNumber", exitDetails.get("phoneNumber"));
+        syncData.put("vehicleType", exitDetails.get("vehicleType"));
+        syncData.put("slotNumber", exitDetails.get("slotNumber"));
+        syncData.put("entryTime", exitDetails.get("entryTime"));
+        syncData.put("exitTime", exitDetails.get("exitTime"));
+        syncData.put("parkingFee", exitDetails.get("parkingFee"));
+        syncData.put("duration", exitDetails.get("duration"));
+        syncData.put("processedAt", LocalDateTime.now());
+        
+        return syncData;
     }
 }

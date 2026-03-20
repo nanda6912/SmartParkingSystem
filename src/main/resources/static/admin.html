@@ -305,7 +305,7 @@
                     console.log('Fetching admin dashboard data...');
                     // Add cache-busting parameter to prevent caching
                     const timestamp = Date.now();
-                    const response = await fetch(`/api/exit/admin/today-stats?t=${timestamp}`);
+                    const response = await fetch(`/api/sync/admin/data?t=${timestamp}`);
                     
                     console.log('API response status:', response.status);
                     
@@ -314,87 +314,55 @@
                     }
                     
                     const data = await response.json();
-                    console.log('=== RAW DASHBOARD DATA RECEIVED ===');
-                    console.log('Total exits:', data.totalExits);
-                    console.log('Total revenue:', data.totalRevenue);
-                    console.log('Exits array:', data.exits);
+                    console.log('=== RAW SYNC DATA RECEIVED ===');
                     console.log('Full data object:', data);
                     console.log('=== END RAW DATA ===');
                     
-                    // Try to get detailed exits from localStorage (stored when vehicles are processed)
-                    const storedExits = this.getStoredExits();
-                    console.log('=== STORED EXITS DATA ===');
-                    console.log('Stored exits count:', storedExits.length);
-                    console.log('Sample stored exit:', storedExits[0]);
-                    console.log('=== END STORED EXITS ===');
+                    // Display sync status
+                    this.displaySyncStatus(data);
                     
-                    // Fetch detailed exits list from API as backup
-                    console.log('Fetching detailed exits list...');
-                    const exitsResponse = await fetch(`/api/exit/stats?t=${timestamp}`);
+                    // Process exits data
+                    let exits = data.exits || [];
+                    console.log('=== EXITS DATA ===');
+                    console.log('Exits count:', exits.length);
+                    console.log('Sample exit:', exits[0]);
+                    console.log('=== END EXITS DATA ===');
                     
-                    if (exitsResponse.ok) {
-                        const exitsData = await exitsResponse.json();
-                        console.log('=== EXITS DATA RECEIVED ===');
-                        console.log('Raw exits data:', exitsData);
-                        console.log('Data type:', typeof exitsData);
-                        console.log('Is array:', Array.isArray(exitsData));
-                        console.log('Keys:', Object.keys(exitsData));
-                        console.log('=== END EXITS DATA ===');
-                        
-                        // Process exits data to show detailed information
-                        let processedExits = [];
-                        
-                        // Check different possible data structures
-                        if (exitsData.exits && Array.isArray(exitsData.exits)) {
-                            processedExits = exitsData.exits;
-                            console.log('Using exits.exits array');
-                        } else if (Array.isArray(exitsData)) {
-                            processedExits = exitsData;
-                            console.log('Using direct array');
-                        } else if (exitsData.todayExits && Array.isArray(exitsData.todayExits)) {
-                            processedExits = exitsData.todayExits;
-                            console.log('Using todayExits array');
-                        } else if (exitsData.exitsProcessed && Array.isArray(exitsData.exitsProcessed)) {
-                            processedExits = exitsData.exitsProcessed;
-                            console.log('Using exitsProcessed array');
-                        } else {
-                            console.log('No detailed exits data found in API response');
-                            console.log('Available data structure:', JSON.stringify(exitsData, null, 2));
-                            
-                            // Use stored exits from localStorage as primary source
-                            processedExits = storedExits;
-                            console.log('Using stored exits from localStorage');
-                        }
-                        
-                        // Merge API data with stored data for completeness
-                        if (storedExits.length > 0) {
-                            // Prefer stored data since it contains real exit details
-                            data.exits = storedExits;
-                            console.log('Using stored exits as primary source -', storedExits.length, 'exits found');
-                        } else {
-                            data.exits = processedExits;
-                            console.log('Using API exits as fallback -', processedExits.length, 'exits found');
-                        }
-                    } else {
-                        console.log('Failed to fetch exits list, using stored exits');
-                        data.exits = storedExits;
-                        console.log('Using stored exits as fallback -', storedExits.length, 'exits found');
-                    }
+                    // Update dashboard with synchronized data
+                    this.updateDashboard(data, exits);
                     
-                    console.log('Final exits count for display:', data.exits.length);
-                    console.log('Sample exit data for display:', data.exits[0]);
+                    // Hide progress indicators
+                    this.hideProgressBar();
+                    this.hideSkeletonLoader();
                     
-                    this.updateDashboard(data);
+                    // Update last refresh time
+                    this.updateLastRefreshTime();
                     
                 } catch (error) {
                     console.error('Error loading dashboard:', error);
-                    this.showError();
-                } finally {
                     this.hideProgressBar();
+                    this.hideSkeletonLoader();
+                    this.showError('Failed to load dashboard data');
                 }
             }
+            
+            displaySyncStatus(data) {
+                // Display synchronization status
+                const syncStatus = data.syncStatus || 'unknown';
+                const lastSync = data.lastSync || 'unknown';
+                const dataAge = data.dataAge || 0;
+                
+                console.log('=== SYNC STATUS ===');
+                console.log('Sync Status:', syncStatus);
+                console.log('Last Sync:', lastSync);
+                console.log('Data Age (minutes):', dataAge);
+                console.log('=== END SYNC STATUS ===');
+                
+                // You can add UI elements to display sync status if needed
+                this.showUpdateNotification(`Data synchronized (${dataAge} min old)`, 'info');
+            }
 
-            updateDashboard(data) {
+            updateDashboard(data, exits) {
                 console.log('=== updateDashboard called with data ===', data);
                 
                 // Update statistics cards
