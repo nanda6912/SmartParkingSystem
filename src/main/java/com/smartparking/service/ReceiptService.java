@@ -66,6 +66,10 @@ public class ReceiptService {
         
         if (booking.getExitTime() != null) {
             receipt.append("EXIT TIME: ").append(booking.getExitTime().format(formatter)).append("\n");
+            
+            // Add duration in human-readable format
+            long totalMinutes = java.time.Duration.between(booking.getBookingTime(), booking.getExitTime()).toMinutes();
+            receipt.append("DURATION: ").append(formatDuration(totalMinutes)).append("\n");
         }
         
         if (booking.getParkingFee() != null) {
@@ -78,5 +82,22 @@ public class ReceiptService {
         receipt.append("========================================\n");
         
         return receipt.toString();
+    }
+    
+    /**
+     * Format duration in minutes to human-readable format
+     */
+    private String formatDuration(long totalMinutes) {
+        if (totalMinutes < 60) {
+            return totalMinutes + " minute" + (totalMinutes == 1 ? "" : "s");
+        } else {
+            long hours = totalMinutes / 60;
+            long minutes = totalMinutes % 60;
+            if (minutes == 0) {
+                return hours + " hour" + (hours == 1 ? "" : "s");
+            } else {
+                return hours + " hour" + (hours == 1 ? "" : "s") + " " + minutes + " minute" + (minutes == 1 ? "" : "s");
+            }
+        }
     }
 }

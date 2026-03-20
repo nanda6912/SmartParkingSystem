@@ -4,6 +4,8 @@ import com.smartparking.dto.BookingRequestDTO;
 import com.smartparking.dto.BookingResponseDTO;
 import com.smartparking.dto.ParkingSlotDTO;
 import com.smartparking.service.ParkingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -16,18 +18,24 @@ import java.util.List;
 @CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:8081}")
 public class ParkingController {
     
+    private static final Logger log = LoggerFactory.getLogger(ParkingController.class);
+    
     @Autowired
     private ParkingService parkingService;
     
     @GetMapping
     public ResponseEntity<List<ParkingSlotDTO>> getAllSlots() {
+        log.debug("Fetching all parking slots");
         List<ParkingSlotDTO> slots = parkingService.getAllSlots();
+        log.debug("Retrieved {} parking slots", slots.size());
         return ResponseEntity.ok(slots);
     }
     
     @GetMapping("/floor/{floor}")
     public ResponseEntity<List<ParkingSlotDTO>> getSlotsByFloor(@PathVariable Integer floor) {
+        log.debug("Fetching parking slots for floor: {}", floor);
         List<ParkingSlotDTO> slots = parkingService.getSlotsByFloor(floor);
+        log.debug("Retrieved {} parking slots for floor {}", slots.size(), floor);
         return ResponseEntity.ok(slots);
     }
     
