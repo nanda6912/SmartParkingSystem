@@ -10,7 +10,7 @@ const path = require('path');
 
 // Files that should NOT be in production
 const DEMO_FILES = [
-    'src/main/resources/static/auth-demo.html'
+    // No demo files - auth-demo.html has been removed
 ];
 
 // Check if we're in production mode

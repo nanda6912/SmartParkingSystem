@@ -273,25 +273,10 @@
             }
             
             // Production authentication - server-side only
-            // DEMO AUTHENTICATION REMOVED FOR PRODUCTION
-            // Use auth-demo.html for development/demo purposes only
-            
-            // Developer convenience redirect - NOT a security control
-            // This window.location.hostname check is only for development convenience
-            // and can be bypassed. Do NOT rely on this for security decisions.
-            // All security controls must be implemented server-side.
-            if (typeof window !== 'undefined' && window.location && 
-                (window.location.hostname === 'localhost' || 
-                 window.location.hostname === '127.0.0.1' || 
-                 window.location.hostname === '::1' || 
-                 window.location.hostname === '[::1]')) {
-                // Development mode - redirect to demo auth
-                window.location.href = '/auth-demo.html';
-                return;
-            }
+            // All authentication must be implemented server-side
             
             // Production mode - server-side authentication required
-            console.error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
+            console.error('Server-side authentication required. Please implement server-side JWT or session-based authentication.');
             showError('Server-side authentication required. Please contact administrator.');
             return;
             
