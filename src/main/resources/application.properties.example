@@ -1,7 +1,7 @@
-# Database Configuration
-spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/smart_parking_db}
-spring.datasource.username=${DB_USERNAME:postgres}
-spring.datasource.password=${DB_PASSWORD:Nanda@123}
+# Database Configuration - Replace with your actual values
+spring.datasource.url=jdbc:postgresql://localhost:5432/smart_parking_db
+spring.datasource.username=postgres
+spring.datasource.password=your_secure_password_here
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA Configuration
@@ -17,17 +17,16 @@ logging.level.org.hibernate.type.descriptor.sql=TRACE
 
 # Server Configuration
 server.port=8081
-# server.servlet.context-path=/api
 
-# JWT Configuration
-jwt.secret=${JWT_SECRET:defaultSecretKeyForDevelopmentOnly123456789012345678901234567890}
+# JWT Configuration - Generate a cryptographically strong secret for production
+jwt.secret=your_jwt_secret_key_minimum_256_bits_long
 jwt.expiration=86400000
 
 # Cache Configuration
 spring.cache.type=jcache
 spring.cache.jcache.provider=org.ehcache.jsr107.EhcacheCachingProvider
 
-# Rate Limiting Configuration (Updated for better user experience)
+# Rate Limiting Configuration
 rate.limit.lock.requests=50
 rate.limit.book.requests=30
 rate.limit.view.requests=200
@@ -47,7 +46,6 @@ logging.level.org.springframework.security=DEBUG
 # Actuator Security Configuration
 management.endpoints.web.exposure.include=health,info
 management.endpoint.health.show-details=never
-# Disable sensitive actuator endpoints in production
 management.endpoint.env.enabled=false
 management.endpoint.heapdump.enabled=false
 management.endpoint.threaddump.enabled=false

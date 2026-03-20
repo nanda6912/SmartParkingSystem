@@ -292,7 +292,34 @@
             
             // Production mode - server-side authentication required
             console.error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
-            showError('Server-side authentication required. Please contact administrator.');
+            
+            // Hide/disable the form in production and show clear message
+            const formElement = document.getElementById('authForm');
+            const submitBtn = formElement.querySelector('button[type="submit"]');
+            const inputs = formElement.querySelectorAll('input');
+            
+            // Disable all form inputs
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.style.opacity = '0.5';
+                input.style.cursor = 'not-allowed';
+            });
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.textContent = '🔒 Authentication Disabled';
+            
+            // Show user-friendly error message
+            showError('🔒 Server-side authentication is required. Please contact your system administrator to set up proper authentication.');
+            
+            // Remove form submission handler
+            formElement.onsubmit = function(e) {
+                e.preventDefault();
+                return false;
+            };
+            
             return;
             
             // TODO: Implement server-side authentication
