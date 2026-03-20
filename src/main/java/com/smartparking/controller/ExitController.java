@@ -3,6 +3,8 @@ package com.smartparking.controller;
 import com.smartparking.entity.Booking;
 import com.smartparking.service.ExitService;
 import com.smartparking.service.DataSyncService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/exit")
 public class ExitController {
+    
+    private static final Logger log = LoggerFactory.getLogger(ExitController.class);
     
     @Autowired
     private ExitService exitService;
@@ -96,10 +100,21 @@ public class ExitController {
             
             return ResponseEntity.ok(response);
             
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // Handle specific business logic errors
+            log.error("Business logic error processing exit for booking {}: {}", bookingId, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "error", "Failed to process exit",
-                "message", e.getMessage()
+                "message", e.getMessage(),
+                "bookingId", bookingId
+            ));
+        } catch (Exception e) {
+            // Handle unexpected errors
+            log.error("Unexpected error processing exit for booking {}: {}", bookingId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                "error", "Internal server error",
+                "message", "An unexpected error occurred while processing the exit",
+                "bookingId", bookingId
             ));
         }
     }

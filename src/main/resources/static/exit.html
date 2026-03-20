@@ -1739,22 +1739,18 @@
 
 
                 if (!this.currentBookingId) {
-
-
-
                     console.log('No current booking ID - returning');
-
-
-
                     return;
-
-
-
                 }
-
-
-
                 
+                // Check if this booking has already been processed
+                const processedKey = `exit_processed_${this.currentBookingId}`;
+                const alreadyProcessed = sessionStorage.getItem(processedKey);
+                if (alreadyProcessed) {
+                    console.log('Booking already processed - preventing duplicate exit');
+                    this.showNotification('This booking has already been processed', 'warning');
+                    return;
+                }
 
 
 
@@ -2043,10 +2039,11 @@
 
 
                         this.notifyAdminPageUpdate();
-
-
-
                         
+                        // Mark this booking as processed to prevent duplicate processing
+                        const processedKey = `exit_processed_${this.currentBookingId}`;
+                        sessionStorage.setItem(processedKey, 'true');
+                        console.log('Marked booking as processed:', this.currentBookingId);
 
 
 
