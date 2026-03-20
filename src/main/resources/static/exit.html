@@ -1914,7 +1914,7 @@
 
 
 
-                        // Store the real exit data for admin dashboard
+                        // Store the exit data for records
 
 
 
@@ -1942,9 +1942,6 @@
                         // Update booking lists and statistics
                         this.loadActiveBookings();
                         this.loadStatistics();
-
-                        // Notify admin page of the update (AFTER setting booking details)
-                        this.notifyAdminPageUpdate();
                         
                         // Mark this booking as processed to prevent duplicate processing
                         const processedKey = `exit_processed_${this.currentBookingId}`;
@@ -2491,12 +2488,6 @@
 
                 
 
-                // Mark this exit as notified
-
-                sessionStorage.setItem(notificationKey, 'true');
-
-                
-
                 // Get the real exit data that was already stored
 
                 const storedExitData = localStorage.getItem('latestExitData');
@@ -2999,85 +2990,42 @@
         };
 
 
-
-
-
-
-
-        // Test function for debugging
-
-
-
-        function testAdminSync() {
-
-
-
-            console.log('Testing admin synchronization...');
-
-
-
-            const testData = {
-
-
-
-                type: 'vehicle_exit',
-
-
-
-                timestamp: Date.now(),
-
-
-
-                data: {
-
-
-
-                    bookingId: 'TEST-123',
-
-
-
-                    bookingCode: 'TEST-456'
-
-
-
-                }
-
-
-
             };
 
 
 
-            
-
-
-
-            localStorage.setItem('adminPageUpdate', JSON.stringify(testData));
-
-
-
-            localStorage.setItem('adminPageUpdate_' + Date.now(), JSON.stringify(testData));
-
-
-
-            
 
 
 
 
-        }
+            // Global function for download and close
+
+
+
+            window.downloadReceiptAndClose = function(bookingId, bookingCode) {
+
+
+
+                // Download receipt using booking code for better filename
+
+
+
+                window.downloadExitReceiptByCode(bookingCode);
+
+
+
+                
+
+
+
+
+        };
 
         // Initialize on page load
 
-
-
         document.addEventListener('DOMContentLoaded', function() {
 
-
-
             exitManagement = new ExitManagement();
-
-
 
         });
 

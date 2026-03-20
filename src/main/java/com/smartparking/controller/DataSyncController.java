@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * Controller for synchronized data between exit and admin pages
+ * Controller for synchronized data for exit page
  */
 @RestController
 @RequestMapping("/api/sync")
@@ -27,22 +27,6 @@ public class DataSyncController {
     
     @Autowired
     private ExitService exitService;
-    
-    /**
-     * Get synchronized data for admin page
-     */
-    @GetMapping("/admin/data")
-    public ResponseEntity<Map<String, Object>> getAdminData() {
-        try {
-            Map<String, Object> data = dataSyncService.getAdminSyncData();
-            return ResponseEntity.ok(data);
-        } catch (Exception e) {
-            log.error("Error getting admin sync data", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to get admin data"
-            ));
-        }
-    }
     
     /**
      * Get synchronized data for exit page
@@ -121,27 +105,6 @@ public class DataSyncController {
             log.error("Error getting today's exits", e);
             return ResponseEntity.internalServerError().body(Map.of(
                 "error", "Failed to get today's exits"
-            ));
-        }
-    }
-    
-    /**
-     * Force refresh of synchronized data (ADMIN only)
-     */
-    @PostMapping("/refresh")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> refreshSyncData() {
-        try {
-            dataSyncService.refreshCache();
-            return ResponseEntity.ok(Map.of(
-                "message", "Data refreshed successfully",
-                "timestamp", LocalDateTime.now(),
-                "serverStartTime", dataSyncService.getServerStartTime()
-            ));
-        } catch (Exception e) {
-            log.error("Failed to refresh sync data", e);
-            return ResponseEntity.internalServerError().body(Map.of(
-                "error", "Failed to refresh data"
             ));
         }
     }

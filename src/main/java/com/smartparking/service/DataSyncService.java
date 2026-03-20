@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Service for managing data synchronization between exit and admin pages
+ * Service for managing data synchronization for exit page
  * with 8-hour in-memory cache (does not survive server restarts)
  */
 @Service
@@ -135,23 +135,6 @@ public class DataSyncService {
         newData.put("lastUpdated", LocalDateTime.now());
         
         return newData;
-    }
-    
-    /**
-     * Get synchronized data for admin page
-     */
-    public Map<String, Object> getAdminSyncData() {
-        Map<String, Object> data = self.getTodayExitData();
-        
-        // Create defensive copy to avoid mutating cache
-        Map<String, Object> adminData = new HashMap<>(data);
-        
-        // Add admin-specific fields
-        adminData.put("syncStatus", "active");
-        adminData.put("lastSync", LocalDateTime.now());
-        adminData.put("dataAge", calculateDataAge(adminData));
-        
-        return adminData;
     }
     
     /**
@@ -299,7 +282,7 @@ public class DataSyncService {
             bookingMap.put("piiMasked", true);
             bookingMap.put("accessLevel", "restricted");
         } else {
-            // For admin page, still include some PII but masked
+            // Include some PII but masked
             String customerName = booking.getCustomerName();
             if (customerName != null && customerName.length() > 2) {
                 bookingMap.put("customerName", customerName.substring(0, 2) + "***");

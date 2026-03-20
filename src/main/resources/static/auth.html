@@ -189,7 +189,6 @@
             <p class="page-subtitle">Enter credentials to access the system</p>
             <div class="role-toggle">
                 <button class="role-btn active" onclick="toggleRole('exit')" id="exitRoleBtn">🚗 Exit Management</button>
-                <button class="role-btn" onclick="toggleRole('admin')" id="adminRoleBtn">⚙️ Admin Dashboard</button>
             </div>
         </div>
 
@@ -222,12 +221,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Check existing authentication and redirect if already authenticated
             const exitAuth = sessionStorage.getItem('exitAuthenticated');
-            const adminAuth = sessionStorage.getItem('adminAuthenticated');
             
-            // Admin takes precedence over exit if both exist
-            if (adminAuth) {
-                console.log('Admin user already authenticated, redirecting to admin.html');
-                window.location.href = '/admin.html';
+            if (exitAuth) {
+                console.log('Exit user already authenticated, redirecting to exit.html');
+                window.location.href = '/exit.html';
                 return;
             }
             
@@ -244,7 +241,6 @@
             
             // Update button states
             document.getElementById('exitRoleBtn').classList.toggle('active', role === 'exit');
-            document.getElementById('adminRoleBtn').classList.toggle('active', role === 'admin');
             
             // Clear form
             document.getElementById('username').value = '';
