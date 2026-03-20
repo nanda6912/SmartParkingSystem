@@ -26,17 +26,46 @@ function showReleaseConfirmation(exitDetails) {
     title.textContent = '✅ Exit Processed Successfully!';
     modalContent.appendChild(title);
     
-    // Booking Code
+    // Booking Code - Safe HTML construction
     const bookingCodePara = document.createElement('p');
     bookingCodePara.style.cssText = 'margin-bottom: 10px;';
-    bookingCodePara.innerHTML = `<strong>Booking Code:</strong> ${exitDetails.bookingCode || 'N/A'}`;
+    
+    // Create strong element for label
+    const bookingCodeLabel = document.createElement('strong');
+    bookingCodeLabel.textContent = 'Booking Code: ';
+    
+    // Create text node for booking code value (safe from XSS)
+    const bookingCodeValue = document.createTextNode(exitDetails.bookingCode || 'N/A');
+    
+    // Append label and value safely
+    bookingCodePara.appendChild(bookingCodeLabel);
+    bookingCodePara.appendChild(bookingCodeValue);
     modalContent.appendChild(bookingCodePara);
     
-    // Total Amount
+    // Total Amount - Safe numeric validation
     const totalFeePara = document.createElement('p');
     totalFeePara.style.cssText = 'margin-bottom: 10px;';
-    const totalFee = Number(exitDetails.totalFee || 0);
-    totalFeePara.innerHTML = `<strong>Total Amount:</strong> ₹${totalFee.toFixed(2)}`;
+    
+    // Explicitly convert and validate numeric input
+    let totalFee = 0;
+    const rawFee = exitDetails.totalFee;
+    if (rawFee !== null && rawFee !== undefined && rawFee !== '') {
+        const parsedFee = Number(rawFee);
+        if (Number.isFinite(parsedFee) && !Number.isNaN(parsedFee)) {
+            totalFee = parsedFee;
+        }
+    }
+    
+    // Create strong element for label
+    const totalFeeLabel = document.createElement('strong');
+    totalFeeLabel.textContent = 'Total Amount: ';
+    
+    // Create text node for total fee value (safe from XSS)
+    const totalFeeValue = document.createTextNode(`₹${totalFee.toFixed(2)}`);
+    
+    // Append label and value safely
+    totalFeePara.appendChild(totalFeeLabel);
+    totalFeePara.appendChild(totalFeeValue);
     modalContent.appendChild(totalFeePara);
     
     // Description
