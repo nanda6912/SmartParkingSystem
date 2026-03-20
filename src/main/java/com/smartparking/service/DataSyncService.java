@@ -1,6 +1,8 @@
 package com.smartparking.service;
 
 import com.smartparking.entity.Booking;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -23,6 +25,12 @@ import java.util.stream.Collectors;
 @Service
 public class DataSyncService {
     
+    private static final Logger log = LoggerFactory.getLogger(DataSyncService.class);
+    
+    // Centralized hourly rate for consistent billing
+    private static final double HOURLY_RATE = 20.0;
+    
+    @Lazy
     @Autowired
     private ExitService exitService;
     
@@ -155,9 +163,9 @@ public class DataSyncService {
         // Create defensive copy to avoid mutating cache
         Map<String, Object> exitData = new HashMap<>(data);
         
-        // Add exit-page specific fields with configurable hourly rate
+        // Add exit-page specific fields with centralized hourly rate
         exitData.put("activeBookings", getActiveBookingsCount());
-        exitData.put("hourlyRate", 50.0); // Default rate - should be from config
+        exitData.put("hourlyRate", HOURLY_RATE);
         
         return exitData;
     }
@@ -262,8 +270,8 @@ public class DataSyncService {
         // Ensure parking fee is properly calculated
         Integer parkingFee = booking.getParkingFee();
         if (parkingFee == null || parkingFee == 0) {
-            // Calculate fee if not set
-            parkingFee = calculateParkingFee(booking.getBookingTime(), booking.getExitTime()).intValue();
+            // Calculate fee if not set with proper rounding
+            parkingFee = Math.toIntExact(Math.round(calculateParkingFee(booking.getBookingTime(), booking.getExitTime())));
         }
         bookingMap.put("parkingFee", parkingFee);
         
@@ -328,9 +336,8 @@ public class DataSyncService {
         
         // Calculate hours (minimum 1 hour charge)
         long hours = (minutes + 59) / 60; // Round up to nearest hour
-        double hourlyRate = 20.0; // Default hourly rate
         
-        return hours * hourlyRate;
+        return hours * HOURLY_RATE;
     }
     
     /**

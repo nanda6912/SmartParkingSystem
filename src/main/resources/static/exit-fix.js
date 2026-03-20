@@ -1,7 +1,7 @@
 // Missing showReleaseConfirmation method for ExitManagement class
 // Add this method to the ExitManagement class in exit.html
 
-showReleaseConfirmation(exitDetails) {
+function showReleaseConfirmation(exitDetails) {
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed;
@@ -16,27 +16,68 @@ showReleaseConfirmation(exitDetails) {
         z-index: 10000;
     `;
     
-    modal.innerHTML = `
-        <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
-            <h3 style="color: #28a745; margin-bottom: 20px;">✅ Exit Processed Successfully!</h3>
-            <p style="margin-bottom: 10px;"><strong>Booking Code:</strong> ${exitDetails.bookingCode || 'N/A'}</p>
-            <p style="margin-bottom: 10px;"><strong>Total Amount:</strong> ₹${(exitDetails.totalFee || 0).toFixed(2)}</p>
-            <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available. Download your receipt below.</p>
-            
-            <div style="margin-bottom: 20px;">
-                <p style="margin-bottom: 10px;"><strong>Would you like to download the receipt?</strong></p>
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="downloadReceiptAndClose('${exitDetails.bookingId}', '${exitDetails.bookingCode}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    📄 Download Receipt
-                </button>
-                <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
+    // Create modal content safely without XSS
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;';
+    
+    // Title
+    const title = document.createElement('h3');
+    title.style.cssText = 'color: #28a745; margin-bottom: 20px;';
+    title.textContent = '✅ Exit Processed Successfully!';
+    modalContent.appendChild(title);
+    
+    // Booking Code
+    const bookingCodePara = document.createElement('p');
+    bookingCodePara.style.cssText = 'margin-bottom: 10px;';
+    bookingCodePara.innerHTML = `<strong>Booking Code:</strong> ${exitDetails.bookingCode || 'N/A'}`;
+    modalContent.appendChild(bookingCodePara);
+    
+    // Total Amount
+    const totalFeePara = document.createElement('p');
+    totalFeePara.style.cssText = 'margin-bottom: 10px;';
+    const totalFee = Number(exitDetails.totalFee || 0);
+    totalFeePara.innerHTML = `<strong>Total Amount:</strong> ₹${totalFee.toFixed(2)}`;
+    modalContent.appendChild(totalFeePara);
+    
+    // Description
+    const descPara = document.createElement('p');
+    descPara.style.cssText = 'margin-bottom: 20px; color: #666;';
+    descPara.textContent = 'The vehicle has been released and the parking slot is now available. Download your receipt below.';
+    modalContent.appendChild(descPara);
+    
+    // Question
+    const questionDiv = document.createElement('div');
+    questionDiv.style.cssText = 'margin-bottom: 20px;';
+    const questionPara = document.createElement('p');
+    questionPara.style.cssText = 'margin-bottom: 10px;';
+    questionPara.innerHTML = '<strong>Would you like to download the receipt?</strong>';
+    questionDiv.appendChild(questionPara);
+    modalContent.appendChild(questionDiv);
+    
+    // Buttons container
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.style.cssText = 'display: flex; gap: 10px; justify-content: center;';
+    
+    // Download Receipt Button
+    const downloadBtn = document.createElement('button');
+    downloadBtn.style.cssText = 'background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;';
+    downloadBtn.textContent = '📄 Download Receipt';
+    downloadBtn.addEventListener('click', () => {
+        downloadReceiptAndClose(exitDetails.bookingId, exitDetails.bookingCode);
+    });
+    buttonsDiv.appendChild(downloadBtn);
+    
+    // Close Button
+    const closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;';
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', () => {
+        closeReleaseConfirmation();
+    });
+    buttonsDiv.appendChild(closeBtn);
+    
+    modalContent.appendChild(buttonsDiv);
+    modal.appendChild(modalContent);
 
     document.body.appendChild(modal);
     window.currentReleaseModal = modal;
