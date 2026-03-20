@@ -342,7 +342,7 @@
                     console.error('Error loading dashboard:', error);
                     this.hideProgressBar();
                     this.hideSkeletonLoader();
-                    this.showError('Failed to load dashboard data');
+                    this.showTemporaryError('Failed to load dashboard data');
                 }
             }
             
@@ -646,13 +646,26 @@
             showUpdateNotification(message, type = 'success') {
                 // Create a temporary notification for real-time updates
                 const notification = document.createElement('div');
+                
+                // Apply styling based on type
+                let bgStyle, textStyle, borderStyle;
+                if (type === 'error') {
+                    bgStyle = 'var(--status-error-bg)';
+                    textStyle = 'var(--status-error-text)';
+                    borderStyle = 'var(--status-error-border)';
+                } else {
+                    bgStyle = 'var(--status-available-bg)';
+                    textStyle = 'var(--status-available-text)';
+                    borderStyle = 'var(--status-available-border)';
+                }
+                
                 notification.style.cssText = `
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    background: var(--status-available-bg);
-                    color: var(--status-available-text);
-                    border: 1px solid var(--status-available-border);
+                    background: ${bgStyle};
+                    color: ${textStyle};
+                    border: 1px solid ${borderStyle};
                 `;
                 notification.textContent = message;
                 

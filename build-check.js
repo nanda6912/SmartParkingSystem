@@ -19,13 +19,17 @@ const isProduction = process.env.NODE_ENV === 'production';
 if (isProduction) {
     console.log('🔒 Running production security checks...');
     
+    // Compute project root from script location
+    const projectRoot = path.resolve(__dirname, '.');
+    
     let hasViolations = false;
     
     DEMO_FILES.forEach(file => {
-        const filePath = path.resolve(file);
+        const filePath = path.resolve(projectRoot, file);
         
         if (fs.existsSync(filePath)) {
             console.error(`❌ SECURITY VIOLATION: Demo file found in production: ${file}`);
+            console.error(`   Path: ${filePath}`);
             console.error('   Demo authentication files must not be present in production builds!');
             hasViolations = true;
         }

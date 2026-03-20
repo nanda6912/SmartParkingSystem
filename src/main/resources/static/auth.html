@@ -273,33 +273,33 @@
             }
             
             // Production authentication - server-side only
-        // DEMO AUTHENTICATION REMOVED FOR PRODUCTION
-        // Use auth-demo.html for development/demo purposes only
-        
-        // Runtime safeguard: Prevent demo auth in production
-        if (typeof window !== 'undefined' && window.location && 
-            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            // Development mode - redirect to demo auth
-            window.location.href = '/auth-demo.html';
-            return;
+            // DEMO AUTHENTICATION REMOVED FOR PRODUCTION
+            // Use auth-demo.html for development/demo purposes only
+            
+            // Runtime safeguard: Prevent demo auth in production
+            if (typeof window !== 'undefined' && window.location && 
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                // Development mode - redirect to demo auth
+                window.location.href = '/auth-demo.html';
+                return;
+            }
+            
+            // Production mode - server-side authentication required
+            try {
+                throw new Error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
+            } catch (error) {
+                console.error('Authentication error:', error.message);
+                showError('Server-side authentication required. Please contact administrator.');
+            }
+            
+            // TODO: Implement server-side authentication
+            // 1. Send credentials to /api/auth/login endpoint
+            // 2. Receive JWT token or session cookie
+            // 3. Store token securely (HttpOnly cookie for session, secure storage for JWT)
+            // 4. Include token in all subsequent API requests
+            // 5. Implement token refresh mechanism
+            // 6. Add logout endpoint to invalidate session/token
         }
-        
-        // Production mode - server-side authentication required
-        try {
-            throw new Error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
-        } catch (error) {
-            console.error('Authentication error:', error.message);
-            showError('Server-side authentication required. Please contact administrator.');
-        }
-        
-        // TODO: Implement server-side authentication
-        // 1. Send credentials to /api/auth/login endpoint
-        // 2. Receive JWT token or session cookie
-        // 3. Store token securely (HttpOnly cookie for session, secure storage for JWT)
-        // 4. Include token in all subsequent API requests
-        // 5. Implement token refresh mechanism
-        // 6. Add logout endpoint to invalidate session/token
-}
         
         function showError(message) {
             const errorDiv = document.getElementById('error');

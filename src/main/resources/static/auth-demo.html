@@ -55,7 +55,7 @@
             <p class="auth-subtitle">Demo Login (Development)</p>
         </div>
         
-        <div class="auth-form">
+        <form class="auth-form" onsubmit="authenticate(event)">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" class="form-input" placeholder="Enter username">
@@ -75,10 +75,10 @@
                 </select>
             </div>
             
-            <button type="submit" class="btn btn-primary" onclick="authenticate()">
+            <button type="submit" class="btn btn-primary">
                 🔐 Login (Demo)
             </button>
-        </div>
+        </form>
         
         <div class="demo-credentials">
             <h3>Demo Credentials:</h3>
@@ -102,7 +102,9 @@
         // - HTTPS enforcement for all authentication traffic
         // Move role validation from client-side to server-side endpoints for security
         
-        function authenticate() {
+        function authenticate(event) {
+            event.preventDefault(); // Prevent form submission
+            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const currentRole = document.getElementById('role').value;
