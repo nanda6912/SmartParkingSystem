@@ -287,11 +287,12 @@
                     role: currentRole
                 })
             })
-            .then(response => {
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}: ${data.message || data.error || response.statusText}`);
                 }
-                return response.json();
+                return data;
             })
             .then(data => {
                 if (data.success) {

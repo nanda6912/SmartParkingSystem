@@ -13,6 +13,9 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
+import jakarta.annotation.PostConstruct;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,17 +36,28 @@ public class AuthController {
     @Autowired
     private AuthenticationManager authenticationManager;
     
-    @Value("${auth.exit.user:exit}")
+    @Value("${auth.exit.user}")
     private String authExitUser;
     
-    @Value("${auth.exit.password:exit456}")
+    @Value("${auth.exit.password}")
     private String authExitPass;
     
-    @Value("${auth.admin.user:admin}")
+    @Value("${auth.admin.user}")
     private String authAdminUser;
     
-    @Value("${auth.admin.password:admin789}")
+    @Value("${auth.admin.password}")
     private String authAdminPass;
+    
+    @PostConstruct
+    public void validateConfiguration() {
+        if (authExitUser == null || authExitUser.trim().isEmpty() ||
+            authExitPass == null || authExitPass.trim().isEmpty() ||
+            authAdminUser == null || authAdminUser.trim().isEmpty() ||
+            authAdminPass == null || authAdminPass.trim().isEmpty()) {
+            throw new IllegalStateException("Authentication configuration is missing. Please set auth.exit.user, auth.exit.password, auth.admin.user, and auth.admin.password in your configuration.");
+        }
+        log.info("Authentication configuration validated successfully");
+    }
     
     /**
      * Authenticate user and return session info
@@ -87,7 +101,7 @@ public class AuthController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Authentication error in AuthController.authenticate", e);
+            log.error("Authentication error in AuthController.login", e);
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
                 "message", "Authentication failed"
@@ -105,15 +119,29 @@ public class AuthController {
             return false;
         }
         
-        // Use externalized configuration instead of hardcoded credentials
+        // Use externalized configuration with constant-time comparison
         switch (role.toLowerCase()) {
             case "exit":
-                return authExitUser.equals(username) && authExitPass.equals(password);
+                return constantTimeEquals(authExitUser, username) && constantTimeEquals(authExitPass, password);
             case "admin":
-                return authAdminUser.equals(username) && authAdminPass.equals(password);
+                return constantTimeEquals(authAdminUser, username) && constantTimeEquals(authAdminPass, password);
             default:
                 return false;
         }
+    }
+    
+    /**
+     * Constant-time comparison to prevent timing attacks
+     */
+    private boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        
+        byte[] aBytes = a.getBytes(StandardCharsets.UTF_8);
+        byte[] bBytes = b.getBytes(StandardCharsets.UTF_8);
+        
+        return MessageDigest.isEqual(aBytes, bBytes);
     }
     
     /**
