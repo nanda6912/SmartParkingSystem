@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Exit Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Exit Page Debug</h1>
+    <button onclick="testAPI()">Test API Calls</button>
+    <button onclick="testRender()">Test Render Function</button>
+    <div id="debug"></div>
+    
+    <script>
+        let debugDiv = document.getElementById('debug');
+        
+        function log(message, type = 'debug') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            debugDiv.appendChild(div);
+            console.log(message);
+        }
+        
+        async function testAPI() {
+            log('Testing API call to /api/exit/active-bookings...');
+            
+            try {
+                const response = await fetch('http://localhost:8081/api/exit/active-bookings', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const bookings = await response.json();
+                log(`Received ${bookings.length} bookings`, 'success');
+                log(`Bookings data: <pre>${JSON.stringify(bookings, null, 2)}</pre>`);
+                
+                // Test render function
+                testRenderWithData(bookings);
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRender() {
+            log('Testing render function with mock data...');
+            
+            const mockBookings = [
+                {
+                    bookingId: 95,
+                    bookingCode: "EG9VD",
+                    vehicleNumber: "AS25EG6426",
+                    customerName: "NANDA",
+                    floor: 1,
+                    slotNumber: 4,
+                    bookingTime: "2026-03-21 02:28:59",
+                    durationMinutes: 18,
+                    vehicleType: "CAR"
+                }
+            ];
+            
+            testRenderWithData(mockBookings);
+        }
+        
+        function testRenderWithData(bookings) {
+            log('Testing renderBookings function...');
+            
+            // Create a test container
+            let testContainer = document.getElementById('testContainer');
+            if (!testContainer) {
+                testContainer = document.createElement('div');
+                testContainer.id = 'testContainer';
+                testContainer.style.border = '2px solid #ccc';
+                testContainer.style.padding = '10px';
+                testContainer.style.margin = '10px 0';
+                document.body.appendChild(testContainer);
+            }
+            
+            // Simulate renderBookings function
+            if (bookings.length === 0) {
+                testContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <h3>No Active Bookings</h3>
+                        <p>There are currently no vehicles parked in the system.</p>
+                    </div>
+                `;
+                log('Rendered empty state', 'success');
+            } else {
+                testContainer.innerHTML = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f0f0f0;">
+                                <th style="padding: 10px; border: 1px solid #ddd;">Booking Code</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Vehicle Number</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Customer Name</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Slot</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Entry Time</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Duration</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bookings.map(booking => `
+                                <tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>${booking.bookingCode}</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.vehicleNumber}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.customerName}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">F${booking.floor}-S${booking.slotNumber}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.bookingTime}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.durationMinutes} min</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <button onclick="alert('Calculate fee for booking ${booking.bookingId}')" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                            💰 Calculate Fee
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                log(`Rendered ${bookings.length} bookings successfully`, 'success');
+            }
+        }
+        
+        // Auto-test on page load
+        window.addEventListener('load', function() {
+            log('Page loaded, ready for testing');
+        });
+    </script>
+</body>
+</html>

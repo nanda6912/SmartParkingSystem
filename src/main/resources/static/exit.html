@@ -658,10 +658,16 @@
 
 
             async loadActiveBookings() {
+                console.log('=== loadActiveBookings called ===');
+                
                 try {
+                    console.log('Showing skeleton loader...');
                     this.showSkeletonLoader();
+                    console.log('Showing progress bar...');
                     this.showProgressBar();
 
+                    console.log('Making API call to:', 'http://localhost:8081/api/exit/active-bookings');
+                    
                     const response = await fetch('http://localhost:8081/api/exit/active-bookings', {
                         method: 'GET',
                         credentials: 'include', // Include session cookies
@@ -671,58 +677,29 @@
                         }
                     });
 
-                    
-
-
+                    console.log('Response received:', response.status, response.statusText);
 
                     if (!response.ok) {
-
-
-
+                        console.error('Response not OK:', response.status, response.statusText);
                         throw new Error(`HTTP error! status: ${response.status}`);
-
-
-
                     }
 
-
-
-                    
-
-
-
+                    console.log('Parsing JSON response...');
                     const bookings = await response.json();
+                    console.log('Bookings received:', bookings);
+                    console.log('Number of bookings:', bookings.length);
 
-
-
+                    console.log('Calling renderBookings...');
                     this.renderBookings(bookings);
-
-
+                    console.log('=== loadActiveBookings completed ===');
 
                 } catch (error) {
-
-
-
-                    console.error('Error loading active bookings:', error);
-
-
-
+                    console.error('Error in loadActiveBookings:', error);
                     this.showNotification('Error loading bookings: ' + error.message, 'error');
-
-
-
                 } finally {
-
-
-
+                    console.log('Hiding progress bar...');
                     this.hideProgressBar();
-
-
-
                 }
-
-
-
             }
 
 
@@ -791,145 +768,56 @@
 
 
             renderBookings(bookings) {
-
-
+                console.log('=== renderBookings called ===');
+                console.log('Bookings parameter:', bookings);
+                console.log('Bookings type:', typeof bookings);
+                console.log('Bookings length:', bookings ? bookings.length : 'undefined');
 
                 const content = document.getElementById('activeBookingsContent');
+                console.log('Content element:', content);
 
-
-
-                
-
-
-
-                if (bookings.length === 0) {
-
-
-
-                    content.innerHTML = `
-
-
-
-                        <div class="empty-state">
-
-
-
-                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-
-
-
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-
-
-
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5" />
-
-
-
-                            </svg>
-
-
-
-                            <div class="empty-state-title">No Active Bookings</div>
-
-
-
-                            <div class="empty-state-description">There are currently no vehicles parked in the system.</div>
-
-
-
-                        </div>
-
-
-
-                    `;
-
-
-
+                if (!content) {
+                    console.error('activeBookingsContent element not found!');
                     return;
-
-
-
                 }
 
+                if (!bookings || bookings.length === 0) {
+                    console.log('Rendering empty state...');
+                    content.innerHTML = `
+                        <div class="empty-state">
+                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5" />
+                            </svg>
+                            <div class="empty-state-title">No Active Bookings</div>
+                            <div class="empty-state-description">There are currently no vehicles parked in the system.</div>
+                        </div>
+                    `;
+                    console.log('Empty state rendered');
+                    return;
+                }
 
-
-                
-
-
-
+                console.log('Rendering table with bookings...');
                 content.innerHTML = `
-
-
-
                     <table class="table">
-
-
-
                         <thead>
-
-
-
                             <tr>
-
-
-
                                 <th>Booking Code</th>
-
-
-
                                 <th>Vehicle Number</th>
-
-
-
                                 <th>Customer Name</th>
-
-
-
                                 <th>Slot</th>
-
-
-
                                 <th>Entry Time</th>
-
-
-
                                 <th>Duration</th>
-
-
-
                                 <th>Actions</th>
-
-
-
                             </tr>
-
-
-
                         </thead>
-
-
-
                         <tbody>
-
-
-
                             ${bookings.map(booking => this.createBookingRow(booking)).join('')}
-
-
-
                         </tbody>
-
-
-
                     </table>
-
-
-
                 `;
-
-
-
+                console.log('Table rendered successfully');
+                console.log('=== renderBookings completed ===');
             }
 
 
