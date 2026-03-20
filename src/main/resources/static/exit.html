@@ -2170,85 +2170,25 @@
 
 
                 modal.innerHTML = `
-
-
-
                     <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
-
-
-
-                        <h3 style="color: #28a745; margin-bottom: 20px;">✅ Vehicle Released Successfully!</h3>
-
-
-
+                        <h3 style="color: #28a745; margin-bottom: 20px;">✅ Exit Processed Successfully!</h3>
                         <p style="margin-bottom: 10px;"><strong>Booking Code:</strong> ${result.bookingCode || 'N/A'}</p>
-
-
-
                         <p style="margin-bottom: 10px;"><strong>Total Amount:</strong> ₹${result.totalFee.toFixed(2)}</p>
-
-
-
-                        <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available.</p>
-
-
-
+                        <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available. Download your receipt below.</p>
                         
-
-
-
                         <div style="margin-bottom: 20px;">
-
-
-
                             <p style="margin-bottom: 10px;"><strong>Would you like to download the receipt?</strong></p>
-
-
-
                         </div>
-
-
-
                         
-
-
-
                         <div style="display: flex; gap: 10px; justify-content: center;">
-
-
-
                             <button onclick="downloadReceiptAndClose('${result.bookingId}', '${result.bookingCode}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-
-
-
                                 📄 Download Receipt
-
-
-
                             </button>
-
-
-
                             <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-
-
-
-                                Cancel
-
-
-
+                                Close
                             </button>
-
-
-
                         </div>
-
-
-
                     </div>
-
-
-
                 `;
 
 
