@@ -19,10 +19,26 @@
     <script>
         let debugDiv = document.getElementById('debug');
         
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         function log(message, type = 'debug') {
             const div = document.createElement('div');
             div.className = type;
-            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            
+            // Create timestamp element safely
+            const timestamp = document.createElement('strong');
+            timestamp.textContent = `${new Date().toLocaleTimeString()}: `;
+            
+            // Create message text node safely
+            const messageText = document.createTextNode(message);
+            
+            div.appendChild(timestamp);
+            div.appendChild(messageText);
             debugDiv.appendChild(div);
             console.log(message);
         }
@@ -31,12 +47,11 @@
             log('Testing API call to /api/exit/active-bookings...');
             
             try {
-                const response = await fetch('http://localhost:8081/api/exit/active-bookings', {
+                const response = await fetch('/api/exit/active-bookings', {
                     method: 'GET',
                     credentials: 'include',
                     headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+                        'Accept': 'application/json'
                     }
                 });
                 
@@ -47,6 +62,14 @@
                 }
                 
                 const bookings = await response.json();
+                
+                // Validate response shape
+                if (!bookings || !Array.isArray(bookings)) {
+                    log(`Error: Expected array but received ${typeof bookings}`, 'error');
+                    log(`Raw response: ${JSON.stringify(bookings)}`, 'error');
+                    return;
+                }
+                
                 log(`Received ${bookings.length} bookings`, 'success');
                 log(`Bookings data: <pre>${JSON.stringify(bookings, null, 2)}</pre>`);
                 
@@ -118,14 +141,14 @@
                         <tbody>
                             ${bookings.map(booking => `
                                 <tr>
-                                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>${booking.bookingCode}</strong></td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.vehicleNumber}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.customerName}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">F${booking.floor}-S${booking.slotNumber}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.bookingTime}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.durationMinutes} min</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>${escapeHtml(booking.bookingCode || '')}</strong></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(booking.vehicleNumber || '')}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(booking.customerName || '')}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">F${escapeHtml(booking.floor || '')}-S${escapeHtml(booking.slotNumber || '')}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(booking.bookingTime || '')}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${escapeHtml(booking.durationMinutes || '')} min</td>
                                     <td style="padding: 10px; border: 1px solid #ddd;">
-                                        <button onclick="alert('Calculate fee for booking ${booking.bookingId}')" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                        <button data-booking-id="${escapeHtml(String(booking.bookingId || ''))}" class="calculate-fee-btn" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
                                             💰 Calculate Fee
                                         </button>
                                     </td>
@@ -135,6 +158,15 @@
                     </table>
                 `;
                 log(`Rendered ${bookings.length} bookings successfully`, 'success');
+                
+                // Add event listeners to calculate fee buttons
+                const buttons = testContainer.querySelectorAll('.calculate-fee-btn');
+                buttons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const bookingId = this.dataset.bookingId;
+                        alert(`Calculate fee for booking ${bookingId}`);
+                    });
+                });
             }
         }
         
