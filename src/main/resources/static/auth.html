@@ -272,47 +272,34 @@
                 return;
             }
             
-            // Role-based authentication (client-side for demo - TODO: Move to server-side)
-        // IMPORTANT: This is demo-only authentication and MUST NOT be used in production
-        // Production deployment should implement server-side authentication with:
-        // - JWT (JSON Web Tokens) or session-based authentication
-        // - Server-enforced role checks on all protected endpoints
-        // - Secure cookies with HttpOnly and Secure flags
-        // - Token expiration and refresh mechanisms
-        // - HTTPS enforcement for all authentication traffic
-        // Move role validation from client-side to server-side endpoints for security
-            let isAuthenticated = false;
-            
-            if (currentRole === 'exit') {
-                if (username === 'exit' && password === 'exit456') {
-                    isAuthenticated = true;
-                    sessionStorage.setItem('exitAuthenticated', 'true');
-                    console.log('Exit authentication successful');
-                }
-            } else if (currentRole === 'admin') {
-                if (username === 'admin' && password === 'admin789') {
-                    isAuthenticated = true;
-                    sessionStorage.setItem('adminAuthenticated', 'true');
-                    console.log('Admin authentication successful');
-                }
-            }
-            
-            if (isAuthenticated) {
-                showSuccess('Authentication successful! Redirecting...');
-                console.log('Redirecting to:', currentRole);
-                
-                setTimeout(() => {
-                    if (currentRole === 'exit') {
-                        window.location.href = '/exit.html';
-                    } else if (currentRole === 'admin') {
-                        window.location.href = '/admin.html';
-                    }
-                }, 1500);
-            } else {
-                console.log('Authentication failed');
-                showError('Invalid credentials. Please try again.');
-            }
+            // Production authentication - server-side only
+        // DEMO AUTHENTICATION REMOVED FOR PRODUCTION
+        // Use auth-demo.html for development/demo purposes only
+        
+        // Runtime safeguard: Prevent demo auth in production
+        if (typeof window !== 'undefined' && window.location && 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            // Development mode - redirect to demo auth
+            window.location.href = '/auth-demo.html';
+            return;
         }
+        
+        // Production mode - server-side authentication required
+        try {
+            throw new Error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
+        } catch (error) {
+            console.error('Authentication error:', error.message);
+            showError('Server-side authentication required. Please contact administrator.');
+        }
+        
+        // TODO: Implement server-side authentication
+        // 1. Send credentials to /api/auth/login endpoint
+        // 2. Receive JWT token or session cookie
+        // 3. Store token securely (HttpOnly cookie for session, secure storage for JWT)
+        // 4. Include token in all subsequent API requests
+        // 5. Implement token refresh mechanism
+        // 6. Add logout endpoint to invalidate session/token
+}
         
         function showError(message) {
             const errorDiv = document.getElementById('error');

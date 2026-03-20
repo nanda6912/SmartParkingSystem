@@ -667,7 +667,7 @@
                 }, 3000);
             }
             
-            showError(message = 'Failed to load dashboard data') {
+            showTemporaryError(message = 'Failed to load dashboard data') {
                 this.showUpdateNotification(message, 'error');
             }
             
@@ -682,8 +682,8 @@
             hideSkeletonLoader() {
                 const content = document.getElementById('exitsTableContent');
                 if (content) {
-                    // Remove skeleton elements
-                    const skeletonElements = content.querySelectorAll('.skeleton-loader');
+                    // Remove skeleton elements created by showSkeletonLoader
+                    const skeletonElements = content.querySelectorAll('.skeleton, .skeleton-text');
                     skeletonElements.forEach(el => el.remove());
                 }
             }
@@ -728,12 +728,7 @@
                     console.error('Error parsing latest exit data in polling:', error);
                 }
             }
-        } catch (error) {
-            console.error('Error in storage polling:', error);
         }
-}, 2000); // Reduced frequency to every 2 seconds
-
-}
         
         // Initialize dashboard
         const adminDashboard = new AdminDashboard();

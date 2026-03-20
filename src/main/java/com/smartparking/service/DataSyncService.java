@@ -74,13 +74,37 @@ public class DataSyncService {
         // Create defensive copy of current data
         Map<String, Object> newData = new HashMap<>(currentData);
         
-        // Get exits list and create defensive copy
-        List<Map<String, Object>> exits = new ArrayList<>(
-            (List<Map<String, Object>>) newData.getOrDefault("exits", new ArrayList<>())
-        );
+        // Get exits list and create deep defensive copy
+        List<Map<String, Object>> originalExits = (List<Map<String, Object>>) newData.getOrDefault("exits", new ArrayList<>());
+        List<Map<String, Object>> exits = new ArrayList<>();
         
-        // Add the new exit record
-        exits.add(0, exitRecord); // Add to beginning
+        // Deep copy each exit map
+        for (Map<String, Object> exit : originalExits) {
+            Map<String, Object> exitCopy = new HashMap<>(exit);
+            // Deep copy nested maps/lists if they exist
+            for (Map.Entry<String, Object> entry : exitCopy.entrySet()) {
+                if (entry.getValue() instanceof Map) {
+                    entry.setValue(new HashMap<>((Map<String, Object>) entry.getValue()));
+                } else if (entry.getValue() instanceof List) {
+                    entry.setValue(new ArrayList<>((List<Object>) entry.getValue()));
+                }
+            }
+            exits.add(exitCopy);
+        }
+        
+        // Create defensive copy of exitRecord before adding
+        Map<String, Object> exitRecordCopy = new HashMap<>(exitRecord);
+        // Deep copy nested structures in exitRecord
+        for (Map.Entry<String, Object> entry : exitRecordCopy.entrySet()) {
+            if (entry.getValue() instanceof Map) {
+                entry.setValue(new HashMap<>((Map<String, Object>) entry.getValue()));
+            } else if (entry.getValue() instanceof List) {
+                entry.setValue(new ArrayList<>((List<Object>) entry.getValue()));
+            }
+        }
+        
+        // Add the new exit record copy
+        exits.add(0, exitRecordCopy); // Add to beginning
         
         // Limit to last 50 entries
         if (exits.size() > 50) {
@@ -211,7 +235,16 @@ public class DataSyncService {
         
         bookingMap.put("id", booking.getId());
         bookingMap.put("bookingCode", booking.getBookingCode());
-        bookingMap.put("vehicleNumber", booking.getVehicleNumber());
+        
+        // PII Protection: Mask vehicle number as potential PII
+        String vehicleNumber = booking.getVehicleNumber();
+        if (vehicleNumber != null && vehicleNumber.length() > 3) {
+            // Keep last 3 characters, mask the rest
+            bookingMap.put("vehicleNumber", "***" + vehicleNumber.substring(vehicleNumber.length() - 3));
+        } else {
+            bookingMap.put("vehicleNumber", "***");
+        }
+        
         bookingMap.put("vehicleType", booking.getVehicleType());
         bookingMap.put("slotNumber", booking.getSlotNumber());
         bookingMap.put("entryTime", booking.getEntryTime());

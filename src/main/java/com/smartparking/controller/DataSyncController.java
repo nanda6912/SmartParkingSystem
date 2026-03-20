@@ -186,7 +186,7 @@ public class DataSyncController {
         syncData.put("bookingCode", exitDetails.get("bookingCode"));
         syncData.put("vehicleNumber", exitDetails.get("vehicleNumber"));
         
-        // PII Protection: Mask or omit sensitive data
+        // PII Protection: Mask sensitive data
         Object customerName = exitDetails.get("customerName");
         if (customerName != null && customerName instanceof String) {
             String name = (String) customerName;
@@ -196,6 +196,9 @@ public class DataSyncController {
             } else {
                 syncData.put("customerName", "**");
             }
+        } else {
+            // Always include customerName for consistent response structure
+            syncData.put("customerName", "**");
         }
         
         // PII Protection: Mask phone number completely

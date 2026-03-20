@@ -338,7 +338,20 @@ public class ExitController {
         syncData.put("id", exitDetails.get("id"));
         syncData.put("bookingCode", exitDetails.get("bookingCode"));
         syncData.put("vehicleNumber", exitDetails.get("vehicleNumber"));
-        syncData.put("customerName", exitDetails.get("customerName"));
+        
+        // PII Protection: Mask customer name
+        Object customerName = exitDetails.get("customerName");
+        if (customerName != null && customerName instanceof String) {
+            String name = (String) customerName;
+            if (name.length() > 2) {
+                // Keep first and last character, mask middle
+                syncData.put("customerName", name.substring(0, 1) + "***" + name.substring(name.length() - 1));
+            } else {
+                syncData.put("customerName", "***");
+            }
+        } else {
+            syncData.put("customerName", "***");
+        }
         
         // PII Protection: Remove or mask phone number
         Object phoneNumber = exitDetails.get("phoneNumber");
