@@ -258,7 +258,15 @@ public class DataSyncService {
         
         bookingMap.put("entryTime", booking.getBookingTime());
         bookingMap.put("exitTime", booking.getExitTime());
-        bookingMap.put("parkingFee", booking.getParkingFee());
+        
+        // Ensure parking fee is properly calculated
+        Integer parkingFee = booking.getParkingFee();
+        if (parkingFee == null || parkingFee == 0) {
+            // Calculate fee if not set
+            parkingFee = calculateParkingFee(booking.getBookingTime(), booking.getExitTime()).intValue();
+        }
+        bookingMap.put("parkingFee", parkingFee);
+        
         bookingMap.put("duration", calculateDuration(booking.getBookingTime(), booking.getExitTime()));
         
         // PII Protection: Only include PII when explicitly authorized
@@ -282,9 +290,47 @@ public class DataSyncService {
             // Add PII handling metadata
             bookingMap.put("piiMasked", true);
             bookingMap.put("accessLevel", "restricted");
+        } else {
+            // For admin page, still include some PII but masked
+            String customerName = booking.getCustomerName();
+            if (customerName != null && customerName.length() > 2) {
+                bookingMap.put("customerName", customerName.substring(0, 2) + "***");
+            } else {
+                bookingMap.put("customerName", "Unknown");
+            }
+            
+            String phoneNumber = booking.getPhoneNumber();
+            if (phoneNumber != null && phoneNumber.length() >= 4) {
+                bookingMap.put("phoneNumber", "***-***-" + phoneNumber.substring(phoneNumber.length() - 4));
+            } else {
+                bookingMap.put("phoneNumber", "Unknown");
+            }
+            
+            bookingMap.put("piiMasked", true);
+            bookingMap.put("accessLevel", "restricted");
         }
         
         return bookingMap;
+    }
+    
+    /**
+     * Calculate parking fee based on duration
+     */
+    private Double calculateParkingFee(LocalDateTime entryTime, LocalDateTime exitTime) {
+        if (entryTime == null || exitTime == null) {
+            return 0.0;
+        }
+        
+        long minutes = ChronoUnit.MINUTES.between(entryTime, exitTime);
+        if (minutes <= 0) {
+            return 0.0;
+        }
+        
+        // Calculate hours (minimum 1 hour charge)
+        long hours = (minutes + 59) / 60; // Round up to nearest hour
+        double hourlyRate = 20.0; // Default hourly rate
+        
+        return hours * hourlyRate;
     }
     
     /**
