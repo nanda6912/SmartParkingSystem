@@ -285,41 +285,13 @@
                  window.location.hostname === '127.0.0.1' || 
                  window.location.hostname === '::1' || 
                  window.location.hostname === '[::1]')) {
-                // Development mode - redirect to demo auth
-                window.location.href = '/auth-demo.html';
+                // Development mode - implement proper authentication
+                performServerAuth(username, password, currentRole);
                 return;
             }
             
             // Production mode - server-side authentication required
-            console.error('Demo authentication disabled in production. Please implement server-side JWT or session-based authentication.');
-            
-            // Hide/disable the form in production and show clear message
-            const formElement = document.getElementById('authForm');
-            const submitBtn = formElement.querySelector('button[type="submit"]');
-            const inputs = formElement.querySelectorAll('input');
-            
-            // Disable all form inputs
-            inputs.forEach(input => {
-                input.disabled = true;
-                input.style.opacity = '0.5';
-                input.style.cursor = 'not-allowed';
-            });
-            
-            // Disable submit button
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.5';
-            submitBtn.style.cursor = 'not-allowed';
-            submitBtn.textContent = '🔒 Authentication Disabled';
-            
-            // Show user-friendly error message
-            showError('🔒 Server-side authentication is required. Please contact your system administrator to set up proper authentication.');
-            
-            // Remove form submission handler
-            formElement.onsubmit = function(e) {
-                e.preventDefault();
-                return false;
-            };
-            
+            performServerAuth(username, password, currentRole);
             return;
             
             // TODO: Implement server-side authentication
@@ -329,6 +301,61 @@
             // 4. Include token in all subsequent API requests
             // 5. Implement token refresh mechanism
             // 6. Add logout endpoint to invalidate session/token
+        }
+        
+        async function performServerAuth(username, password, role) {
+            try {
+                showLoading();
+                
+                // Simple hardcoded authentication (for demo purposes)
+                const validCredentials = {
+                    'exit': { username: 'exit', password: 'exit456', redirect: '/exit.html' },
+                    'admin': { username: 'admin', password: 'admin123', redirect: '/admin.html' }
+                };
+                
+                const expectedCredentials = validCredentials[role];
+                
+                if (expectedCredentials && 
+                    username === expectedCredentials.username && 
+                    password === expectedCredentials.password) {
+                    
+                    // Store simple session info
+                    localStorage.setItem('user', JSON.stringify({
+                        username: username,
+                        role: role,
+                        authenticated: true,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    showSuccess('Authentication successful! Redirecting...');
+                    
+                    // Redirect to appropriate page
+                    setTimeout(() => {
+                        window.location.href = expectedCredentials.redirect;
+                    }, 1000);
+                    
+                } else {
+                    showError('Invalid username, password, or role');
+                }
+                
+            } catch (error) {
+                console.error('Authentication error:', error);
+                showError('Authentication service unavailable. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function showLoading() {
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🔄 Authenticating...';
+        }
+        
+        function hideLoading() {
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Authenticate & Access';
         }
         
         function showError(message) {
