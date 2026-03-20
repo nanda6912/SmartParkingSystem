@@ -367,14 +367,14 @@ public class ExitService {
      */
     private String formatDuration(long totalMinutes) {
         if (totalMinutes < 60) {
-            return totalMinutes + " minutes";
+            return totalMinutes + " minute" + (totalMinutes == 1 ? "" : "s");
         } else {
             long hours = totalMinutes / 60;
             long minutes = totalMinutes % 60;
             if (minutes == 0) {
-                return hours + " hour" + (hours > 1 ? "s" : "");
+                return hours + " hour" + (hours == 1 ? "" : "s");
             } else {
-                return hours + " hour" + (hours > 1 ? "s" : "") + " " + minutes + " minutes";
+                return hours + " hour" + (hours == 1 ? "" : "s") + " " + minutes + " minute" + (minutes == 1 ? "" : "s");
             }
         }
     }
