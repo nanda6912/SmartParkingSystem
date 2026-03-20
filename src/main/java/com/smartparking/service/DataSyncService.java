@@ -246,11 +246,15 @@ public class DataSyncService {
         }
         
         bookingMap.put("vehicleType", booking.getVehicleType());
-        bookingMap.put("slotNumber", booking.getSlotNumber());
-        bookingMap.put("entryTime", booking.getEntryTime());
+        
+        // Get slot number from ParkingSlot entity
+        String slotNumber = (booking.getParkingSlot() != null) ? String.valueOf(booking.getParkingSlot().getSlotNumber()) : "N/A";
+        bookingMap.put("slotNumber", slotNumber);
+        
+        bookingMap.put("entryTime", booking.getBookingTime());
         bookingMap.put("exitTime", booking.getExitTime());
         bookingMap.put("parkingFee", booking.getParkingFee());
-        bookingMap.put("duration", calculateDuration(booking.getEntryTime(), booking.getExitTime()));
+        bookingMap.put("duration", calculateDuration(booking.getBookingTime(), booking.getExitTime()));
         
         // PII Protection: Only include PII when explicitly authorized
         if (includePii) {
