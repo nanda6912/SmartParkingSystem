@@ -245,7 +245,7 @@ public class DataSyncService {
             bookingMap.put("vehicleNumber", "***");
         }
         
-        bookingMap.put("vehicleType", booking.getVehicleType());
+        bookingMap.put("vehicleType", booking.getVehicleType() != null ? booking.getVehicleType().toString() : "UNKNOWN");
         
         // Get slot number from ParkingSlot entity
         String slotNumber = (booking.getParkingSlot() != null) ? String.valueOf(booking.getParkingSlot().getSlotNumber()) : "N/A";

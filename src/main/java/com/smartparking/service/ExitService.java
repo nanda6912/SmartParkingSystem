@@ -149,9 +149,12 @@ public class ExitService {
                 exitDetails.put("bookingCode", displayBookingCode);
                 exitDetails.put("vehicleNumber", savedBooking.getVehicleNumber());
                 exitDetails.put("customerName", savedBooking.getCustomerName());
+                exitDetails.put("phoneNumber", savedBooking.getPhoneNumber());
+                exitDetails.put("vehicleType", savedBooking.getVehicleType() != null ? savedBooking.getVehicleType().toString() : "UNKNOWN");
                 exitDetails.put("entryTime", savedBooking.getBookingTime().format(FORMATTER));
                 exitDetails.put("exitTime", savedBooking.getExitTime().format(FORMATTER));
                 exitDetails.put("totalMinutes", totalMinutes);
+                exitDetails.put("duration", formatDuration(totalMinutes)); // Add human-readable duration
                 exitDetails.put("hoursCharged", hours);
                 exitDetails.put("hourlyRate", HOURLY_RATE);
                 exitDetails.put("totalFee", fee);
@@ -357,5 +360,22 @@ public class ExitService {
         dto.put("durationMinutes", Duration.between(booking.getBookingTime(), LocalDateTime.now()).toMinutes());
         
         return dto;
+    }
+    
+    /**
+     * Format duration in minutes to human-readable format
+     */
+    private String formatDuration(long totalMinutes) {
+        if (totalMinutes < 60) {
+            return totalMinutes + " minutes";
+        } else {
+            long hours = totalMinutes / 60;
+            long minutes = totalMinutes % 60;
+            if (minutes == 0) {
+                return hours + " hour" + (hours > 1 ? "s" : "");
+            } else {
+                return hours + " hour" + (hours > 1 ? "s" : "") + " " + minutes + " minutes";
+            }
+        }
     }
 }
