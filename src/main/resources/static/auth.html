@@ -273,6 +273,14 @@
             }
             
             // Role-based authentication (client-side for demo - TODO: Move to server-side)
+        // IMPORTANT: This is demo-only authentication and MUST NOT be used in production
+        // Production deployment should implement server-side authentication with:
+        // - JWT (JSON Web Tokens) or session-based authentication
+        // - Server-enforced role checks on all protected endpoints
+        // - Secure cookies with HttpOnly and Secure flags
+        // - Token expiration and refresh mechanisms
+        // - HTTPS enforcement for all authentication traffic
+        // Move role validation from client-side to server-side endpoints for security
             let isAuthenticated = false;
             
             if (currentRole === 'exit') {

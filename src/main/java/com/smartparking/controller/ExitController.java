@@ -72,14 +72,26 @@ public class ExitController {
             // Process the exit using existing service
             Map<String, Object> exitDetails = exitService.processExit(bookingId);
             
-            // Convert to sync format and store for synchronization
-            Map<String, Object> syncExitData = convertExitDetailsToSyncFormat(exitDetails);
-            dataSyncService.addExitRecord(syncExitData);
+            // Try to sync data but don't fail the entire operation if sync fails
+            String syncStatus = "success";
+            String syncError = null;
+            
+            try {
+                // Convert to sync format and store for synchronization
+                Map<String, Object> syncExitData = convertExitDetailsToSyncFormat(exitDetails);
+                dataSyncService.addExitRecord(syncExitData);
+            } catch (Exception syncEx) {
+                System.err.println("Sync operation failed for bookingId " + bookingId + ": " + syncEx.getMessage());
+                syncEx.printStackTrace();
+                syncStatus = "failed";
+                syncError = "Data synchronization failed";
+            }
             
             // Return combined response with sync status
             Map<String, Object> response = new java.util.HashMap<>();
             response.put("exitDetails", exitDetails);
-            response.put("syncStatus", "updated");
+            response.put("syncStatus", syncStatus);
+            response.put("syncError", syncError);
             response.put("timestamp", LocalDateTime.now());
             
             return ResponseEntity.ok(response);
@@ -317,7 +329,7 @@ public class ExitController {
     }
     
     /**
-     * Convert exit details to sync format
+     * Convert exit details to sync format with PII protection
      */
     private Map<String, Object> convertExitDetailsToSyncFormat(Map<String, Object> exitDetails) {
         Map<String, Object> syncData = new java.util.HashMap<>();
@@ -327,7 +339,21 @@ public class ExitController {
         syncData.put("bookingCode", exitDetails.get("bookingCode"));
         syncData.put("vehicleNumber", exitDetails.get("vehicleNumber"));
         syncData.put("customerName", exitDetails.get("customerName"));
-        syncData.put("phoneNumber", exitDetails.get("phoneNumber"));
+        
+        // PII Protection: Remove or mask phone number
+        Object phoneNumber = exitDetails.get("phoneNumber");
+        if (phoneNumber != null && phoneNumber instanceof String) {
+            String phone = (String) phoneNumber;
+            if (phone.length() >= 4) {
+                // Keep only last 4 digits
+                syncData.put("phoneNumber", "***-***-" + phone.substring(phone.length() - 4));
+            } else {
+                syncData.put("phoneNumber", "***-***-****");
+            }
+        } else {
+            syncData.put("phoneNumber", "***-***-****");
+        }
+        
         syncData.put("vehicleType", exitDetails.get("vehicleType"));
         syncData.put("slotNumber", exitDetails.get("slotNumber"));
         syncData.put("entryTime", exitDetails.get("entryTime"));

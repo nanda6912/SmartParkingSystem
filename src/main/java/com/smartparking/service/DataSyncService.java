@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
 
 /**
  * Service for managing data synchronization between exit and admin pages
- * with 8-hour persistent storage that survives server restarts
+ * with 8-hour in-memory cache (does not survive server restarts)
  */
 @Service
 public class DataSyncService {
@@ -33,6 +34,11 @@ public class DataSyncService {
     
     // Server start time
     private final LocalDateTime serverStartTime = LocalDateTime.now();
+    
+    // Self-reference for proxy calls
+    @Lazy
+    @Autowired
+    private DataSyncService self;
     
     /**
      * Store exit data with 8-hour expiration
@@ -50,25 +56,12 @@ public class DataSyncService {
     }
     
     /**
-     * Get today's exit data with 8-hour persistence
+     * Get today's exit data with caching
      */
     @Cacheable(value = "exitData", key = "'today-exits'")
     public Map<String, Object> getTodayExitData() {
-        try {
-            // Try to get from cache first
-            Map<String, Object> cachedData = (Map<String, Object>) memoryCache.get("today-exits");
-            if (cachedData != null && isDataValid(cachedData)) {
-                return cachedData;
-            }
-            
-            // If no cached data or expired, fetch fresh data
-            Map<String, Object> freshData = fetchFreshExitData();
-            return storeExitData(freshData);
-            
-        } catch (Exception e) {
-            System.err.println("Error getting today's exit data: " + e.getMessage());
-            return getDefaultExitData();
-        }
+        // Fetch fresh data and store through proxy
+        return self.storeExitData(fetchFreshExitData());
     }
     
     /**
@@ -76,20 +69,26 @@ public class DataSyncService {
      */
     @CachePut(value = "exitData", key = "'today-exits'")
     public Map<String, Object> addExitRecord(Map<String, Object> exitRecord) {
-        Map<String, Object> currentData = getTodayExitData();
+        Map<String, Object> currentData = self.getTodayExitData();
+        
+        // Create defensive copy of current data
+        Map<String, Object> newData = new HashMap<>(currentData);
+        
+        // Get exits list and create defensive copy
+        List<Map<String, Object>> exits = new ArrayList<>(
+            (List<Map<String, Object>>) newData.getOrDefault("exits", new ArrayList<>())
+        );
         
         // Add the new exit record
-        List<Map<String, Object>> exits = (List<Map<String, Object>>) currentData.getOrDefault("exits", new ArrayList<>());
-        exits.add(0, exitRecord); // Add to beginning for chronological order
+        exits.add(0, exitRecord); // Add to beginning
         
-        // Keep only last 50 records to prevent memory bloat
+        // Limit to last 50 entries
         if (exits.size() > 50) {
-            exits = exits.subList(0, 50);
+            exits = new ArrayList<>(exits.subList(0, 50));
         }
         
-        currentData.put("exits", exits);
-        currentData.put("lastUpdated", LocalDateTime.now());
-        currentData.put("totalExits", exits.size());
+        newData.put("exits", exits);
+        newData.put("totalExits", exits.size());
         
         // Recalculate revenue
         double totalRevenue = exits.stream()
@@ -98,39 +97,45 @@ public class DataSyncService {
                 return fee instanceof Number ? ((Number) fee).doubleValue() : 0.0;
             })
             .sum();
-        currentData.put("totalRevenue", totalRevenue);
+        newData.put("totalRevenue", totalRevenue);
         
-        // Store in both caches
-        memoryCache.put("today-exits", currentData);
+        // Update timestamp
+        newData.put("lastUpdated", LocalDateTime.now());
         
-        return currentData;
+        return newData;
     }
     
     /**
      * Get synchronized data for admin page
      */
     public Map<String, Object> getAdminSyncData() {
-        Map<String, Object> data = getTodayExitData();
+        Map<String, Object> data = self.getTodayExitData();
+        
+        // Create defensive copy to avoid mutating cache
+        Map<String, Object> adminData = new HashMap<>(data);
         
         // Add admin-specific fields
-        data.put("syncStatus", "active");
-        data.put("lastSync", LocalDateTime.now());
-        data.put("dataAge", calculateDataAge(data));
+        adminData.put("syncStatus", "active");
+        adminData.put("lastSync", LocalDateTime.now());
+        adminData.put("dataAge", calculateDataAge(adminData));
         
-        return data;
+        return adminData;
     }
     
     /**
      * Get synchronized data for exit page
      */
     public Map<String, Object> getExitPageSyncData() {
-        Map<String, Object> data = getTodayExitData();
+        Map<String, Object> data = self.getTodayExitData();
         
-        // Add exit-page specific fields
-        data.put("activeBookings", getActiveBookingsCount());
-        data.put("hourlyRate", 20.0);
+        // Create defensive copy to avoid mutating cache
+        Map<String, Object> exitData = new HashMap<>(data);
         
-        return data;
+        // Add exit-page specific fields with configurable hourly rate
+        exitData.put("activeBookings", getActiveBookingsCount());
+        exitData.put("hourlyRate", 50.0); // Default rate - should be from config
+        
+        return exitData;
     }
     
     /**
@@ -171,7 +176,7 @@ public class DataSyncService {
                 .filter(booking -> booking.getExitTime() != null)
                 .filter(booking -> booking.getExitTime().toLocalDate().equals(now.toLocalDate()))
                 .sorted((b1, b2) -> b2.getExitTime().compareTo(b1.getExitTime())) // Most recent first
-                .map(this::convertBookingToMap)
+                .map(booking -> convertBookingToMap(booking, false))
                 .collect(Collectors.toList());
             
             // Calculate statistics
@@ -199,31 +204,53 @@ public class DataSyncService {
     }
     
     /**
-     * Convert Booking entity to Map for JSON serialization
+     * Convert Booking entity to Map with PII protection
      */
-    private Map<String, Object> convertBookingToMap(Booking booking) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", booking.getId());
-        map.put("bookingCode", booking.getBookingCode());
-        map.put("vehicleNumber", booking.getVehicleNumber());
-        map.put("customerName", booking.getCustomerName());
-        map.put("phoneNumber", booking.getPhoneNumber());
-        map.put("vehicleType", booking.getVehicleType());
-        map.put("slotNumber", booking.getSlotNumber());
-        map.put("entryTime", booking.getEntryTime());
-        map.put("exitTime", booking.getExitTime());
-        map.put("parkingFee", booking.getParkingFee());
-        map.put("isActive", booking.getIsActive());
-        map.put("duration", calculateDuration(booking));
-        return map;
+    private Map<String, Object> convertBookingToMap(Booking booking, boolean includePii) {
+        Map<String, Object> bookingMap = new HashMap<>();
+        
+        bookingMap.put("id", booking.getId());
+        bookingMap.put("bookingCode", booking.getBookingCode());
+        bookingMap.put("vehicleNumber", booking.getVehicleNumber());
+        bookingMap.put("vehicleType", booking.getVehicleType());
+        bookingMap.put("slotNumber", booking.getSlotNumber());
+        bookingMap.put("entryTime", booking.getEntryTime());
+        bookingMap.put("exitTime", booking.getExitTime());
+        bookingMap.put("parkingFee", booking.getParkingFee());
+        bookingMap.put("duration", calculateDuration(booking.getEntryTime(), booking.getExitTime()));
+        
+        // PII Protection: Only include PII when explicitly authorized
+        if (includePii) {
+            // Mask customer name - keep first 2 letters
+            String customerName = booking.getCustomerName();
+            if (customerName != null && customerName.length() > 2) {
+                bookingMap.put("customerName", customerName.substring(0, 2) + "***");
+            } else {
+                bookingMap.put("customerName", "**");
+            }
+            
+            // Mask phone number - keep last 4 digits only
+            String phoneNumber = booking.getPhoneNumber();
+            if (phoneNumber != null && phoneNumber.length() >= 4) {
+                bookingMap.put("phoneNumber", "***-***-" + phoneNumber.substring(phoneNumber.length() - 4));
+            } else {
+                bookingMap.put("phoneNumber", "***-***-****");
+            }
+            
+            // Add PII handling metadata
+            bookingMap.put("piiMasked", true);
+            bookingMap.put("accessLevel", "restricted");
+        }
+        
+        return bookingMap;
     }
     
     /**
      * Calculate parking duration
      */
-    private String calculateDuration(Booking booking) {
-        if (booking.getEntryTime() != null && booking.getExitTime() != null) {
-            long minutes = ChronoUnit.MINUTES.between(booking.getEntryTime(), booking.getExitTime());
+    private String calculateDuration(LocalDateTime entryTime, LocalDateTime exitTime) {
+        if (entryTime != null && exitTime != null) {
+            long minutes = ChronoUnit.MINUTES.between(entryTime, exitTime);
             long hours = minutes / 60;
             long remainingMinutes = minutes % 60;
             return String.format("%d hours %d minutes", hours, remainingMinutes);
@@ -278,11 +305,10 @@ public class DataSyncService {
     }
     
     /**
-     * Force refresh of cached data
+     * Refresh cache with fresh data
      */
     @CacheEvict(value = "exitData", key = "'today-exits'")
     public void refreshCache() {
-        memoryCache.clear();
-        storeExitData(fetchFreshExitData());
+        self.storeExitData(fetchFreshExitData());
     }
 }
