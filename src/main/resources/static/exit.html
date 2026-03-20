@@ -1852,25 +1852,17 @@
                     console.log('Result success:', result.success);
                     console.log('Result keys:', Object.keys(result));
 
-                    
+                    // Extract exit details from nested structure
+                    const exitDetails = result.exitDetails || result;
+                    console.log('Extracted exitDetails:', exitDetails);
 
-
-
-                    if (result.success) {
-
-
-
+                    if (result.success && exitDetails) {
                         // Store booking details for receipt BEFORE notifying
-
-
-
-                        this.currentBookingCode = result.bookingCode;
-
-
-
-                        this.currentBookingId = result.bookingId;
-
-
+                        this.currentBookingCode = exitDetails.bookingCode;
+                        this.currentBookingId = exitDetails.bookingId;
+                        
+                        // Store the complete exit details for receipt
+                        this.currentBookingDetails = exitDetails;
 
                         
 
@@ -1879,87 +1871,29 @@
                         // Create detailed exit data with COMPLETE booking information
 
                         const exitData = {
-
-
-
-                            bookingId: result.bookingId,
-
-
-
-                            bookingCode: result.bookingCode || 'N/A',
-
-
-
+                            bookingId: exitDetails.bookingId,
+                            bookingCode: exitDetails.bookingCode || 'N/A',
                             processedAt: new Date().toISOString(),
-
-
-
                             exitTime: new Date().toLocaleString('en-US', { 
-
-
-
                                 hour: '2-digit', 
-
-
-
                                 minute: '2-digit',
-
-
-
                                 hour12: true 
-
-
-
                             }),
-
-
-
                             // Use stored booking details (original data from booking)
-
-                            vehicleNumber: this.currentBookingDetails?.vehicleNumber || result.vehicleNumber || 'Unknown',
-
-
-
-                            customerName: this.currentBookingDetails?.customerName || result.customerName || 'Unknown',
-
-
-
-                            phoneNumber: this.currentBookingDetails?.phoneNumber || result.phoneNumber || 'Unknown',
-
-
-
-                            vehicleType: this.currentBookingDetails?.vehicleType || result.vehicleType || 'Unknown',
-
-
-
-                            slotNumber: this.currentBookingDetails?.slotNumber || result.slotNumber || 'Unknown',
-
-
-
-                            floor: this.currentBookingDetails?.floor || result.floor || 'Unknown',
-
-
-
-                            totalFee: this.currentBookingDetails?.totalFee || result.totalFee || 0,
-
-
-
-                            entryTime: this.currentBookingDetails?.entryTime || result.entryTime || 'Unknown',
-
-
-
-                            duration: this.currentBookingDetails?.duration || result.duration || 'Unknown',
-
-
-
-                            hoursCharged: this.currentBookingDetails?.hoursCharged || result.hoursCharged || 0
-
-
-
+                            vehicleNumber: exitDetails.vehicleNumber || 'Unknown',
+                            customerName: exitDetails.customerName || 'Unknown',
+                            phoneNumber: exitDetails.phoneNumber || 'Unknown',
+                            vehicleType: exitDetails.vehicleType || 'Unknown',
+                            slotNumber: exitDetails.slotNumber || 'Unknown',
+                            floor: exitDetails.floor || 'Unknown',
+                            totalFee: exitDetails.totalFee || 0,
+                            entryTime: exitDetails.entryTime || 'Unknown',
+                            duration: exitDetails.duration || 'Unknown',
+                            hoursCharged: exitDetails.hoursCharged || 0
                         };
 
 
-
+                        
                         
 
 
@@ -2000,48 +1934,23 @@
 
 
 
-                        
 
 
-
-                        // Show release confirmation with receipt options
-
-
-
-                        this.showReleaseConfirmation(result);
-
-
-
-                        
-
-
+        // Show release confirmation with receipt options
+                        this.showReleaseConfirmation(exitDetails);
 
                         // Update booking lists and statistics
-
-
-
                         this.loadActiveBookings();
-
-
-
                         this.loadStatistics();
 
-
-
-                        
-
-
-
                         // Notify admin page of the update (AFTER setting booking details)
-
-
-
                         this.notifyAdminPageUpdate();
                         
                         // Mark this booking as processed to prevent duplicate processing
                         const processedKey = `exit_processed_${this.currentBookingId}`;
                         sessionStorage.setItem(processedKey, 'true');
                         console.log('Marked booking as processed:', this.currentBookingId);
+
 
 
 
@@ -2105,107 +2014,6 @@
 
 
 
-
-
-
-
-            showReleaseConfirmation(result) {
-
-
-
-                const modal = document.createElement('div');
-
-
-
-                modal.style.cssText = `
-
-
-
-                    position: fixed;
-
-
-
-                    top: 0;
-
-
-
-                    left: 0;
-
-
-
-                    width: 100%;
-
-
-
-                    height: 100%;
-
-
-
-                    background: rgba(0, 0, 0, 0.5);
-
-
-
-                    display: flex;
-
-
-
-                    justify-content: center;
-
-
-
-                    align-items: center;
-
-
-
-                    z-index: 10000;
-
-
-
-                `;
-
-
-
-                
-
-
-
-                modal.innerHTML = `
-                    <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
-                        <h3 style="color: #28a745; margin-bottom: 20px;">✅ Exit Processed Successfully!</h3>
-                        <p style="margin-bottom: 10px;"><strong>Booking Code:</strong> ${result.bookingCode || 'N/A'}</p>
-                        <p style="margin-bottom: 10px;"><strong>Total Amount:</strong> ₹${result.totalFee.toFixed(2)}</p>
-                        <p style="margin-bottom: 20px; color: #666;">The vehicle has been released and the parking slot is now available. Download your receipt below.</p>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <p style="margin-bottom: 10px;"><strong>Would you like to download the receipt?</strong></p>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; justify-content: center;">
-                            <button onclick="downloadReceiptAndClose('${result.bookingId}', '${result.bookingCode}')" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                                📄 Download Receipt
-                            </button>
-                            <button onclick="closeReleaseConfirmation()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-
-
-                
-
-
-
-                document.body.appendChild(modal);
-
-
-
-                window.currentReleaseModal = modal;
-
-
-
-            }
 
 
 
