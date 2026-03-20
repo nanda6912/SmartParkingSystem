@@ -93,10 +93,24 @@ public class ExitController {
             
             // Return combined response with sync status
             Map<String, Object> response = new java.util.HashMap<>();
-            response.put("exitDetails", exitDetails);
+            response.put("success", true);
+            response.put("bookingId", exitDetails.get("bookingId"));
+            response.put("bookingCode", exitDetails.get("bookingCode"));
+            response.put("vehicleNumber", exitDetails.get("vehicleNumber"));
+            response.put("customerName", exitDetails.get("customerName"));
+            response.put("phoneNumber", exitDetails.get("phoneNumber"));
+            response.put("vehicleType", exitDetails.get("vehicleType"));
+            response.put("slotNumber", exitDetails.get("slotNumber"));
+            response.put("floor", exitDetails.get("floor"));
+            response.put("entryTime", exitDetails.get("entryTime"));
+            response.put("exitTime", exitDetails.get("exitTime"));
+            response.put("duration", exitDetails.get("duration"));
+            response.put("hoursCharged", exitDetails.get("hoursCharged"));
+            response.put("totalFee", exitDetails.get("totalFee"));
             response.put("syncStatus", syncStatus);
             response.put("syncError", syncError);
             response.put("timestamp", LocalDateTime.now());
+            response.put("message", "Exit processed successfully");
             
             return ResponseEntity.ok(response);
             
