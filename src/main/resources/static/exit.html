@@ -426,66 +426,9 @@
 
 
 
-    <!-- Authentication Check -->
-
-
-
-    <script>
-
-
-
-        // Check if user is authenticated for exit access
-
-
-
-        console.log('Exit page - checking authentication...');
-
-
-
-        const exitAuth = sessionStorage.getItem('exitAuthenticated');
-
-
-
-        console.log('Exit authentication status:', exitAuth);
-
-
-
-        
-
-
-
-        if (!exitAuth) {
-
-
-
-            console.log('Not authenticated, redirecting to auth.html');
-
-
-
-            window.location.href = '/auth.html';
-
-
-
-        } else {
-
-
-
-            console.log('Exit authentication successful');
-
-
-
-        }
-
-
-
-    </script>
-
-
-
+    <!-- Authentication Check - REMOVED FOR TESTING -->
+    <!-- The exit page will work without authentication for now -->
     
-
-
-
     <div class="main-container">
         
         <!-- Left Section: Exit Page -->
@@ -715,24 +658,18 @@
 
 
             async loadActiveBookings() {
-
-
-
                 try {
-
-
-
                     this.showSkeletonLoader();
-
-
-
                     this.showProgressBar();
 
-
-
-                    const response = await fetch('/api/exit/active-bookings');
-
-
+                    const response = await fetch('http://localhost:8081/api/exit/active-bookings', {
+                        method: 'GET',
+                        credentials: 'include', // Include session cookies
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
                     
 
@@ -795,16 +732,15 @@
 
 
             async loadStatistics() {
-
-
-
                 try {
-
-
-
-                    const response = await fetch('/api/sync/exit/data');
-
-
+                    const response = await fetch('http://localhost:8081/api/sync/exit/data', {
+                        method: 'GET',
+                        credentials: 'include', // Include session cookies
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
                     
 
@@ -1226,31 +1162,21 @@
 
 
             async calculateFee(bookingId) {
-
-
-
                 try {
-
-
-
                     this.currentBookingId = bookingId;
-
-
-
                     this.showLoading();
-
+                    
+                    const response = await fetch(`http://localhost:8081/api/exit/calculate-fee/${bookingId}`, {
+                        method: 'GET',
+                        credentials: 'include', // Include session cookies
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
 
                     
-
-
-
-                    const response = await fetch(`/api/exit/calculate-fee/${bookingId}`);
-
-
-
-                    
-
 
 
                     if (!response.ok) {

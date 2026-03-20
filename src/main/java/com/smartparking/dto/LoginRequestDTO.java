@@ -12,11 +12,20 @@ public class LoginRequestDTO {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
     
+    @NotBlank(message = "Role is required")
+    private String role;
+    
     public LoginRequestDTO() {}
     
     public LoginRequestDTO(String username, String password) {
         this.username = username;
         this.password = password;
+    }
+    
+    public LoginRequestDTO(String username, String password, String role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
     }
     
     public String getUsername() {
@@ -33,5 +42,13 @@ public class LoginRequestDTO {
     
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public String getRole() {
+        return role;
+    }
+    
+    public void setRole(String role) {
+        this.role = role;
     }
 }
