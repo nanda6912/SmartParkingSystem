@@ -2221,13 +2221,11 @@
 
 
         function loadActiveBookings() {
-
-
-
-            exitManagement.loadActiveBookings();
-
-
-
+            if (exitManagement) {
+                exitManagement.loadActiveBookings();
+            } else {
+                console.error('ExitManagement not initialized');
+            }
         }
 
 
@@ -2685,12 +2683,59 @@
 
         }
 
-
-
     </script>
     
     <!-- Include exit-fix.js for showReleaseConfirmation method -->
     <script src="exit-fix.js"></script>
+    
+    <!-- Initialize ExitManagement class -->
+    <script>
+        let exitManagement;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing ExitManagement...');
+            exitManagement = new ExitManagement();
+            console.log('ExitManagement initialized');
+        });
+        
+        // Global functions for onclick handlers
+        function loadActiveBookings() {
+            if (exitManagement) {
+                exitManagement.loadActiveBookings();
+            } else {
+                console.error('ExitManagement not initialized');
+            }
+        }
+        
+        function calculateFee(bookingId) {
+            if (exitManagement) {
+                exitManagement.calculateFee(bookingId);
+            } else {
+                console.error('ExitManagement not initialized');
+            }
+        }
+        
+        function processExit() {
+            if (exitManagement) {
+                exitManagement.processExit();
+            } else {
+                console.error('ExitManagement not initialized');
+            }
+        }
+        
+        function closeFeeModal() {
+            if (exitManagement) {
+                exitManagement.closeFeeModal();
+            } else {
+                console.error('ExitManagement not initialized');
+            }
+        }
+        
+        function logout() {
+            console.log('Logout clicked');
+            window.location.href = '/auth.html';
+        }
+    </script>
 
 
 </body>
