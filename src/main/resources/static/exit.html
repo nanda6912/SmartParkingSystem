@@ -36,27 +36,45 @@
 
         .main-container {
 
-
-
             display: flex;
-
-
 
             min-height: 100vh;
 
+            gap: var(--space-6);
 
+            padding: var(--space-6);
 
         }
 
 
 
-        
+        .left-section {
+
+            flex: 1;
+
+            min-width: 0;
+
+        }
+
+
+
+        .right-section {
+
+            flex: 1;
+
+            min-width: 0;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: var(--space-6);
+
+        }
 
 
 
         .content-area {
-
-
 
             flex: 1;
 
@@ -638,28 +656,153 @@
 
 
 
+
+
+        .revenue-block {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            text-align: center;
+            margin-bottom: var(--space-6);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .revenue-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            opacity: 0.9;
+        }
+
+        .revenue-amount {
+            font-size: var(--font-size-4xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+        }
+
+        .revenue-subtitle {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+        }
+
+        .released-vehicles {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .released-vehicles h3 {
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+        }
+
+        .vehicle-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            transition: var(--transition-base);
+        }
+
+        .vehicle-item:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+            padding-bottom: var(--space-2);
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .vehicle-number {
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-size: var(--font-size-lg);
+        }
+
+        .vehicle-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .vehicle-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+            font-size: var(--font-size-sm);
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-xs);
+            margin-bottom: var(--space-1);
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .fare-amount {
+            color: var(--accent-success);
+            font-weight: 700;
+            font-size: var(--font-size-lg);
+        }
+
+        .active-bookings-inline {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            margin-top: var(--space-3);
+        }
+
+        .active-bookings-inline h4 {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+
+        .booking-slot {
+            display: inline-block;
+            background: var(--accent-primary);
+            color: white;
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            margin-right: var(--space-2);
+            margin-bottom: var(--space-1);
+        }
+
         
 
 
 
         @media (max-width: 768px) {
-
-
-
-            .stats-grid {
-
-
-
-                grid-template-columns: 1fr;
-
-
-
+            .main-container {
+                flex-direction: column;
             }
 
-
-
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
-
 
 
     </style>
@@ -755,123 +898,37 @@
 
 
     <div class="main-container">
-
-
-
-        <!-- Main Content Area -->
-
-
-
-        <main class="main-content-full">
-
-
-
-            <!-- Page Header -->
-
-
-
-            <div class="page-header">
-
-
-
-                <h1 class="page-title">Vehicle Exit Management</h1>
-
-
-
-                <p class="page-subtitle">Process vehicle exits and calculate parking fees</p>
-
-
-
-                <div style="margin-top: var(--space-4);">
-
-
-
-                    <button onclick="logout()" class="btn btn-primary">🚪 Logout</button>
-
-
-
+        
+        <!-- Left Section: Exit Page -->
+        <div class="left-section">
+            <main class="main-content-full">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1 class="page-title">Vehicle Exit Management</h1>
+                    <p class="page-subtitle">Process vehicle exits and calculate parking fees</p>
+                    <div style="margin-top: var(--space-4);">
+                        <button onclick="logout()" class="btn btn-primary">🚪 Logout</button>
+                    </div>
                 </div>
 
-
-
-            </div>
-
-
-
-
-
-
-
-            <!-- Statistics Grid -->
-
-
-
-            <div class="stats-grid">
-
-
-
-                <div class="stat-card">
-
-
-
-                    <div class="stat-value" id="todayExits">0</div>
-
-
-
-                    <div class="stat-label">Today's Exits</div>
-
-
-
+                <!-- Statistics Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="todayExits">0</div>
+                        <div class="stat-label">Today's Exits</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeBookings">0</div>
+                        <div class="stat-label">Active Bookings</div>
+                    </div>
                 </div>
 
-
-
-                <div class="stat-card">
-
-
-
-                    <div class="stat-value" id="activeBookings">0</div>
-
-
-
-                    <div class="stat-label">Active Bookings</div>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-
-
-
-            <!-- Active Bookings Table -->
-
-
-
-            <div class="table-container">
-
-
-
-                <div class="table-header">
-
-
-
-                    <h2 class="table-title">🅿️ Active Bookings</h2>
-
-
-
-                    <button class="refresh-btn" onclick="loadActiveBookings()">🔄 Refresh</button>
-
-
-
-                </div>
-
-
+                <!-- Active Bookings Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">🅿️ Active Bookings</h2>
+                        <button class="refresh-btn" onclick="loadActiveBookings()">🔄 Refresh</button>
+                    </div>
 
                 <div id="activeBookingsContent">
 
@@ -894,9 +951,28 @@
 
 
     </div>
-
-
-
+        
+        <!-- Right Section: Revenue and Released Vehicles -->
+        <div class="right-section">
+            <!-- Total Revenue Block -->
+            <div class="revenue-block">
+                <div class="revenue-title">💰 Today's Total Revenue</div>
+                <div class="revenue-amount" id="totalRevenue">₹0</div>
+                <div class="revenue-subtitle">From vehicle exits</div>
+            </div>
+            
+            <!-- Released Vehicles Section -->
+            <div class="released-vehicles">
+                <h3>🚗 Released Vehicles</h3>
+                <div id="releasedVehiclesList">
+                    <!-- Released vehicles will be populated here -->
+                    <div class="empty-state">
+                        <div class="empty-state-title">No vehicles released yet today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 
@@ -1410,21 +1486,80 @@
 
 
             updateStatistics(stats) {
-
-
-
                 document.getElementById('todayExits').textContent = stats.todayExits || 0;
-
-
-
                 document.getElementById('activeBookings').textContent = stats.activeBookings || 0;
-
-
-
+                
+                // Update total revenue
+                const totalRevenue = stats.totalRevenue || 0;
+                document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
+                
+                // Update released vehicles list
+                this.updateReleasedVehicles(stats.todayExitsData || []);
             }
-
-
-
+            
+            updateReleasedVehicles(exitsData) {
+                const container = document.getElementById('releasedVehiclesList');
+                
+                if (!exitsData || exitsData.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-title">No vehicles released yet today</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const vehiclesHtml = exitsData.map(exit => `
+                    <div class="vehicle-item">
+                        <div class="vehicle-header">
+                            <div class="vehicle-number">${exit.vehicleNumber || 'N/A'}</div>
+                            <div class="vehicle-time">${this.formatTime(exit.exitTime)}</div>
+                        </div>
+                        <div class="vehicle-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Entry Time</div>
+                                <div class="detail-value">${this.formatTime(exit.entryTime)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Slot Number</div>
+                                <div class="detail-value">${exit.slotNumber || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Duration</div>
+                                <div class="detail-value">${exit.duration || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Fare Charged</div>
+                                <div class="detail-value fare-amount">₹${exit.totalFee || 0}</div>
+                            </div>
+                        </div>
+                        ${exit.activeBookings && exit.activeBookings.length > 0 ? `
+                            <div class="active-bookings-inline">
+                                <h4>Active Bookings Slot:</h4>
+                                ${exit.activeBookings.map(booking => `
+                                    <span class="booking-slot">${booking.slotNumber || 'N/A'}</span>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+                
+                container.innerHTML = vehiclesHtml;
+            }
+            
+            formatTime(timeString) {
+                if (!timeString) return 'N/A';
+                try {
+                    const date = new Date(timeString);
+                    return date.toLocaleTimeString('en-IN', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                } catch (error) {
+                    return timeString;
+                }
+            }
 
 
 
