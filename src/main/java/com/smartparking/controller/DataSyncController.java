@@ -83,8 +83,9 @@ public class DataSyncController {
                 syncError = "Data synchronization failed";
             }
             
-            // Return combined response
+            // Return combined response with success flag
             Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", true);
             response.put("exitDetails", exitDetails);
             response.put("syncStatus", syncStatus);
             response.put("syncError", syncError);
@@ -95,12 +96,14 @@ public class DataSyncController {
         } catch (IllegalArgumentException e) {
             log.warn("Invalid request for bookingId {}: {}", bookingId, e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
                 "error", "Invalid request",
                 "message", "Invalid booking ID or request parameters"
             ));
         } catch (Exception e) {
             log.error("Failed to process exit for bookingId {}", bookingId, e);
             return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
                 "error", "Failed to process exit"
             ));
         }
