@@ -247,9 +247,14 @@ public class DataSyncService {
         
         bookingMap.put("vehicleType", booking.getVehicleType() != null ? booking.getVehicleType().toString() : "UNKNOWN");
         
-        // Get slot number from ParkingSlot entity
-        String slotNumber = (booking.getParkingSlot() != null) ? String.valueOf(booking.getParkingSlot().getSlotNumber()) : "N/A";
-        bookingMap.put("slotNumber", slotNumber);
+        // Get slot number and floor from ParkingSlot entity
+        if (booking.getParkingSlot() != null) {
+            bookingMap.put("slotNumber", String.valueOf(booking.getParkingSlot().getSlotNumber()));
+            bookingMap.put("floor", booking.getParkingSlot().getFloor());
+        } else {
+            bookingMap.put("slotNumber", "N/A");
+            bookingMap.put("floor", null);
+        }
         
         bookingMap.put("entryTime", booking.getBookingTime());
         bookingMap.put("exitTime", booking.getExitTime());

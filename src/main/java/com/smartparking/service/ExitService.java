@@ -84,6 +84,7 @@ public class ExitService {
             feeDetails.put("entryTime", booking.getBookingTime().format(FORMATTER));
             feeDetails.put("exitTime", now.format(FORMATTER));
             feeDetails.put("totalMinutes", totalMinutes);
+            feeDetails.put("duration", formatDuration(totalMinutes)); // Add human-readable duration
             feeDetails.put("hoursCharged", hours);
             feeDetails.put("hourlyRate", HOURLY_RATE);
             feeDetails.put("totalFee", fee);
