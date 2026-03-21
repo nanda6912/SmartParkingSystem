@@ -2041,27 +2041,13 @@
                 
 
 
-                
 
-
-                
-
-                if (!this.currentBookingId) 
-
-
-
-                    
-
-
+                // Check if currentBookingId is set
+                if (!this.currentBookingId) {
+                    console.error('No currentBookingId set, cannot notify other pages');
                     return;
-
-
-
                 }
 
-
-
-                
 
                 // Prevent multiple notifications for the same exit
 
@@ -2336,7 +2322,7 @@
                 }
                 
                 // Single localStorage update (no multiple setTimeouts)
-                localStorage.setItem('parkingPageUpdate', JSON.stringify(message));
+                localStorage.setItem('adminPageUpdate', JSON.stringify(message));
                 localStorage.setItem('latestExitData', JSON.stringify(exitData));
                 
                 console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
