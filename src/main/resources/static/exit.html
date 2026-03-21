@@ -601,16 +601,22 @@
                     });
                     
                     // Poll localStorage as additional fallback
-                    setInterval(() => {
+                    this.bookingPollInterval = setInterval(() => {
                         const lastBooking = localStorage.getItem('newBooking');
                         if (lastBooking) {
-                            const bookingData = JSON.parse(lastBooking);
-                            const now = Date.now();
-                            if (now - bookingData.timestamp < 5000) { // Within last 5 seconds
-                                console.log('Recent booking detected via localStorage polling');
-                                this.loadActiveBookings();
-                                this.loadStatistics();
-                                localStorage.removeItem('newBooking'); // Clear to avoid reprocessing
+                            try {
+                                const bookingData = JSON.parse(lastBooking);
+                                const now = Date.now();
+                                if (now - bookingData.timestamp < 5000) { // Within last 5 seconds
+                                    console.log('Recent booking detected via localStorage polling');
+                                    this.loadActiveBookings();
+                                    this.loadStatistics();
+                                    localStorage.removeItem('newBooking'); // Clear to avoid reprocessing
+                                }
+                            } catch (error) {
+                                console.warn('Malformed JSON in localStorage newBooking:', error);
+                                // Remove malformed data to prevent repeated parsing errors
+                                localStorage.removeItem('newBooking');
                             }
                         }
                     }, 2000);
@@ -620,8 +626,14 @@
 
 
 
-
-
+            // Cleanup method to clear intervals when page is unloaded
+            cleanup() {
+                if (this.bookingPollInterval) {
+                    clearInterval(this.bookingPollInterval);
+                    this.bookingPollInterval = null;
+                    console.log('Booking polling interval cleared');
+                }
+            }
 
             async loadActiveBookings() {
                 console.log('=== loadActiveBookings called ===');
@@ -667,12 +679,6 @@
                     this.hideProgressBar();
                 }
             }
-
-
-
-
-
-
 
             async loadStatistics() {
                 try {
@@ -2358,6 +2364,14 @@
             console.log('DOM loaded, initializing ExitManagement...');
             exitManagement = new ExitManagement();
             console.log('ExitManagement initialized');
+        });
+        
+        // Cleanup when page is unloaded
+        window.addEventListener('beforeunload', function() {
+            if (exitManagement) {
+                console.log('Page unloading, cleaning up ExitManagement...');
+                exitManagement.cleanup();
+            }
         });
         
         // Global functions for onclick handlers
