@@ -505,94 +505,30 @@
             </div>
         </div>
     </div>
-
-
-
-
     <!-- Modal Overlay -->
-
-
-
     <div class="modal-overlay" id="feeModal">
-
-
-
         <div class="modal">
-
-
-
             <div class="modal-header">
-
-
-
                 <h2 class="modal-title">Parking Fee Calculation</h2>
-
-
-
                 <button class="modal-close" onclick="closeFeeModal()">&times;</button>
-
-
-
             </div>
-
-
-
             <div class="modal-body" id="feeModalBody">
-
-
-
                 <!-- Fee details will be populated here -->
-
-
-
             </div>
-
-
-
             <div class="modal-footer">
-
-
-
                 <button type="button" class="btn btn-secondary" onclick="closeFeeModal()">Cancel</button>
-
-
-
                 <button type="button" class="btn btn-primary" id="processExitBtn" onclick="processExit()">Process Exit</button>
-
-
-
             </div>
-
-
-
         </div>
-
-
-
     </div>
 
 
 
 
-
-
-
     <!-- Notification -->
-
-
-
     <div class="notification" id="notification"></div>
 
-
-
-
-
-
-
     <script>
-
-
-
         class ExitManagement {
 
 
@@ -614,41 +550,71 @@
 
 
 
-
-
-
             init() {
-
-
-
                 this.loadActiveBookings();
-
-
-
                 this.loadStatistics();
-
-
-
+                
+                // Setup real-time booking updates
+                this.setupBookingUpdates();
+                
                 // Auto-refresh every 30 seconds
-
-
-
                 setInterval(() => {
-
-
-
                     this.loadActiveBookings();
-
-
-
                     this.loadStatistics();
-
-
-
                 }, 30000);
-
-
-
+            }
+            
+            setupBookingUpdates() {
+                // Listen for booking updates from other pages
+                try {
+                    const channel = new BroadcastChannel('parking_updates');
+                    channel.onmessage = (event) => {
+                        const message = event.data;
+                        console.log('Received booking update:', message);
+                        
+                        if (message.type === 'new_booking' || message.type === 'booking_update') {
+                            // Refresh bookings when a new booking is made
+                            console.log('New booking detected, refreshing active bookings...');
+                            this.loadActiveBookings();
+                            this.loadStatistics();
+                            
+                            // Show notification for new booking
+                            if (message.type === 'new_booking' && message.data) {
+                                this.showNotification(
+                                    `New booking: ${message.data.bookingCode || 'Vehicle ' + message.data.vehicleNumber}`, 
+                                    'info'
+                                );
+                            }
+                        }
+                    };
+                    console.log('Booking updates listener initialized');
+                } catch (error) {
+                    console.log('BroadcastChannel not supported, falling back to localStorage polling');
+                    
+                    // Fallback: Listen for localStorage changes
+                    window.addEventListener('storage', (event) => {
+                        if (event.key === 'newBooking' || event.key === 'bookingUpdate') {
+                            console.log('New booking detected via localStorage, refreshing...');
+                            this.loadActiveBookings();
+                            this.loadStatistics();
+                        }
+                    });
+                    
+                    // Poll localStorage as additional fallback
+                    setInterval(() => {
+                        const lastBooking = localStorage.getItem('newBooking');
+                        if (lastBooking) {
+                            const bookingData = JSON.parse(lastBooking);
+                            const now = Date.now();
+                            if (now - bookingData.timestamp < 5000) { // Within last 5 seconds
+                                console.log('Recent booking detected via localStorage polling');
+                                this.loadActiveBookings();
+                                this.loadStatistics();
+                                localStorage.removeItem('newBooking'); // Clear to avoid reprocessing
+                            }
+                        }
+                    }, 2000);
+                }
             }
 
 

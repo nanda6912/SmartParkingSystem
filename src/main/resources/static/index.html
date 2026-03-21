@@ -2241,37 +2241,16 @@
 
 
                         this.closeBookingForm();
-
-
-
                         
-
-
-
+                        // Notify exit page about new booking
+                        this.notifyExitPage(result);
+                        
                         // Reload slots to show updated status
-
-
-
                         try {
-
-
-
                             await this.loadParkingSlots();
-
-
-
                         } catch (loadError) {
-
-
-
                             console.warn('Error reloading slots after booking:', loadError);
-
-
-
                             // Don't show error to user since booking was successful
-
-
-
                         }
 
 
@@ -2336,6 +2315,56 @@
 
 
 
+            }
+
+
+
+
+
+
+
+            notifyExitPage(bookingResult) {
+                // Send notification to exit page about new booking
+                try {
+                    const message = {
+                        type: 'new_booking',
+                        timestamp: Date.now(),
+                        data: {
+                            bookingCode: bookingResult.bookingCode,
+                            vehicleNumber: bookingResult.vehicleNumber,
+                            customerName: bookingResult.customerName,
+                            slotNumber: bookingResult.slotNumber,
+                            entryTime: bookingResult.entryTime
+                        }
+                    };
+                    
+                    // Use BroadcastChannel for real-time communication
+                    const channel = new BroadcastChannel('parking_updates');
+                    channel.postMessage(message);
+                    channel.close();
+                    console.log('Notified exit page about new booking:', message);
+                    
+                    // Also set localStorage as fallback
+                    localStorage.setItem('newBooking', JSON.stringify({
+                        ...message,
+                        timestamp: Date.now()
+                    }));
+                    
+                } catch (error) {
+                    console.log('BroadcastChannel not supported, using localStorage only');
+                    // Fallback to localStorage only
+                    localStorage.setItem('newBooking', JSON.stringify({
+                        type: 'new_booking',
+                        timestamp: Date.now(),
+                        data: {
+                            bookingCode: bookingResult.bookingCode,
+                            vehicleNumber: bookingResult.vehicleNumber,
+                            customerName: bookingResult.customerName,
+                            slotNumber: bookingResult.slotNumber,
+                            entryTime: bookingResult.entryTime
+                        }
+                    }));
+                }
             }
 
 
