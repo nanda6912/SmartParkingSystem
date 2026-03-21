@@ -63,13 +63,6 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        
-        <!-- H2 Database for development -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>runtime</scope>
-        </dependency>
 
         <!-- JWT -->
         <dependency>
@@ -129,6 +122,31 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- Development profile with H2 database -->
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        
+        <!-- Production profile without H2 database -->
+        <profile>
+            <id>prod</id>
+            <dependencies>
+                <!-- PostgreSQL is already in main dependencies -->
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
