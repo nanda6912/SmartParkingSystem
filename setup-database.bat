@@ -11,12 +11,13 @@ IF NOT DEFINED PGPASSWORD (
     
     REM Use PowerShell Read-Host with AsSecureString for secure password input
     REM This approach prevents echo and handles special characters correctly
-    FOR /F "usebackq delims=" %%P IN (`powershell -Command "$password = Read-Host -AsSecureString 'Enter PostgreSQL password for postgres user: '; $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password); [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)"`) DO (
+    REM Uses try/finally to ensure BSTR is properly freed after conversion
+    FOR /F "usebackq delims=" %%P IN (`powershell -Command "try { $password = Read-Host -AsSecureString 'Enter PostgreSQL password for postgres user: '; $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password); $plainText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR); Write-Output $plainText } finally { if ($BSTR) { [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR) } }"`) DO (
         SET PGPASSWORD=%%P
     )
     
-    IF NOT DEFINED PGPASSWORD (
-        echo ERROR: Failed to read password securely.
+    IF NOT DEFINED PGPASSWORD OR "%PGPASSWORD%"=="" (
+        echo ERROR: Failed to read password securely or password is empty.
         echo Please set PGPASSWORD environment variable manually.
         pause
         exit /b 1
