@@ -52,14 +52,6 @@ public class DataInitializationService implements CommandLineRunner {
     
     private void initializeUsers() {
         if (userRepository.count() == 0) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole(UserRole.ADMIN);
-            admin.setFullName("System Administrator");
-            admin.setEmail("admin@smartparking.com");
-            admin.setIsActive(true);
-            
             User staff = new User();
             staff.setUsername("staff");
             staff.setPassword(passwordEncoder.encode("staff123"));
@@ -68,11 +60,9 @@ public class DataInitializationService implements CommandLineRunner {
             staff.setEmail("staff@smartparking.com");
             staff.setIsActive(true);
             
-            userRepository.save(admin);
             userRepository.save(staff);
             
             System.out.println("Initialized default users:");
-            System.out.println("Admin - Username: admin, Password: admin123");
             System.out.println("Staff - Username: staff, Password: staff123");
         }
     }

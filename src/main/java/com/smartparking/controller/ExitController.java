@@ -267,47 +267,6 @@ public class ExitController {
         }
     }
     
-    /**
-     * Get today's statistics for admin dashboard
-     */
-    @GetMapping("/admin/today-stats")
-    public ResponseEntity<Map<String, Object>> getTodayStatsForAdmin() {
-        try {
-            LocalDate today = LocalDate.now();
-            
-            // Get all bookings
-            List<Booking> allBookings = exitService.getAllBookings();
-            
-            // Filter today's exits
-            List<Booking> todayExits = allBookings.stream()
-                    .filter(booking -> booking.getExitTime() != null)
-                    .filter(booking -> booking.getExitTime().toLocalDate().equals(today))
-                    .collect(Collectors.toList());
-            
-            // Get active bookings
-            List<Booking> activeBookings = allBookings.stream()
-                    .filter(booking -> booking.getIsActive() != null && booking.getIsActive())
-                    .collect(Collectors.toList());
-            
-            // Calculate total revenue for today
-            double todayRevenue = todayExits.stream()
-                    .mapToDouble(booking -> booking.getParkingFee() != null ? booking.getParkingFee() : 0.0)
-                    .sum();
-            
-            // Prepare response
-            Map<String, Object> stats = new java.util.HashMap<>();
-            stats.put("date", today.toString());
-            stats.put("totalExits", todayExits.size());
-            stats.put("totalRevenue", todayRevenue);
-            stats.put("activeBookings", activeBookings.size());
-            
-            return ResponseEntity.ok(stats);
-            
-        } catch (Exception e) {
-            System.err.println("Error fetching today's stats: " + e.getMessage());
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch today's statistics"));
-        }
-    }
     @GetMapping("/debug/vehicle/{vehicleNumber}")
     public ResponseEntity<String> checkVehicleStatus(@PathVariable String vehicleNumber) {
         try {

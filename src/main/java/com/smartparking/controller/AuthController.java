@@ -92,8 +92,6 @@ public class AuthController {
         switch (role.toLowerCase()) {
             case "exit":
                 return "exit".equals(username) && "exit123".equals(password);
-            case "admin":
-                return "admin".equals(username) && "admin123".equals(password);
             case "operator":
                 return "operator".equals(username) && "operator123".equals(password);
             default:
@@ -108,12 +106,10 @@ public class AuthController {
         switch (username.toLowerCase()) {
             case "exit":
                 return "Exit Operator";
-            case "admin":
-                return "Administrator";
             case "operator":
                 return "Parking Operator";
             default:
-                return username.toUpperCase();
+                return "Unknown User";
         }
     }
     
@@ -124,8 +120,6 @@ public class AuthController {
         switch (role.toLowerCase()) {
             case "exit":
                 return "/exit.html";
-            case "admin":
-                return "/admin.html";  // Note: admin page was removed, but keeping for compatibility
             case "operator":
                 return "/booking.html";
             default:

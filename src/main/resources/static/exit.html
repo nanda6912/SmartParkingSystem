@@ -2060,144 +2060,327 @@
 
 
 
-            notifyAdminPageUpdate() {
+            notifyAdminPageUpdate() 
+
+
 
                 console.log('=== notifyAdminPageUpdate called ===');
 
+
+
                 console.log('Current booking ID:', this.currentBookingId);
+
+
 
                 console.log('Current booking code:', this.currentBookingCode);
 
+
+
                 
 
-                if (!this.currentBookingId) {
+                if (!this.currentBookingId) 
+
+
 
                     console.error('No currentBookingId set, cannot notify admin page');
 
+
+
                     return;
 
+
+
                 }
+
+
 
                 
 
                 // Prevent multiple notifications for the same exit
 
+
+
                 const notificationKey = `exit_notified_${this.currentBookingId}`;
 
                 const alreadyNotified = sessionStorage.getItem(notificationKey);
 
+
+
                 
 
-                if (alreadyNotified) {
+                if (alreadyNotified) 
+
+
 
                     console.log('=== EXIT ALREADY NOTIFIED, SKIPPING DUPLICATE NOTIFICATION ===');
 
+
+
                     return;
 
+
+
                 }
+
+
 
                 
 
                 // Get the real exit data that was already stored
 
+
+
                 const storedExitData = localStorage.getItem('latestExitData');
+
+
 
                 let exitData;
 
+
+
                 
 
-                if (storedExitData) {
+                if (storedExitData) 
 
-                    try {
+
+
+                    try 
+
+
 
                         exitData = JSON.parse(storedExitData);
 
+
+
                         console.log('Using stored real exit data:', exitData);
 
-                    } catch (error) {
+
+
+                    catch (error) 
+
+
 
                         console.error('Error parsing stored exit data:', error);
 
+
+
                         exitData = null;
+
+
 
                     }
 
+
+
                 }
+
+
 
                 
 
                 // Create a single, clean notification message
 
-                const message = {
+
+
+                const message = 
+
+
 
                     type: 'vehicle_exit',
 
+
+
                     timestamp: Date.now(),
+
+
 
                     bookingId: this.currentBookingId,
 
-                    data: {
+
+
+                    data: 
+
+
 
                         bookingId: this.currentBookingId,
 
+
+
                         bookingCode: this.currentBookingCode || 'N/A',
+
+
 
                         exitData: exitData
 
+
+
                     }
 
+
+
                 };
+
+
 
                 
 
                 console.log('=== SENDING CLEAN NOTIFICATION ===');
 
+
+
                 console.log('Notification data:', message);
+
+
 
                 
 
                 // Use only one reliable method: BroadcastChannel + localStorage
 
-                try {
+
+
+                try 
+
+
 
                     const channel = new BroadcastChannel('parking_updates');
 
+
+
                     channel.postMessage(message);
+
+
 
                     channel.close();
 
+
+
                     console.log('BroadcastChannel message sent');
 
-                } catch (error) {
+
+
+                catch (error) 
+
+
 
                     console.log('BroadcastChannel not supported:', error);
 
+
+
                 }
+
+
 
                 
 
                 // Single localStorage update (no multiple setTimeouts)
 
+
+
                 localStorage.setItem('adminPageUpdate', JSON.stringify(message));
 
+
+
                 localStorage.setItem('latestExitData', JSON.stringify(exitData));
+
+
 
                 
 
                 console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
 
+
+
                 
 
                 // Clear the notification flag after a delay
 
-                setTimeout(() => {
+
+
+                setTimeout(() => 
+
+
 
                     sessionStorage.removeItem(notificationKey);
 
+
+
                 }, 5000);
+
+
 
             }
 
+
+
+            notifyOtherPagesUpdate() {
+                console.log('=== notifyOtherPagesUpdate called ===');
+                console.log('Current booking ID:', this.currentBookingId);
+                console.log('Current booking code:', this.currentBookingCode);
+                
+                if (!this.currentBookingId) {
+                    console.error('No currentBookingId set, cannot notify other pages');
+                    return;
+                }
+                
+                // Prevent multiple notifications for the same exit
+                const notificationKey = `exit_notified_${this.currentBookingId}`;
+                const alreadyNotified = sessionStorage.getItem(notificationKey);
+                
+                if (alreadyNotified) {
+                    console.log('=== EXIT ALREADY NOTIFIED, SKIPPING DUPLICATE NOTIFICATION ===');
+                    return;
+                }
+                
+                // Get the real exit data that was already stored
+                const storedExitData = localStorage.getItem('latestExitData');
+                let exitData;
+                
+                if (storedExitData) {
+                    try {
+                        exitData = JSON.parse(storedExitData);
+                        console.log('Using stored real exit data:', exitData);
+                    } catch (error) {
+                        console.error('Error parsing stored exit data:', error);
+                        exitData = null;
+                    }
+                }
+                
+                // Create a single, clean notification message
+                const message = {
+                    type: 'vehicle_exit',
+                    timestamp: Date.now(),
+                    bookingId: this.currentBookingId,
+                    data: {
+                        bookingId: this.currentBookingId,
+                        bookingCode: this.currentBookingCode || 'N/A',
+                        exitData: exitData
+                    }
+                };
+                
+                console.log('=== SENDING CLEAN NOTIFICATION ===');
+                console.log('Notification data:', message);
+                
+                // Use only one reliable method: BroadcastChannel + localStorage
+                try {
+                    const channel = new BroadcastChannel('parking_updates');
+                    channel.postMessage(message);
+                    channel.close();
+                    console.log('BroadcastChannel message sent');
+                } catch (error) {
+                    console.log('BroadcastChannel not supported:', error);
+                }
+                
+                // Single localStorage update (no multiple setTimeouts)
+                localStorage.setItem('parkingPageUpdate', JSON.stringify(message));
+                localStorage.setItem('latestExitData', JSON.stringify(exitData));
+                
+                console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
+                
+                // Clear the notification flag after a delay
+                setTimeout(() => {
+                    sessionStorage.removeItem(notificationKey);
+                }, 5000);
+            }
 
 
         }
