@@ -4,7 +4,23 @@ echo Setting up PostgreSQL database...
 REM Check if PGPASSWORD environment variable is set
 IF NOT DEFINED PGPASSWORD (
     echo PostgreSQL password not set in environment.
-    set /p PGPASSWORD=Enter PostgreSQL password for postgres user: 
+    echo.
+    echo Using secure password input method...
+    echo Note: This method handles special characters securely.
+    echo.
+    
+    REM Use PowerShell Read-Host with AsSecureString for secure password input
+    REM This approach prevents echo and handles special characters correctly
+    FOR /F "usebackq delims=" %%P IN (`powershell -Command "$password = Read-Host -AsSecureString 'Enter PostgreSQL password for postgres user: '; $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password); [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)"`) DO (
+        SET PGPASSWORD=%%P
+    )
+    
+    IF NOT DEFINED PGPASSWORD (
+        echo ERROR: Failed to read password securely.
+        echo Please set PGPASSWORD environment variable manually.
+        pause
+        exit /b 1
+    )
 )
 
 REM Use the environment variable (either existing or user-provided)
