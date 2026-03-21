@@ -557,8 +557,8 @@
                 // Setup real-time booking updates
                 this.setupBookingUpdates();
                 
-                // Auto-refresh every 30 seconds
-                setInterval(() => {
+                // Auto-refresh every 30 seconds - save reference for cleanup
+                this.autoRefreshInterval = setInterval(() => {
                     this.loadActiveBookings();
                     this.loadStatistics();
                 }, 30000);
@@ -591,14 +591,15 @@
                 } catch (error) {
                     console.log('BroadcastChannel not supported, falling back to localStorage polling');
                     
-                    // Fallback: Listen for localStorage changes
-                    window.addEventListener('storage', (event) => {
+                    // Fallback: Listen for localStorage changes - save handler reference for cleanup
+                    this.onStorageChanged = (event) => {
                         if (event.key === 'newBooking' || event.key === 'bookingUpdate') {
                             console.log('New booking detected via localStorage, refreshing...');
                             this.loadActiveBookings();
                             this.loadStatistics();
                         }
-                    });
+                    };
+                    window.addEventListener('storage', this.onStorageChanged);
                     
                     // Poll localStorage as additional fallback
                     this.bookingPollInterval = setInterval(() => {
@@ -628,10 +629,25 @@
 
             // Cleanup method to clear intervals when page is unloaded
             cleanup() {
+                // Clear auto-refresh interval
+                if (this.autoRefreshInterval) {
+                    clearInterval(this.autoRefreshInterval);
+                    this.autoRefreshInterval = null;
+                    console.log('Auto refresh interval cleared');
+                }
+                
+                // Clear booking poll interval
                 if (this.bookingPollInterval) {
                     clearInterval(this.bookingPollInterval);
                     this.bookingPollInterval = null;
                     console.log('Booking polling interval cleared');
+                }
+                
+                // Remove storage event listener
+                if (this.onStorageChanged) {
+                    window.removeEventListener('storage', this.onStorageChanged);
+                    this.onStorageChanged = null;
+                    console.log('Storage event listener removed');
                 }
             }
 
