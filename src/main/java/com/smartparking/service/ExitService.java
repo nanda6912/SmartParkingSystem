@@ -88,8 +88,19 @@ public class ExitService {
             feeDetails.put("hoursCharged", hours);
             feeDetails.put("hourlyRate", HOURLY_RATE);
             feeDetails.put("totalFee", fee);
-            feeDetails.put("slotNumber", booking.getParkingSlot().getSlotNumber());
-            feeDetails.put("floor", booking.getParkingSlot().getFloor());
+            
+            // Add null safety check for parking slot
+            ParkingSlot slot = booking.getParkingSlot();
+            if (slot != null) {
+                feeDetails.put("slotId", slot.getSlotId());
+                feeDetails.put("slotNumber", slot.getSlotNumber());
+                feeDetails.put("floor", slot.getFloor());
+            } else {
+                feeDetails.put("slotId", "UNKNOWN");
+                feeDetails.put("slotNumber", 0);
+                feeDetails.put("floor", 0);
+                log.warn("Booking {} has no associated parking slot", bookingId);
+            }
             
             return feeDetails;
             
@@ -350,15 +361,25 @@ public class ExitService {
         String bookingIdentifier = booking.getBookingCode() != null ? 
             booking.getBookingCode() : String.valueOf(booking.getId());
         
+        // Add null safety check for parking slot
+        ParkingSlot slot = booking.getParkingSlot();
+        if (slot != null) {
+            dto.put("slotId", slot.getSlotId());
+            dto.put("slotNumber", slot.getSlotNumber());
+            dto.put("floor", slot.getFloor());
+        } else {
+            dto.put("slotId", "UNKNOWN");
+            dto.put("slotNumber", 0);
+            dto.put("floor", 0);
+            log.warn("Booking {} has no associated parking slot in convertToExitDTO", booking.getId());
+        }
+        
         dto.put("bookingId", booking.getId());
         dto.put("bookingCode", bookingIdentifier);
         dto.put("vehicleNumber", booking.getVehicleNumber());
         dto.put("customerName", booking.getCustomerName());
         dto.put("phoneNumber", booking.getPhoneNumber());
         dto.put("vehicleType", booking.getVehicleType());
-        dto.put("slotId", booking.getParkingSlot().getSlotId());
-        dto.put("slotNumber", booking.getParkingSlot().getSlotNumber());
-        dto.put("floor", booking.getParkingSlot().getFloor());
         dto.put("bookingTime", booking.getBookingTime().format(FORMATTER));
         dto.put("durationMinutes", Duration.between(booking.getBookingTime(), LocalDateTime.now()).toMinutes());
         

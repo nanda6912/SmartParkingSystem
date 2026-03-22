@@ -88,12 +88,15 @@ public class ParkingService {
             }
             
             slot.setStatus(SlotStatus.LOCKED);
-            slot.setLockUntil(LocalDateTime.now().plusMinutes(5)); // Increased from 2 to 5 minutes
+            slot.setLockUntil(LocalDateTime.now().plusMinutes(2)); // 2 minutes to match frontend timer
             parkingSlotRepository.save(slot);
             
             ParkingSlotDTO slotDTO = convertToDTO(slot);
             BookingResponseDTO response = new BookingResponseDTO("Slot locked successfully");
             response.setSlotId(slotId);
+            response.setSlotIdString(slotDTO.getSlotId()); // Add slotIdString for frontend display
+            response.setSlotNumber(slotDTO.getSlotNumber());
+            response.setFloor(slotDTO.getFloor());
             response.setSlotStatus(SlotStatus.LOCKED);
             
             return response;

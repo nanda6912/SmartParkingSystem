@@ -64,7 +64,7 @@ public class AuthController {
             }
             
             // Validate role matches
-            if (!user.getRole().name().equalsIgnoreCase(loginRequest.getRole())) {
+            if (loginRequest.getRole() == null || !user.getRole().name().equalsIgnoreCase(loginRequest.getRole())) {
                 log.warn("Authentication failed - role mismatch for user: {}. Expected: {}, Got: {}", 
                         loginRequest.getUsername(), user.getRole(), loginRequest.getRole());
                 Map<String, Object> response = new HashMap<>();
