@@ -4,19 +4,27 @@ A comprehensive full-stack parking management system built with Java 21, Spring 
 
 ## 🚀 Latest Features & Enhancements
 
-### ✨ Professional UI & Design System (NEW!)
-- **Cambria Font Family**: Professional typography across all pages
-- **Bold Headings**: Cambria Bold for all titles and headings
-- **Consistent Styling**: Normal Cambria for body text
-- **Modern Design System**: Unified CSS variables and components
-- **Responsive Layout**: Mobile-friendly interface with consistent styling
+### 🔐 Exit Page Authentication (NEW!)
+- **Client-side Authentication**: Simple credentials-based access control
+- **Session Management**: Uses sessionStorage for authentication state
+- **Logout Functionality**: Clear session and redirect to auth page
+- **View Booking Status**: Open booking page in view-only mode in new tab
 
-### 🎯 Advanced Admin Dashboard (NEW!)
+**Default Credentials:**
+- Username: `admin`
+- Password: `admin123`
+
+### ✨ Professional UI & Design System
+- **Modern Design System**: Unified CSS variables and components
+- **Responsive Layout**: Mobile-friendly interface
+- **Ghost Badges**: Subtle status indicators (Available, Booked, Locked)
+- **Skeleton Loaders**: Smooth loading experience
+
+### 🎯 Advanced Admin Dashboard
 - **Real-time Synchronization**: Instant updates after vehicle exits
 - **Complete Data Display**: Phone numbers, vehicle types, duration, hours charged
 - **Clean UI**: Removed duplicate refresh buttons for better UX
 - **Live Statistics**: Today's exits, revenue, and active bookings
-- **Professional Tables**: Clean, organized data presentation
 
 ### 🔧 Enhanced Exit Process (NEW!)
 - **Staff Confirmation Dialog**: Professional confirmation before vehicle release
@@ -150,16 +158,22 @@ cd SmartParkingSystem
 CREATE DATABASE smart_parking_db;
 ```
 
-3. **Build and run the application**
+3. **Run the application**
+
+Development mode (H2 database):
 ```bash
-mvn clean install
 mvn spring-boot:run
+```
+
+Production mode (PostgreSQL):
+```powershell
+mvn spring-boot:run "-Dspring.profiles.active=prod"
 ```
 
 4. **Access the application**
 - **Main Application**: http://localhost:8081/index.html
-- **API Base URL**: http://localhost:8081/api
 - **Exit Management**: http://localhost:8081/exit.html
+- **Authentication**: http://localhost:8081/auth.html
 
 ## 📡 API Endpoints
 
@@ -175,40 +189,25 @@ mvn spring-boot:run
 - `GET /api/exit/receipt/{bookingId}` - Download receipt by booking ID
 - `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
 
-### Receipt Downloads
-- `GET /receipt/download/{bookingCode}` - Download booking confirmation receipt
-- `GET /api/exit/receipt/{bookingId}` - Download exit receipt by ID
-- `GET /api/exit/receipt/by-code/{bookingCode}` - Download exit receipt by code
-- `GET /api/exit/calculate-fee/{bookingId}` - Calculate parking fee
-
-### Debug & Monitoring
-- `GET /api/exit/debug/bookings` - View all bookings for troubleshooting
-- `GET /api/exit/debug/vehicle/{vehicleNumber}` - Check vehicle booking status
-- `GET /api/receipt/download/{bookingCode}` - Download booking receipt (main page)
-
 ### Authentication
-- `POST /api/auth/login` - User authentication
+- `POST /api/auth/login` - User authentication (for admin)
 - `POST /api/auth/refresh` - Refresh JWT token
 
 ## 🔧 Configuration
 
-### Application Properties
-```properties
-# Enhanced Rate Limiting (Updated for better user experience)
-rate.limit.lock.requests=50      # 50 locks per hour
-rate.limit.book.requests=30      # 30 bookings per hour  
-rate.limit.view.requests=200     # 200 views per hour
-rate.limit.receipt.requests=50   # 50 receipts per hour
-rate.limit.general.requests=300  # 300 general requests per hour
+### Application Properties Files
+- `application.properties` - Development configuration (H2 database)
+- `application-prod.properties` - Production configuration (PostgreSQL)
 
-# Database Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/smart_parking_db
-spring.datasource.username=postgres
-spring.datasource.password=your_password
+### Environment Variables
+```bash
+# JWT Secret (generate with: openssl rand -base64 32)
+export JWT_SECRET="your-secret-key"
 
-# JWT Configuration
-jwt.secret=mySecretKey123456789012345678901234567890
-jwt.expiration=86400000
+# Database (optional - can use properties file)
+export DB_URL="jdbc:postgresql://localhost:5432/smart_parking_db"
+export DB_USERNAME="postgres"
+export DB_PASSWORD="your-password"
 ```
 
 ## 🐛 Troubleshooting
@@ -267,221 +266,103 @@ jwt.expiration=86400000
 - **Fixed Sync Issues**: Admin dashboard updates immediately after vehicle exit
 - **Fixed Duplicate Notifications**: Advanced deduplication prevents multiple updates
 
-## Default Users
+### Default Users
 
-The system automatically creates default users on first startup:
-
-### Admin User
+#### Exit Page
 - **Username**: admin
 - **Password**: admin123
-- **Role**: Administrator
 
-### Staff User
-- **Username**: staff
-- **Password**: staff123
-- **Role**: Staff
+#### Admin Dashboard (JWT)
+- **Username**: admin
+- **Password**: admin123
 
-## API Endpoints
+## Project Structure
+
+```
+SmartParkingSystem/
+├── src/
+│   ├── main/
+│   │   ├── java/com/smartparking/
+│   │   │   ├── controller/     # REST controllers
+│   │   │   ├── dto/           # Data transfer objects
+│   │   │   ├── entity/        # JPA entities (Booking, ParkingSlot, User)
+│   │   │   ├── enums/         # Enumerations
+│   │   │   ├── filter/        # Security filters
+│   │   │   ├── repository/    # Data repositories
+│   │   │   ├── scheduler/     # Scheduled tasks
+│   │   │   ├── security/      # Security configuration
+│   │   │   ├── service/       # Business logic
+│   │   │   └── config/        # Web configuration
+│   │   └── resources/
+│   │       ├── static/        # Frontend files
+│   │       │   ├── styles/     # CSS design system
+│   │       │   ├── auth.html   # Exit authentication
+│   │       │   ├── exit.html   # Exit management
+│   │       │   └── index.html  # Main booking page
+│   │       ├── application.properties         # PostgreSQL configuration
+│   └── test/                  # Test files
+├── pom.xml                    # Maven configuration
+├── setup-database.bat        # Database setup script
+├── .gitignore               # Git ignore rules
+└── README.md                # Project documentation
+```
+
+## Security Implementation
+
+### JWT Authentication
+- **Token-based authentication** using JSON Web Tokens (JWT)
+- **Token expiration**: 24 hours (configurable via `jwt.expiration`)
+- **Secret key**: Configured via environment variable `JWT_SECRET` or default in properties
+- **Algorithm**: HS256 for signing tokens
+
+### Implementation Details
+- **Filter**: `JwtAuthenticationFilter` - Intercepts requests and validates JWT tokens
+- **Entry Point**: `JwtAuthenticationEntryPoint` - Handles unauthorized access attempts
+- **Util**: `JwtUtil` - Token generation, validation, and extraction
+- **Security Config**: `SecurityConfig` - Configures security rules and filters
+
+### Protected Endpoints
+- `/api/admin/**` - Admin-only endpoints
+- `/api/staff/**` - Staff and Admin access
+- All API endpoints except public ones require authentication
 
 ### Public Endpoints
-- `GET /api/parking-slots` - Get all parking slots
-- `GET /api/parking-slots/floor/{floor}` - Get slots by floor
-- `POST /api/parking-slots/lock/{slotId}` - Lock a slot for 2 minutes
-- `POST /api/parking-slots/book` - Book a slot
+- `/api/parking-slots/**` - View parking slots (GET)
+- `/api/auth/login` - Login endpoint
+- `/` - Static resources
 
-### Authentication Required
-- `POST /api/auth/login` - User login
-- `GET /api/admin/dashboard` - Admin dashboard
-- `GET /api/staff/bookings` - View active bookings
-- `POST /api/exit/vehicle` - Release vehicle and calculate fees
+## Rate Limiting Implementation
 
-## Parking Slot Status
+### Token Bucket Algorithm
+Implements a token bucket algorithm for rate limiting with the following features:
 
-### Available (Green)
-- Slot is free for booking
-- Click to lock and start booking process
+### Configuration (requests per hour)
+| Endpoint Type | Limit | Purpose |
+|--------------|-------|---------|
+| Lock | 50 | Slot locking attempts |
+| Book | 30 | Booking confirmations |
+| View | 200 | Page views and slot queries |
+| Receipt | 50 | Receipt downloads |
+| General | 300 | All other requests |
 
-### Locked (Yellow)
-- Slot is temporarily locked (2 minutes)
-- Countdown timer shows remaining time
-- Automatically reverts to Available if not booked
+### Key Components
+- **RateLimitingFilter**: Servlet filter that intercepts all requests
+- **RateLimitingService**: Core service implementing token bucket logic
+- **RateLimitConfig**: Configuration properties for limits
+- **Cleanup**: Automatic cleanup of expired buckets every 5 minutes
 
-### Occupied (Red)
-- Slot is currently booked
-- Cannot be selected until vehicle exits
+### Features
+- **IP-based tracking**: Limits applied per client IP address
+- **Thread-safe**: Concurrent access handling
+- **Burst handling**: Allows short bursts while maintaining overall limits
+- **Automatic cleanup**: Removes inactive IP records to prevent memory leaks
 
-## Booking Process
-
-1. **Select Slot**: Click on an available (green) slot
-2. **Lock Slot**: System locks the slot for 2 minutes
-3. **Complete Form**: Fill in vehicle and customer details
-4. **Validation**: System validates all input fields
-5. **Confirm Booking**: Submit to complete the booking
-6. **Slot Occupied**: Slot status changes to Occupied
-
-## Input Validation Rules
-
-### Vehicle Number
-- Format: XX00XX0000 (e.g., MH12AB1234)
-- Must be uppercase
-- Unique across all bookings
-
-### Customer Name
-- Maximum 20 characters
-- Alphabets and spaces only
-- Required field
-
-### Phone Number
-- Exactly 10 digits
-- Numeric characters only
-- Required field
-
-### Vehicle Type
-- Car, Bike, SUV, Van
-- Required selection
-
-## Security Features
-
-### Authentication
-- JWT-based authentication
-- Role-based access control (Admin/Staff)
-- Secure password hashing with BCrypt
-
-### Rate Limiting
-- **Enhanced Token Bucket Algorithm**: IP-based throttling with user-friendly limits
-- **Multi-layer Protection**: Different limits per endpoint type (Lock: 50/hour, Book: 30/hour, View: 200/hour)
-- **User-Friendly Approach**: Eliminates "too many requests" warnings for normal usage
-- **Burst Handling**: Allows natural user behavior while preventing abuse
-- **Recent Updates**: 50x more bookings (3→30/hour), 10x more locks (5→50/hour)
-- **Thread-safe Implementation**: Concurrent access support with automatic cleanup
-- **Monitoring**: Real-time statistics and health check endpoints
-
-### Data Validation
-- Server-side validation with Bean Validation
-- SQL injection prevention
-- XSS protection
-
-## Concurrency Control
-
-### Database Locking
-- Pessimistic locking for slot operations
-- Prevents double booking scenarios
-- Row-level locking with JPA @Lock
-
-### Transaction Management
-- ACID compliance for all operations
-- Rollback on errors
-- Consistent data state
-
-## Scheduled Tasks
-
-### Lock Release
-- Runs every 30 seconds
-- Automatically releases expired locks
-- Updates slot status to Available
-
-## Error Handling
-
-### Frontend Validation
-- Real-time form validation
-- User-friendly error messages
-- Visual feedback for errors
-
-### Backend Validation
-- Comprehensive input validation
-- Proper HTTP status codes
-- Detailed error responses
-
-## Performance Features
-
-### Caching
-- Application-level caching
-- Reduced database queries
-- Improved response times
-
-### Auto-refresh
-- Frontend updates every 5 seconds
-- Real-time slot status
-- Efficient data loading
-
-## Future Enhancements
-
-### Planned Features
-- PDF receipt generation
-- Advanced admin dashboard
-- Revenue analytics
-- Mobile app support
-- Payment integration
-- Vehicle exit automation
-- Advanced reporting
-
-### Scalability
-- Microservices architecture
-- Load balancing
-- Database sharding
-- Caching strategies
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Error**
-   - Verify PostgreSQL is running
-   - Check connection credentials
-   - Ensure database exists
-
-2. **Port Already in Use**
-   - Change server.port in application.properties
-   - Kill existing process on port 8080
-
-3. **Maven Build Errors**
-   - Check Java version (requires Java 21)
-   - Update Maven dependencies
-   - Clean and rebuild project
-
-### Logs
-- Application logs available in console
-- Database query logging enabled
-- Security events logged
-
-## Development
-
-### Project Structure
+### Response Headers
 ```
-src/
-├── main/
-│   ├── java/com/smartparking/
-│   │   ├── controller/     # REST controllers (Parking, Exit, Auth, Receipt, etc.)
-│   │   ├── dto/           # Data transfer objects
-│   │   ├── entity/        # JPA entities
-│   │   ├── enums/         # Enumerations
-│   │   ├── filter/        # Security filters (Rate Limiting, JWT)
-│   │   ├── ratelimit/     # Rate limiting implementation
-│   │   ├── repository/    # Data repositories
-│   │   ├── scheduler/     # Scheduled tasks
-│   │   ├── security/      # Security configuration
-│   │   ├── service/       # Business logic
-│   │   └── config/       # Web configuration
-│   └── resources/
-│       ├── static/        # Frontend files (HTML, CSS, JS)
-│       │   ├── styles/    # CSS design system
-│       │   ├── admin.html # Admin dashboard
-│       │   ├── auth.html  # Authentication page
-│       │   ├── exit.html  # Exit management
-│       │   └── index.html # Main booking page
-│       └── application.properties
-├── test/                 # Test files
-├── pom.xml              # Maven configuration
-├── README.md            # Project documentation
-└── API_ANALYSIS.md      # API documentation
+X-RateLimit-Limit: 50
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 3600
 ```
-
-### Contributing
-1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Add tests
-5. Submit pull request
 
 ## License
 

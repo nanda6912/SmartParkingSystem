@@ -19,11 +19,11 @@
         .auth-container {
             background: var(--bg-secondary);
             border: 1px solid var(--border-primary);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-md);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             width: 100%;
-            max-width: 450px;
-            padding: var(--space-8);
+            max-width: 380px;
+            padding: var(--space-6);
         }
         
         .auth-header {
@@ -32,18 +32,17 @@
         }
         
         .page-title {
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
+            font-size: var(--font-size-xl);
+            font-weight: 600;
             color: var(--text-primary);
             margin-bottom: var(--space-2);
-            font-family: 'Cambria', serif;
-            font-weight: bold;
+            font-family: var(--font-family-primary);
         }
         
         .page-subtitle {
             color: var(--text-secondary);
-            font-size: var(--font-size-base);
-            font-family: 'Cambria', serif;
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family-primary);
         }
         
         .role-toggle {
@@ -206,16 +205,16 @@
             <div id="error" class="notification error" style="display: none;"></div>
             <div id="success" class="notification success" style="display: none;"></div>
 
-            <button type="submit" class="btn btn-primary">🚀 Authenticate & Access</button>
+            <button type="submit" class="btn btn-primary">Authenticate & Access</button>
         </form>
-
-        <div class="back-link">
-            <a href="/index.html">← Back to Booking</a>
-        </div>
     </div>
 
     <script>
-        let currentRole = 'exit';
+        // Exit page credentials - can be modified as needed
+        const EXIT_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin123'
+        };
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
@@ -227,40 +226,17 @@
                 window.location.href = '/exit.html';
                 return;
             }
-            
-            if (exitAuth) {
-                console.log('Exit user already authenticated, redirecting to exit.html');
-                window.location.href = '/exit.html';
-                return;
-            }
         });
-        
-        // Toggle role function
-        function toggleRole(role) {
-            currentRole = role;
-            
-            // Update button states
-            document.getElementById('exitRoleBtn').classList.toggle('active', role === 'exit');
-            
-            // Clear form
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('success').style.display = 'none';
-        }
         
         function handleAuth(event) {
             event.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
             // Clear previous messages
             document.getElementById('error').style.display = 'none';
             document.getElementById('success').style.display = 'none';
-            
-            // Debug logging (non-sensitive)
-            console.log('Auth attempt for role:', currentRole);
             
             // Validate inputs
             if (!username || !password) {
@@ -268,109 +244,45 @@
                 return;
             }
             
-            // Production authentication - server-side only
-            // DEMO AUTHENTICATION REMOVED FOR PRODUCTION
-            // Use auth-demo.html for development/demo purposes only
+            // Show loading state
+            showLoading();
             
-            // Developer convenience redirect - NOT a security control
-            // This window.location.hostname check is only for development convenience
-            // and can be bypassed. Do NOT rely on this for security decisions.
-            // All security controls must be implemented server-side.
-            if (typeof window !== 'undefined' && window.location && 
-                (window.location.hostname === 'localhost' || 
-                 window.location.hostname === '127.0.0.1' || 
-                 window.location.hostname === '::1' || 
-                 window.location.hostname === '[::1]')) {
-                // Development mode - implement proper authentication
-                performServerAuth(username, password, currentRole);
-                return;
-            }
-            
-            // Production mode - server-side authentication required
-            performServerAuth(username, password, currentRole);
-            return;
-            
-            // TODO: Implement server-side authentication
-            // 1. Send credentials to /api/auth/login endpoint
-            // 2. Receive JWT token or session cookie
-            // 3. Store token securely (HttpOnly cookie for session, secure storage for JWT)
-            // 4. Include token in all subsequent API requests
-            // 5. Implement token refresh mechanism
-            // 6. Add logout endpoint to invalidate session/token
-        }
-        
-        async function performServerAuth(username, password, role) {
-            try {
-                showLoading();
-                
-                // Server-side authentication (simple implementation)
-                const response = await fetch('http://localhost:8081/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
+            // Simulate authentication delay for UX
+            setTimeout(() => {
+                // Check credentials
+                if (username === EXIT_CREDENTIALS.username && password === EXIT_CREDENTIALS.password) {
+                    // Store authentication in sessionStorage
+                    sessionStorage.setItem('exitAuthenticated', 'true');
+                    sessionStorage.setItem('exitUser', JSON.stringify({
                         username: username,
-                        password: password,
-                        role: role
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(result => {
-                    if (result.success) {
-                        // Validate redirect URL for security
-                        const redirectUrl = result.redirectUrl;
-                        if (redirectUrl && (redirectUrl.startsWith('/') || redirectUrl.startsWith(window.location.origin))) {
-                            // Store session info consistently with sessionStorage
-                            sessionStorage.setItem('user', JSON.stringify({
-                                username: result.user.username,
-                                role: result.user.role,
-                                name: result.user.name,
-                                authenticated: true,
-                                timestamp: new Date().toISOString()
-                            }));
-
-                            // Set role-specific authentication flag
-                            sessionStorage.setItem(result.user.role + 'Authenticated', 'true');
-
-                            showSuccess('Authentication successful! Redirecting...');
-
-                            // Redirect to appropriate page
-                            setTimeout(() => {
-                                window.location.href = redirectUrl;
-                            }, 1000);
-                        } else {
-                            console.error('Invalid redirect URL:', redirectUrl);
-                            showError('Invalid redirect destination. Please contact administrator.');
-                        }
-                    } else {
-                        showError(result.message || 'Authentication failed');
-                    }
-                })
-                .catch(error => {
-                    console.error('Authentication error:', error);
-                    showError('Authentication service unavailable. Please contact administrator.');
-                })
-                .finally(() => {
+                        role: 'exit',
+                        authenticated: true,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    showSuccess('Authentication successful! Redirecting...');
+                    
+                    // Redirect to exit page
+                    setTimeout(() => {
+                        window.location.href = '/exit.html';
+                    }, 800);
+                } else {
                     hideLoading();
-                });
+                    showError('Invalid credentials. Please try again.');
+                }
+            }, 500);
         }
         
         function showLoading() {
             const submitBtn = document.querySelector('button[type="submit"]');
             submitBtn.disabled = true;
-            submitBtn.textContent = '🔄 Authenticating...';
+            submitBtn.textContent = 'Authenticating...';
         }
         
         function hideLoading() {
             const submitBtn = document.querySelector('button[type="submit"]');
             submitBtn.disabled = false;
-            submitBtn.textContent = '🚀 Authenticate & Access';
+            submitBtn.textContent = 'Authenticate & Access';
         }
         
         function showError(message) {

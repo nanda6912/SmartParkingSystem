@@ -22,18 +22,31 @@
     --text-tertiary: #64748B; /* Slate 500 */
     --text-inverse: #FFFFFF;
     
-    /* Status Colors */
-    --status-available-bg: #D1FAE5; /* Pale Mint */
-    --status-available-text: #065F46; /* Mint 800 */
-    --status-available-border: #6EE7B7; /* Mint 300 */
+    /* Ghost Badge System */
+    --badge-available-bg: #F0FDF4; /* Pale Mint */
+    --badge-available-text: #166534; /* Green 800 */
+    --badge-available-border: #86EFAC; /* Green 300 */
     
-    --status-booked-bg: #FEE2E2; /* Pale Rose */
-    --status-booked-text: #991B1B; /* Rose 800 */
-    --status-booked-border: #FCA5A5; /* Rose 300 */
+    --badge-booked-bg: #FEF2F2; /* Pale Rose */
+    --badge-booked-text: #991B1B; /* Red 800 */
+    --badge-booked-border: #FCA5A5; /* Red 300 */
     
-    --status-locked-bg: #FEF3C7; /* Pale Amber */
-    --status-locked-text: #92400E; /* Amber 800 */
-    --status-locked-border: #FCD34D; /* Amber 300 */
+    --badge-locked-bg: #FFFBEB; /* Pale Amber */
+    --badge-locked-text: #92400E; /* Amber 800 */
+    --badge-locked-border: #FCD34D; /* Amber 300 */
+    
+    /* Legacy Status Colors (for backwards compatibility) */
+    --status-available-bg: #F0FDF4;
+    --status-available-text: #166534;
+    --status-available-border: #86EFAC;
+    
+    --status-booked-bg: #FEF2F2;
+    --status-booked-text: #991B1B;
+    --status-booked-border: #FCA5A5;
+    
+    --status-locked-bg: #FFFBEB;
+    --status-locked-text: #92400E;
+    --status-locked-border: #FCD34D;
     
     /* Button Colors */
     --btn-primary: #1E293B; /* Dark Slate */
@@ -41,13 +54,16 @@
     --btn-secondary: transparent;
     --btn-secondary-border: #CBD5E1; /* Slate 300 */
     --btn-secondary-hover: #F8FAFC; /* Slate 50 */
+    --btn-disabled: #94A3B8;
+    --btn-disabled-bg: #E2E8F0;
     
     /* Shadows */
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-    --shadow-md: 0 2px 6px rgba(0,0,0,0.07);
-    --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-lg: 0 4px 8px rgba(0,0,0,0.05);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.05);
     
-    /* Spacing (8px grid system) */
+    /* Spacing (4px/8px grid system) */
     --space-1: 4px;   /* 0.25rem */
     --space-2: 8px;   /* 0.5rem */
     --space-3: 12px;  /* 0.75rem */
@@ -60,22 +76,22 @@
     --space-16: 64px; /* 4rem */
     
     /* Border Radius */
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
-    --radius-xl: 12px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
     
-    /* Typography */
-    --font-family-primary: 'Cambria', serif;
-    --font-family-secondary: 'Cambria', serif;
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.875rem;
-    --font-size-4xl: 2.25rem;
+    /* Typography - 14px base with Inter font */
+    --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-family-secondary: 'Inter', sans-serif;
+    --font-size-xs: 9px;      /* 0.64rem */
+    --font-size-sm: 12px;     /* 0.86rem */
+    --font-size-base: 14px;   /* 1rem */
+    --font-size-lg: 16px;     /* 1.14rem */
+    --font-size-xl: 18px;     /* 1.29rem */
+    --font-size-2xl: 20px;    /* 1.43rem */
+    --font-size-3xl: 24px;    /* 1.71rem */
+    --font-size-4xl: 32px;    /* 2.29rem */
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
@@ -83,25 +99,234 @@
     --line-height-tight: 1.25;
     --line-height-normal: 1.5;
     --line-height-relaxed: 1.75;
+    --letter-spacing-tight: -0.01em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide: 0.05em;
     
     /* Transitions */
     --transition-fast: 150ms ease;
-    --transition-base: 250ms ease;
-    --transition-slow: 350ms ease;
+    --transition-base: 200ms ease;
+    --transition-slow: 300ms ease;
 }
 
-/* ===== TYPOGRAPHY ===== */
-/* Using local Cambria font with fallbacks */
+/* ===== BASE STYLES ===== */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 14px;
+}
+
 body {
     font-family: var(--font-family-primary);
     font-size: var(--font-size-base);
-    line-height: 1.6;
+    line-height: var(--line-height-normal);
     color: var(--text-primary);
     background-color: var(--bg-primary);
+    margin: 0;
+    padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: var(--letter-spacing-tight);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+h1 { font-size: var(--font-size-3xl); margin-bottom: var(--space-4); }
+h2 { font-size: var(--font-size-2xl); margin-bottom: var(--space-3); }
+h3 { font-size: var(--font-size-xl); margin-bottom: var(--space-3); }
+h4 { font-size: var(--font-size-lg); margin-bottom: var(--space-2); }
+h5 { font-size: var(--font-size-base); margin-bottom: var(--space-2); }
+h6 { font-size: var(--font-size-sm); margin-bottom: var(--space-2); }
+
+p {
+    margin: 0 0 var(--space-3) 0;
+}
+
+/* ===== GHOST BADGES ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+    border: 1px solid transparent;
+}
+
+.badge-available {
+    background-color: var(--badge-available-bg);
+    color: var(--badge-available-text);
+    border-color: var(--badge-available-border);
+}
+
+.badge-booked {
+    background-color: var(--badge-booked-bg);
+    color: var(--badge-booked-text);
+    border-color: var(--badge-booked-border);
+}
+
+.badge-locked {
+    background-color: var(--badge-locked-bg);
+    color: var(--badge-locked-text);
+    border-color: var(--badge-locked-border);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: 8px 16px;
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: var(--font-size-xs);
+}
+
+.btn-primary {
+    background-color: var(--btn-primary);
+    color: var(--text-inverse);
+    border-color: var(--btn-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--btn-primary-hover);
+    border-color: var(--btn-primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary);
+    color: var(--text-secondary);
+    border-color: var(--btn-secondary-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--btn-secondary-hover);
+    border-color: var(--btn-secondary-border);
+}
+
+/* ===== LINE LOADER ===== */
+.line-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    z-index: 9999;
+    animation: line-loader 1.5s ease-in-out infinite;
+    display: none;
+}
+
+.line-loader.active {
+    display: block;
+}
+
+@keyframes line-loader {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(0); }
+    100% { transform: translateX(100%); }
+}
+
+/* ===== SKELETON LOADER ===== */
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: var(--space-2);
+}
+
+.skeleton-text-sm {
+    height: 12px;
+    margin-bottom: var(--space-1);
+}
+
+.skeleton-title {
+    height: 18px;
+    margin-bottom: var(--space-2);
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ===== CARDS ===== */
+.card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+}
+
+/* ===== FORMS ===== */
+input, select, textarea {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-base);
+    padding: 8px 12px;
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* ===== UTILITIES ===== */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+
+/* ===== TYPOGRAPHY ===== */
+/* Using local Cambria font with fallbacks */
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.3;

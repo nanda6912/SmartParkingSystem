@@ -1,563 +1,775 @@
 <!DOCTYPE html>
-
-
-
 <html lang="en">
-
-
-
 <head>
-
-
-
     <meta charset="UTF-8">
-
-
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Vehicle Exit Management - Smart Parking System</title>
-
-
-
     <link rel="stylesheet" href="/styles/design-system.css">
-
-
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-
-
-
-        /* Page-specific styles */
-
-
-
-        .main-container {
+        /* Color Variables for Visibility */
+        :root {
+            --primary-color: #3B82F6;
+            --primary-hover: #2563EB;
+            --success-color: #10B981;
+            --success-hover: #059669;
+            --warning-color: #F59E0B;
+            --warning-hover: #D97706;
+            --info-color: #06B6D4;
+            --info-hover: #0891B2;
+            --error-color: #EF4444;
+            --error-hover: #DC2626;
+        }
+        
+        /* Exit Page Specific Styles */
+        .exit-container {
             display: flex;
             min-height: 100vh;
-            gap: var(--space-8);
-            padding: var(--space-8);
-            background: var(--bg-tertiary);
-        }
-
-        .left-section {
-            flex: 1.2;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-6);
-        }
-
-        .right-section {
-            flex: 0.8;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-6);
-        }
-
-        /* Enhanced Revenue Block */
-        .revenue-block {
-            background: linear-gradient(135deg, #4f46e5, #7c3aed, #a855f7);
-            color: white;
-            border-radius: var(--radius-xl);
-            padding: var(--space-8);
-            text-align: center;
-            box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.3), 0 10px 10px -5px rgba(124, 58, 237, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .revenue-block::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
-            pointer-events: none;
-        }
-
-        .revenue-title {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            margin-bottom: var(--space-3);
-            opacity: 0.95;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        .revenue-amount {
-            font-size: var(--font-size-5xl);
-            font-weight: 800;
-            margin-bottom: var(--space-2);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 1;
-        }
-
-        .revenue-subtitle {
-            font-size: var(--font-size-sm);
-            opacity: 0.9;
-            letter-spacing: 0.3px;
-        }
-
-        /* Enhanced Released Vehicles Section */
-        .released-vehicles {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-xl);
-            padding: var(--space-6);
-            flex: 1;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-        }
-
-        .released-vehicles h3 {
-            color: var(--text-primary);
-            margin-bottom: var(--space-5);
-            font-size: var(--font-size-2xl);
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding-bottom: var(--space-3);
-            border-bottom: 2px solid var(--border-primary);
-        }
-
-        /* Enhanced Vehicle Items */
-        .vehicle-item {
             background: var(--bg-primary);
-            border: 1px solid var(--border-secondary);
-            border-radius: var(--radius-lg);
-            padding: var(--space-5);
-            margin-bottom: var(--space-4);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm);
-            position: relative;
         }
-
-        .vehicle-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(180deg, #4f46e5, #a855f7);
-            border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        
+        .main-content {
+            flex: 1;
+            padding: var(--space-6);
+            overflow-y: auto;
         }
-
-        .vehicle-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            border-color: #4f46e5;
-        }
-
-        .vehicle-item:hover::before {
-            opacity: 1;
-        }
-
-        .vehicle-header {
+        
+        .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: var(--space-4);
-            padding-bottom: var(--space-3);
-            border-bottom: 1px solid var(--border-secondary);
-        }
-
-        .vehicle-number {
-            font-weight: 700;
-            color: #4f46e5;
-            font-size: var(--font-size-xl);
-            letter-spacing: 0.5px;
-        }
-
-        .vehicle-time {
-            font-size: var(--font-size-sm);
-            color: var(--text-secondary);
-            font-weight: 500;
-            background: var(--bg-tertiary);
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-secondary);
-        }
-
-        .vehicle-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-4);
-            font-size: var(--font-size-sm);
-        }
-
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-            padding: var(--space-2);
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-secondary);
-        }
-
-        .detail-label {
-            color: var(--text-secondary);
-            font-size: var(--font-size-xs);
-            margin-bottom: var(--space-1);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-value {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: var(--font-size-sm);
-        }
-
-        .fare-amount {
-            color: #10b981;
-            font-weight: 800;
-            font-size: var(--font-size-lg);
-            text-shadow: 0 1px 2px rgba(16, 185, 129, 0.2);
-        }
-
-        /* Enhanced Active Bookings */
-        .active-bookings-inline {
-            background: linear-gradient(135deg, var(--bg-tertiary), #f3f4f6);
-            border: 1px solid var(--border-secondary);
-            border-radius: var(--radius-lg);
-            padding: var(--space-4);
-            margin-top: var(--space-4);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .active-bookings-inline h4 {
-            font-size: var(--font-size-sm);
-            color: var(--text-secondary);
-            margin-bottom: var(--space-3);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .booking-slot {
-            display: inline-block;
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            color: white;
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-md);
-            font-size: var(--font-size-xs);
-            margin-right: var(--space-2);
-            margin-bottom: var(--space-2);
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-            transition: all 0.2s ease;
-        }
-
-        .booking-slot:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
-        }
-
-        /* Enhanced Left Section Styles */
-        .page-header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-primary);
-            padding: var(--space-8);
             margin-bottom: var(--space-6);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
+            padding-bottom: var(--space-4);
+            border-bottom: 2px solid var(--border-primary);
         }
-
+        
         .page-title {
             font-size: var(--font-size-3xl);
-            font-weight: 800;
+            font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: var(--space-2);
-            font-family: 'Inter', system-ui, sans-serif;
-            letter-spacing: -0.5px;
+            margin: 0;
         }
-
+        
         .page-subtitle {
+            font-size: var(--font-size-md);
             color: var(--text-secondary);
-            font-size: var(--font-size-lg);
-            font-weight: 500;
+            margin: var(--space-2) 0 0 0;
         }
-
+        
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: var(--space-4);
             margin-bottom: var(--space-6);
         }
-
+        
         .stat-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-primary);
-            border-radius: var(--radius-xl);
-            padding: var(--space-6);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
             text-align: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #4f46e5, #a855f7);
-        }
-
+        
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
-
+        
         .stat-value {
             font-size: var(--font-size-4xl);
-            font-weight: 800;
-            color: #4f46e5;
+            font-weight: 700;
+            color: var(--primary-color);
             margin-bottom: var(--space-2);
         }
-
+        
         .stat-label {
-            color: var(--text-secondary);
             font-size: var(--font-size-sm);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
-
-        /* Enhanced Table Container */
-        .table-container {
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--space-6);
+        }
+        
+        .section-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-primary);
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            box-shadow: var(--shadow-lg);
-            flex: 1;
+            border-radius: var(--radius-md);
+            padding: var(--space-6);
         }
-
-        .table-header {
+        
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: var(--space-6);
-            background: var(--bg-tertiary);
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
             border-bottom: 1px solid var(--border-primary);
         }
-
-        .table-title {
+        
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+        
+        .btn-refresh {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-refresh:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+        }
+        
+        .booking-card {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            padding: 0 var(--space-3);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-2);
+            transition: border-color var(--transition-fast);
+        }
+        
+        .booking-card:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .booking-info-row {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            gap: var(--space-4);
+            overflow-x: auto;
+        }
+        
+        .booking-cell {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+        }
+        
+        .booking-cell-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+        
+        .booking-cell-value {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .booking-vehicle {
+            font-weight: 600;
+            font-size: var(--font-size-base);
+            color: var(--text-primary);
+            min-width: 100px;
+        }
+        
+        .booking-badge {
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .booking-actions-compact {
+            display: flex;
+            gap: var(--space-2);
+            margin-left: var(--space-3);
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-secondary);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+        
+        .btn-sm:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+        
+        .btn-sm.btn-release {
+            background: #ff6b35;
+            border-color: #ff6b35;
+            color: white;
+        }
+        
+        .btn-sm.btn-release:hover {
+            background: #e55a2b;
+            border-color: #e55a2b;
+        }
+        
+        .btn {
+            padding: var(--space-2) var(--space-3);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-1);
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        
+        .booking-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .booking-header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+            min-width: 120px;
+        }
+        
+        .vehicle-number {
+            font-size: var(--font-size-md);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .booking-code {
+            background: var(--primary-color);
+            color: rgb(129,124,124);
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+            width: fit-content;
+        }
+        
+        .booking-details {
+            display: none;
+        }
+        
+        .detail-item {
+            display: none;
+        }
+        
+        .detail-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-1);
+        }
+        
+        .detail-value {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .booking-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: var(--space-2);
+            min-width: 200px;
+        }
+        
+        .btn {
+            padding: var(--space-2) var(--space-3);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-1);
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        
+        .btn-calculate {
+            background: var(--info-color);
+            color: rgb(129, 124, 124);
+        }
+        
+        .btn-calculate:hover {
+            background: var(--info-hover);
+        }
+        
+        .btn-release {
+            background: var(--success-color);
+            color: rgb(121, 117, 117);
+        }
+        
+        .btn-release:hover {
+            background: var(--success-hover);
+        }
+            
+        .revenue-subtitle {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+        }
+        
+        .released-section {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .released-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            margin-bottom: var(--space-2);
+            font-size: 12px;
+        }
+        
+        .released-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .released-vehicle {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+        
+        .released-time {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        
+        .released-amount {
+            font-weight: 700;
+            color: var(--success-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.open {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-6);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .modal-header {
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .modal-title {
             font-size: var(--font-size-xl);
             font-weight: 700;
             color: var(--text-primary);
             margin: 0;
         }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #4f46e5, #7c3aed);
-            color: white;
-            border: none;
-            padding: var(--space-3) var(--space-4);
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-        }
-
-        .refresh-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
-        }
-
-        @media (max-width: 768px) {
-            .main-container {
-                flex-direction: column;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-
-        </style>
-
-
-</head>
-
-
-
-<body>
-
-
-
-    <!-- Progress Bar -->
-
-
-
-    <div class="progress-bar" id="progressBar" style="display: none;">
-
-
-
-        <div class="progress-bar-fill" id="progressBarFill"></div>
-
-
-
-    </div>
-
-
-
-
-
-
-
-    <!-- Authentication Check - REMOVED FOR TESTING -->
-    <!-- The exit page will work without authentication for now -->
-    
-    <div class="main-container">
         
-        <!-- Left Section: Exit Page -->
-        <div class="left-section">
-            <main class="main-content-full">
-                <!-- Page Header -->
-                <div class="page-header">
+        .fee-details {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+        
+        .fee-row {
+            display: flex;
+            justify-content: space-between;
+            padding: var(--space-3) 0;
+            border-bottom: 1px solid var(--border-secondary);
+        }
+        
+        .fee-row:last-child {
+            border-bottom: none;
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: var(--space-3);
+        }
+        
+        .btn-confirm {
+            background: var(--success-color);
+            color: rgb(129, 124, 124);
+            flex: 1;
+            padding: var(--space-3);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-cancel {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            flex: 1;
+            padding: var(--space-3);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .notification {
+            position: fixed;
+            top: var(--space-4);
+            right: var(--space-4);
+            background: var(--success-color);
+            color: rgb(129,124,124);
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: var(--error-color);
+        }
+        
+        .notification.info {
+            background: var(--info-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: var(--space-8);
+            color: var(--text-tertiary);
+        }
+        
+        .empty-state i {
+            font-size: var(--font-size-6xl);
+            margin-bottom: var(--space-4);
+            opacity: 0.5;
+        }
+        
+        .progress-bar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-color);
+            z-index: 1002;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+            height: 20px;
+            margin-bottom: var(--space-2);
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .confirmation-modal .modal-content {
+            text-align: center;
+        }
+        
+        .confirmation-icon {
+            font-size: var(--font-size-6xl);
+            color: var(--warning-color);
+            margin-bottom: var(--space-4);
+        }
+        
+        .confirmation-text {
+            font-size: var(--font-size-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+        
+        /* Force horizontal layout */
+        #activeBookingsContainer .booking-card {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 15px !important;
+            padding: 15px !important;
+            margin-bottom: 10px !important;
+        }
+        
+        #activeBookingsContainer .booking-header {
+            min-width: 120px !important;
+        }
+        
+        #activeBookingsContainer .booking-details-horizontal {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 20px !important;
+            flex: 1 !important;
+        }
+        
+        #activeBookingsContainer .detail-item-horizontal {
+            text-align: center !important;
+            min-width: 70px !important;
+        }
+        
+        #activeBookingsContainer .booking-actions {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 10px !important;
+            min-width: 180px !important;
+        }
+        
+        #activeBookingsContainer .btn {
+            display: inline-flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            min-width: 85px !important;
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="exit-container">
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
                     <h1 class="page-title">Vehicle Exit Management</h1>
                     <p class="page-subtitle">Process vehicle exits and calculate parking fees</p>
-                    <div style="margin-top: var(--space-4);">
-                        <button onclick="logout()" class="btn btn-primary">🚪 Logout</button>
-                    </div>
                 </div>
-
-                <!-- Statistics Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="todayExits">0</div>
-                        <div class="stat-label">Today's Exits</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="activeBookings">0</div>
-                        <div class="stat-label">Active Bookings</div>
-                    </div>
+                <div style="display: flex; gap: var(--space-3); align-items: center;">
+                    <button class="btn-refresh" onclick="viewBookingStatus()">
+                        <i class="fas fa-eye"></i> View Booking Status
+                    </button>
+                    <button class="btn-refresh" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn-refresh" onclick="logout()" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-secondary);">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
-
-                <!-- Active Bookings Table -->
-                <div class="table-container">
-                    <div class="table-header">
-                        <h2 class="table-title">🅿️ Active Bookings</h2>
-                        <button class="refresh-btn" onclick="loadActiveBookings()">🔄 Refresh</button>
-                    </div>
-
-                <div id="activeBookingsContent">
-
-
-
-                    <!-- Table will be populated here -->
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-        </main>
-
-
-
-    </div>
-        
-        <!-- Right Section: Revenue and Released Vehicles -->
-        <div class="right-section">
-            <!-- Total Revenue Block -->
-            <div class="revenue-block">
-                <div class="revenue-title">💰 Today's Total Revenue</div>
-                <div class="revenue-amount" id="totalRevenue">₹0</div>
-                <div class="revenue-subtitle">From vehicle exits</div>
             </div>
             
-            <!-- Released Vehicles Section -->
-            <div class="released-vehicles">
-                <h3>🚗 Released Vehicles</h3>
-                <div id="releasedVehiclesList">
-                    <!-- Released vehicles will be populated here -->
-                    <div class="empty-state">
-                        <div class="empty-state-title">No vehicles released yet today</div>
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="todayExitsCount">0</div>
+                    <div class="stat-label">Today's Exits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeBookingsCount">0</div>
+                    <div class="stat-label">Active Bookings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRevenue">₹0</div>
+                    <div class="stat-label">Today's Revenue</div>
+                </div>
+            </div>
+            
+            <!-- Main Content Grid -->
+            <div class="content-grid">
+                <!-- Left Side: Search & Active Bookings -->
+                <div>
+                    <!-- Search Section -->
+                    <div class="section-card" style="margin-bottom: var(--space-4);">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-search"></i>
+                                Search Vehicle
+                            </h2>
+                        </div>
+                        <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-3);">
+                            <input type="text" id="searchInput" placeholder="Enter Booking ID or Vehicle Number..." 
+                                style="flex: 1; padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-sm); font-size: var(--font-size-sm);">
+                            <button onclick="searchVehicle()" class="btn-refresh" style="padding: var(--space-3) var(--space-4);">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <div id="searchResults" style="display: none;">
+                            <!-- Search results will appear here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Active Bookings Section -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-car"></i>
+                                Active Bookings
+                            </h2>
+                            <span id="lastUpdated"></span>
+                        </div>
+                        <div id="activeBookingsContainer">
+                            <!-- Active bookings will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side Panel -->
+                <div>
+                    <!-- Released Vehicles Section -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-check-circle"></i>
+                                Released Vehicles
+                            </h2>
+                        </div>
+                        <div class="released-section" id="releasedVehiclesContainer">
+                            <!-- Released vehicles will be loaded here -->
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
-    <!-- Modal Overlay -->
-    <div class="modal-overlay" id="feeModal">
-        <div class="modal">
+    
+    <!-- Fee Calculation Modal -->
+    <div class="modal" id="feeModal">
+        <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">Parking Fee Calculation</h2>
-                <button class="modal-close" onclick="closeFeeModal()">&times;</button>
+                <h3 class="modal-title">Fee Calculation</h3>
             </div>
-            <div class="modal-body" id="feeModalBody">
-                <!-- Fee details will be populated here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeFeeModal()">Cancel</button>
-                <button type="button" class="btn btn-primary" id="processExitBtn" onclick="processExit()">Process Exit</button>
+            <div id="feeModalBody">
+                <!-- Fee details will be loaded here -->
             </div>
         </div>
     </div>
-
-
-
-
+    
+    <!-- Confirmation Modal -->
+    <div class="modal confirmation-modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="confirmation-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="modal-title">Confirm Vehicle Release</h3>
+            <p class="confirmation-text" id="confirmText">
+                Are you sure you want to release this vehicle?
+            </p>
+            <div class="modal-actions">
+                <button class="btn-confirm" onclick="confirmRelease()">
+                    <i class="fas fa-check"></i> Yes, Release
+                </button>
+                <button class="btn-cancel" onclick="closeConfirmModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Notification -->
     <div class="notification" id="notification"></div>
-
+    
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressBarFill"></div>
+    </div>
+    
     <script>
-        class ExitManagement {
-
-
-
-            constructor() {
-
-
-
-                this.currentBookingId = null;
-
-
-
-                this.init();
-
-
-
+        // Authentication Check - Redirect to auth if not authenticated
+        (function checkAuth() {
+            const isAuthenticated = sessionStorage.getItem('exitAuthenticated');
+            if (!isAuthenticated) {
+                window.location.href = '/auth.html';
+                return;
             }
-
-
-
+        })();
+        
+        class ExitManagement {
+            constructor() {
+                this.currentBookingId = null;
+                this.currentBookingDetails = null;
+                this.bookingPollInterval = null;
+                this.autoRefreshInterval = null;
+                this.onStorageChanged = null;
+                this.todayRevenue = 0;
+                this.todayExits = 0;
+            }
 
             init() {
                 this.loadActiveBookings();
                 this.loadStatistics();
-                
-                // Setup real-time booking updates
                 this.setupBookingUpdates();
                 
-                // Auto-refresh every 30 seconds - save reference for cleanup
+                // Auto-refresh every 30 seconds
                 this.autoRefreshInterval = setInterval(() => {
                     this.loadActiveBookings();
                     this.loadStatistics();
@@ -573,12 +785,10 @@
                         console.log('Received booking update:', message);
                         
                         if (message.type === 'new_booking' || message.type === 'booking_update') {
-                            // Refresh bookings when a new booking is made
-                            console.log('New booking detected, refreshing active bookings...');
+                            console.log('New booking detected, refreshing...');
                             this.loadActiveBookings();
                             this.loadStatistics();
                             
-                            // Show notification for new booking
                             if (message.type === 'new_booking' && message.data) {
                                 this.showNotification(
                                     `New booking: ${message.data.bookingCode || 'Vehicle ' + message.data.vehicleNumber}`, 
@@ -589,9 +799,8 @@
                     };
                     console.log('Booking updates listener initialized');
                 } catch (error) {
-                    console.log('BroadcastChannel not supported, falling back to localStorage polling');
+                    console.log('BroadcastChannel not supported, using localStorage polling');
                     
-                    // Fallback: Listen for localStorage changes - save handler reference for cleanup
                     this.onStorageChanged = (event) => {
                         if (event.key === 'newBooking' || event.key === 'bookingUpdate') {
                             console.log('New booking detected via localStorage, refreshing...');
@@ -608,15 +817,14 @@
                             try {
                                 const bookingData = JSON.parse(lastBooking);
                                 const now = Date.now();
-                                if (now - bookingData.timestamp < 5000) { // Within last 5 seconds
+                                if (now - bookingData.timestamp < 5000) {
                                     console.log('Recent booking detected via localStorage polling');
                                     this.loadActiveBookings();
                                     this.loadStatistics();
-                                    localStorage.removeItem('newBooking'); // Clear to avoid reprocessing
+                                    localStorage.removeItem('newBooking');
                                 }
                             } catch (error) {
                                 console.warn('Malformed JSON in localStorage newBooking:', error);
-                                // Remove malformed data to prevent repeated parsing errors
                                 localStorage.removeItem('newBooking');
                             }
                         }
@@ -624,30 +832,18 @@
                 }
             }
 
-
-
-
-            // Cleanup method to clear intervals when page is unloaded
             cleanup() {
-                // Clear auto-refresh interval
                 if (this.autoRefreshInterval) {
                     clearInterval(this.autoRefreshInterval);
                     this.autoRefreshInterval = null;
-                    console.log('Auto refresh interval cleared');
                 }
-                
-                // Clear booking poll interval
                 if (this.bookingPollInterval) {
                     clearInterval(this.bookingPollInterval);
                     this.bookingPollInterval = null;
-                    console.log('Booking polling interval cleared');
                 }
-                
-                // Remove storage event listener
                 if (this.onStorageChanged) {
                     window.removeEventListener('storage', this.onStorageChanged);
                     this.onStorageChanged = null;
-                    console.log('Storage event listener removed');
                 }
             }
 
@@ -655,1779 +851,646 @@
                 console.log('=== loadActiveBookings called ===');
                 
                 try {
-                    console.log('Showing skeleton loader...');
                     this.showSkeletonLoader();
-                    console.log('Showing progress bar...');
                     this.showProgressBar();
 
-                    console.log('Making API call to:', 'http://localhost:8081/api/exit/active-bookings');
-                    
-                    const response = await fetch('http://localhost:8081/api/exit/active-bookings', {
+                    const response = await fetch('/api/exit/active-bookings', {
                         method: 'GET',
-                        credentials: 'include', // Include session cookies
+                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         }
                     });
 
-                    console.log('Response received:', response.status, response.statusText);
-
                     if (!response.ok) {
-                        console.error('Response not OK:', response.status, response.statusText);
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
-                    console.log('Parsing JSON response...');
                     const bookings = await response.json();
                     console.log('Bookings received:', bookings);
-                    console.log('Number of bookings:', bookings.length);
-
-                    console.log('Calling renderBookings...');
+                    
                     this.renderBookings(bookings);
-                    console.log('=== loadActiveBookings completed ===');
+                    document.getElementById('activeBookingsCount').textContent = bookings.length;
+                    
+                    const now = new Date();
+                    document.getElementById('lastUpdated').textContent = 
+                        `Last updated: ${now.toLocaleTimeString()}`;
 
                 } catch (error) {
                     console.error('Error in loadActiveBookings:', error);
                     this.showNotification('Error loading bookings: ' + error.message, 'error');
                 } finally {
-                    console.log('Hiding progress bar...');
                     this.hideProgressBar();
                 }
             }
 
             async loadStatistics() {
                 try {
-                    const response = await fetch('http://localhost:8081/api/sync/exit/data', {
+                    const response = await fetch('/api/exit/active-bookings', {
                         method: 'GET',
-                        credentials: 'include', // Include session cookies
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        }
+                        credentials: 'include'
                     });
 
-                    
-
-
-
-                    if (!response.ok) {
-
-
-
-                        throw new Error(`HTTP error! status: ${response.status}`);
-
-
-
+                    if (response.ok) {
+                        const bookings = await response.json();
+                        document.getElementById('activeBookingsCount').textContent = bookings.length;
+                        this.loadReleasedVehicles();
                     }
-
-
-
-                    
-
-
-
-                    const stats = await response.json();
-
-
-
-                    this.updateStatistics(stats);
-
-
-
                 } catch (error) {
-
-
-
                     console.error('Error loading statistics:', error);
-
-
-
                 }
-
-
-
             }
 
-
-
-
-
-
+            async loadReleasedVehicles() {
+                // This would typically come from an API endpoint
+                // For now, we'll use localStorage to track released vehicles
+                const released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+                const today = new Date().toDateString();
+                const todayReleased = released.filter(v => 
+                    new Date(v.exitTime).toDateString() === today
+                );
+                
+                this.todayExits = todayReleased.length;
+                this.todayRevenue = todayReleased.reduce((sum, v) => sum + (v.totalFee || 0), 0);
+                
+                document.getElementById('todayExitsCount').textContent = this.todayExits;
+                document.getElementById('totalRevenue').textContent = '₹' + this.todayRevenue;
+                
+                this.renderReleasedVehicles(todayReleased);
+            }
 
             renderBookings(bookings) {
-                console.log('=== renderBookings called ===');
-                console.log('Bookings parameter:', bookings);
-                console.log('Bookings type:', typeof bookings);
-                console.log('Bookings length:', bookings ? bookings.length : 'undefined');
-
-                const content = document.getElementById('activeBookingsContent');
-                console.log('Content element:', content);
-
-                if (!content) {
-                    console.error('activeBookingsContent element not found!');
-                    return;
-                }
-
+                const container = document.getElementById('activeBookingsContainer');
+                
                 if (!bookings || bookings.length === 0) {
-                    console.log('Rendering empty state...');
-                    content.innerHTML = `
-                        <div class="empty-state">
-                            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 21v-2a4 4 0 00-4-4H5" />
-                            </svg>
-                            <div class="empty-state-title">No Active Bookings</div>
-                            <div class="empty-state-description">There are currently no vehicles parked in the system.</div>
-                        </div>
-                    `;
-                    console.log('Empty state rendered');
-                    return;
-                }
-
-                console.log('Rendering table with bookings...');
-                content.innerHTML = `
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Booking Code</th>
-                                <th>Vehicle Number</th>
-                                <th>Customer Name</th>
-                                <th>Slot</th>
-                                <th>Entry Time</th>
-                                <th>Duration</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${bookings.map(booking => this.createBookingRow(booking)).join('')}
-                        </tbody>
-                    </table>
-                `;
-                console.log('Table rendered successfully');
-                console.log('=== renderBookings completed ===');
-            }
-
-
-
-
-
-
-
-            createBookingRow(booking) {
-
-
-
-                return `
-
-
-
-                    <tr>
-
-
-
-                        <td><strong>${booking.bookingCode}</strong></td>
-
-
-
-                        <td>${booking.vehicleNumber}</td>
-
-
-
-                        <td>${booking.customerName}</td>
-
-
-
-                        <td><span class="status-badge status-available">F${booking.floor}-S${booking.slotNumber}</span></td>
-
-
-
-                        <td>${booking.bookingTime}</td>
-
-
-
-                        <td>${booking.durationMinutes} min</td>
-
-
-
-                        <td>
-
-
-
-                            <button class="btn btn-sm btn-primary" onclick="calculateFee(${booking.bookingId})">
-
-
-
-                                💰 Calculate Fee
-
-
-
-                            </button>
-
-
-
-                        </td>
-
-
-
-                    </tr>
-
-
-
-                `;
-
-
-
-            }
-
-
-
-
-
-
-
-            updateStatistics(stats) {
-                document.getElementById('todayExits').textContent = stats.todayExits || 0;
-                document.getElementById('activeBookings').textContent = stats.activeBookings || 0;
-                
-                // Update total revenue
-                const totalRevenue = stats.totalRevenue || 0;
-                document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
-                
-                // Update released vehicles list
-                this.updateReleasedVehicles(stats.todayExitsData || []);
-            }
-            
-            updateReleasedVehicles(exitsData) {
-                const container = document.getElementById('releasedVehiclesList');
-                
-                if (!exitsData || exitsData.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state-title">No vehicles released yet today</div>
+                            <i class="fas fa-parking"></i>
+                            <p>No active bookings found</p>
                         </div>
                     `;
                     return;
                 }
-                
-                // Clear existing content
-                container.innerHTML = '';
-                
-                // Create vehicle items safely using DOM manipulation
-                exitsData.forEach(exit => {
-                    const vehicleItem = this.createVehicleItem(exit);
-                    container.appendChild(vehicleItem);
+
+                let html = '';
+                bookings.forEach(booking => {
+                    html += `
+                        <div class="booking-card">
+                            <span class="booking-vehicle">${this.escapeHtml(booking.vehicleNumber)}</span>
+                            <div class="booking-info-row">
+                                <div class="booking-cell">
+                                    <span class="booking-cell-label">ID</span>
+                                    <span class="booking-cell-value">#${this.escapeHtml(booking.bookingId)}</span>
+                                </div>
+                                <div class="booking-cell">
+                                    <span class="booking-cell-label">Customer</span>
+                                    <span class="booking-cell-value">${this.escapeHtml(booking.customerName)}</span>
+                                </div>
+                                <div class="booking-cell">
+                                    <span class="booking-cell-label">Entry</span>
+                                    <span class="booking-cell-value">${this.escapeHtml(new Date(booking.bookingTime).toLocaleDateString())}</span>
+                                </div>
+                                <div class="booking-cell">
+                                    <span class="booking-cell-label">Slot</span>
+                                    <span class="booking-cell-value">${this.escapeHtml(booking.floor)}-${this.escapeHtml(booking.slotNumber)}</span>
+                                </div>
+                                <div class="booking-cell">
+                                    <span class="booking-cell-label">Duration</span>
+                                    <span class="booking-cell-value">${this.escapeHtml(booking.durationMinutes)}m</span>
+                                </div>
+                            </div>
+                            <div class="booking-actions-compact">
+                                <button class="btn-sm btn-release" onclick="showReleaseConfirm(${booking.bookingId})">
+                                    <i class="fas fa-sign-out-alt"></i> Release
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 });
+
+                container.innerHTML = html;
             }
-            
-            createVehicleItem(exit) {
-                const vehicleItem = document.createElement('div');
-                vehicleItem.className = 'vehicle-item';
+
+            renderReleasedVehicles(vehicles) {
+                const container = document.getElementById('releasedVehiclesContainer');
                 
-                // Create header
-                const header = document.createElement('div');
-                header.className = 'vehicle-header';
-                
-                const vehicleNumber = document.createElement('div');
-                vehicleNumber.className = 'vehicle-number';
-                vehicleNumber.textContent = this.escapeHtml(exit.vehicleNumber || 'N/A');
-                
-                const vehicleTime = document.createElement('div');
-                vehicleTime.className = 'vehicle-time';
-                vehicleTime.textContent = this.formatTime(exit.exitTime);
-                
-                header.appendChild(vehicleNumber);
-                header.appendChild(vehicleTime);
-                
-                // Create details
-                const details = document.createElement('div');
-                details.className = 'vehicle-details';
-                
-                // Entry Time
-                const entryTimeItem = this.createDetailItem('Entry Time', this.formatTime(exit.entryTime));
-                details.appendChild(entryTimeItem);
-                
-                // Slot Number
-                const slotNumberItem = this.createDetailItem('Slot Number', this.escapeHtml(exit.slotNumber || 'N/A'));
-                details.appendChild(slotNumberItem);
-                
-                // Duration
-                const durationItem = this.createDetailItem('Duration', this.escapeHtml(exit.duration || 'N/A'));
-                details.appendChild(durationItem);
-                
-                // Fare Charged
-                const fareItem = this.createDetailItem('Fare Charged', `₹${exit.totalFee || 0}`, true);
-                details.appendChild(fareItem);
-                
-                // Assemble vehicle item
-                vehicleItem.appendChild(header);
-                vehicleItem.appendChild(details);
-                
-                // Add active bookings if present
-                if (exit.activeBookings && exit.activeBookings.length > 0) {
-                    const activeBookingsDiv = this.createActiveBookingsSection(exit.activeBookings);
-                    vehicleItem.appendChild(activeBookingsDiv);
+                if (!vehicles || vehicles.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No vehicles released yet today</div>';
+                    return;
                 }
-                
-                return vehicleItem;
-            }
-            
-            createDetailItem(label, value, isFare = false) {
-                const detailItem = document.createElement('div');
-                detailItem.className = 'detail-item';
-                
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'detail-label';
-                labelDiv.textContent = label;
-                
-                const valueDiv = document.createElement('div');
-                valueDiv.className = isFare ? 'detail-value fare-amount' : 'detail-value';
-                valueDiv.textContent = value;
-                
-                detailItem.appendChild(labelDiv);
-                detailItem.appendChild(valueDiv);
-                
-                return detailItem;
-            }
-            
-            createActiveBookingsSection(activeBookings) {
-                const activeBookingsDiv = document.createElement('div');
-                activeBookingsDiv.className = 'active-bookings-inline';
-                
-                const title = document.createElement('h4');
-                title.textContent = 'Active Bookings Slot:';
-                activeBookingsDiv.appendChild(title);
-                
-                activeBookings.forEach(booking => {
-                    const slotSpan = document.createElement('span');
-                    slotSpan.className = 'booking-slot';
-                    slotSpan.textContent = this.escapeHtml(booking.slotNumber || 'N/A');
-                    activeBookingsDiv.appendChild(slotSpan);
+
+                let html = '';
+                vehicles.forEach(vehicle => {
+                    const exitTime = new Date(vehicle.exitTime).toLocaleTimeString();
+                    html += `
+                        <div class="released-item">
+                            <div class="released-header">
+                                <span class="released-vehicle">${this.escapeHtml(vehicle.vehicleNumber)}</span>
+                                <span class="released-time">${this.escapeHtml(exitTime)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>${this.escapeHtml(vehicle.duration)}</span>
+                                <span class="released-amount">₹${this.escapeHtml(vehicle.totalFee)}</span>
+                            </div>
+                        </div>
+                    `;
                 });
-                
-                return activeBookingsDiv;
+
+                container.innerHTML = html;
             }
-            
+
+            showSkeletonLoader() {
+                const container = document.getElementById('activeBookingsContainer');
+                container.innerHTML = `
+                    <div class="booking-card skeleton-row">
+                        <div class="skeleton" style="width: 80px; height: 16px;"></div>
+                        <div class="skeleton" style="flex: 1; height: 16px;"></div>
+                        <div class="skeleton" style="width: 60px; height: 28px;"></div>
+                    </div>
+                    <div class="booking-card skeleton-row">
+                        <div class="skeleton" style="width: 80px; height: 16px;"></div>
+                        <div class="skeleton" style="flex: 1; height: 16px;"></div>
+                        <div class="skeleton" style="width: 60px; height: 28px;"></div>
+                    </div>
+                    <div class="booking-card skeleton-row">
+                        <div class="skeleton" style="width: 80px; height: 16px;"></div>
+                        <div class="skeleton" style="flex: 1; height: 16px;"></div>
+                        <div class="skeleton" style="width: 60px; height: 28px;"></div>
+                    </div>
+                `;
+            }
+
+            showProgressBar() {
+                // Line loader at top of screen
+                let lineLoader = document.getElementById('lineLoader');
+                if (!lineLoader) {
+                    lineLoader = document.createElement('div');
+                    lineLoader.id = 'lineLoader';
+                    lineLoader.className = 'line-loader';
+                    document.body.appendChild(lineLoader);
+                }
+                lineLoader.classList.add('active');
+            }
+
+            hideProgressBar() {
+                const lineLoader = document.getElementById('lineLoader');
+                if (lineLoader) {
+                    lineLoader.classList.remove('active');
+                }
+            }
+
+            setButtonLoading(button, loading) {
+                if (loading) {
+                    button.disabled = true;
+                    button.dataset.originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                } else {
+                    button.disabled = false;
+                    button.innerHTML = button.dataset.originalText || button.innerHTML;
+                }
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }
+
             escapeHtml(text) {
+                if (text === null || text === undefined) return '';
                 const div = document.createElement('div');
-                div.textContent = text;
+                div.textContent = String(text);
                 return div.innerHTML;
             }
-            
-            formatTime(timeString) {
-                if (!timeString) return 'N/A';
-                try {
-                    const date = new Date(timeString);
-                    
-                    // Check if date is valid
-                    if (isNaN(date.getTime())) {
-                        return 'N/A';
-                    }
-                    
-                    return date.toLocaleTimeString('en-IN', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: true 
-                    });
-                } catch (error) {
-                    return 'N/A';
-                }
-            }
-
-
-
 
             async calculateFee(bookingId) {
                 try {
                     this.currentBookingId = bookingId;
-                    this.showLoading();
+                    this.showProgressBar();
                     
-                    const response = await fetch(`http://localhost:8081/api/exit/calculate-fee/${bookingId}`, {
+                    const response = await fetch(`/api/exit/calculate-fee/${bookingId}`, {
                         method: 'GET',
-                        credentials: 'include', // Include session cookies
+                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         }
                     });
 
-
-                    
-
-
                     if (!response.ok) {
-
-
-
                         throw new Error(`HTTP error! status: ${response.status}`);
-
-
-
                     }
-
-
-
-                    
-
-
 
                     const feeDetails = await response.json();
-
-
-
-                    
-
-
-
-                    // Store the complete booking details for later use
-
-
-
-                    this.currentBookingDetails = {
-
-
-
-                        bookingId: bookingId,
-
-
-
-                        bookingCode: feeDetails.bookingCode,
-
-
-
-                        vehicleNumber: feeDetails.vehicleNumber,
-
-
-
-                        customerName: feeDetails.customerName,
-
-
-
-                        phoneNumber: feeDetails.phoneNumber,
-
-
-
-                        vehicleType: feeDetails.vehicleType,
-
-
-
-                        entryTime: feeDetails.entryTime,
-
-
-
-                        slotNumber: feeDetails.slotNumber,
-
-
-
-                        floor: feeDetails.floor,
-
-
-
-                        duration: feeDetails.duration,
-
-
-
-                        totalFee: feeDetails.totalFee,
-
-
-
-                        hoursCharged: feeDetails.hoursCharged
-
-
-
-                    };
-
-
-
-                    
-
-
-
-                    console.log('=== BOOKING DETAILS STORED ===');
-
-
-
-                    console.log('Stored booking details:', this.currentBookingDetails);
-
-
-
-
-                    
-
-
-
+                    this.currentBookingDetails = feeDetails;
                     this.showFeeModal(feeDetails);
-
-
-
+                    
                 } catch (error) {
-
-
-
                     console.error('Error calculating fee:', error);
-
-
-
                     this.showNotification('Error calculating fee: ' + error.message, 'error');
-
-
-
                 } finally {
-
-
-
-                    this.hideLoading();
-
-
-
+                    this.hideProgressBar();
                 }
-
-
-
             }
-
-
-
-
-
-
 
             showFeeModal(feeDetails) {
-
-
-
                 const modal = document.getElementById('feeModal');
-
-
-
-                const feeModalBody = document.getElementById('feeModalBody');
-
-
-
+                const modalBody = document.getElementById('feeModalBody');
                 
-
-
-
-                feeModalBody.innerHTML = `
-
-
-
-                    <div style="display: grid; gap: var(--space-4);">
-
-
-
-                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
-
-
-
-                            <span style="font-weight: 600; color: var(--text-secondary);">Booking Code:</span>
-
-
-
-                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.bookingCode}</span>
-
-
-
+                const entryTime = new Date(feeDetails.entryTime).toLocaleString();
+                const exitTime = new Date().toLocaleString();
+                
+                modalBody.innerHTML = `
+                    <div class="fee-details">
+                        <div class="fee-row">
+                            <span>Vehicle Number:</span>
+                            <span>${this.escapeHtml(feeDetails.vehicleNumber)}</span>
                         </div>
-
-
-
-                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
-
-
-
-                            <span style="font-weight: 600; color: var(--text-secondary);">Vehicle Number:</span>
-
-
-
-                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.vehicleNumber}</span>
-
-
-
+                        <div class="fee-row">
+                            <span>Customer Name:</span>
+                            <span>${this.escapeHtml(feeDetails.customerName)}</span>
                         </div>
-
-
-
-                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
-
-
-
-                            <span style="font-weight: 600; color: var(--text-secondary);">Entry Time:</span>
-
-
-
-                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.entryTime}</span>
-
-
-
+                        <div class="fee-row">
+                            <span>Entry Time:</span>
+                            <span>${this.escapeHtml(entryTime)}</span>
                         </div>
-
-
-
-                        <div style="display: flex; justify-content: space-between; padding: var(--space-3); background: var(--bg-tertiary); border-radius: var(--radius-sm);">
-
-
-
-                            <span style="font-weight: 600; color: var(--text-secondary);">Duration:</span>
-
-
-
-                            <span style="font-weight: 700; color: var(--text-primary);">${feeDetails.duration}</span>
-
-
-
+                        <div class="fee-row">
+                            <span>Exit Time:</span>
+                            <span>${this.escapeHtml(exitTime)}</span>
                         </div>
-
-
-
-                        <div style="display: flex; justify-content: space-between; padding: var(--space-4); background: var(--status-available-bg); border: 1px solid var(--status-available-border); border-radius: var(--radius-sm);">
-
-
-
-                            <span style="font-weight: 600; color: var(--status-available-text);">Total Fee:</span>
-
-
-
-                            <span style="font-weight: 700; color: var(--status-available-text); font-size: var(--font-size-xl);">₹${feeDetails.totalFee}</span>
-
-
-
+                        <div class="fee-row">
+                            <span>Duration:</span>
+                            <span>${this.escapeHtml(feeDetails.durationMinutes)} minutes</span>
                         </div>
-
-
-
+                        <div class="fee-row">
+                            <span>Base Fare:</span>
+                            <span>₹20</span>
+                        </div>
+                        <div class="fee-row">
+                            <span>Total Amount:</span>
+                            <span class="total-amount">₹${this.escapeHtml(feeDetails.totalFee || feeDetails.totalAmount)}</span>
+                        </div>
                     </div>
-
-
-
+                    <div class="modal-actions">
+                        <button class="btn-confirm" onclick="showReleaseConfirm(${feeDetails.bookingId})">
+                            <i class="fas fa-check"></i> Proceed to Release
+                        </button>
+                        <button class="btn-cancel" onclick="closeFeeModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
                 `;
-
-
-
                 
-
-
-
                 modal.classList.add('open');
-
-
-
             }
 
+            closeFeeModal() {
+                document.getElementById('feeModal').classList.remove('open');
+            }
 
+            showReleaseConfirm(bookingId) {
+                this.currentBookingId = bookingId;
+                this.closeFeeModal();
+                document.getElementById('confirmModal').classList.add('open');
+            }
 
+            closeConfirmModal() {
+                document.getElementById('confirmModal').classList.remove('open');
+            }
 
-
-
-
-            async processExit() {
-
-
-
-                console.log('processExit method called');
-
-
-
-                
-
-
-                
-
-
-
+            async confirmRelease() {
                 if (!this.currentBookingId) {
-                    console.log('No current booking ID - returning');
+                    this.showNotification('No booking selected', 'error');
                     return;
                 }
                 
-                // Check if this booking has already been processed
-                const processedKey = `exit_processed_${this.currentBookingId}`;
-                const alreadyProcessed = sessionStorage.getItem(processedKey);
-                if (alreadyProcessed) {
-                    console.log('Booking already processed - preventing duplicate exit');
-                    this.showNotification('This booking has already been processed', 'warning');
-                    return;
-                }
-
-
-
-                // Show confirmation dialog
-
-
-
-                const confirmed = confirm(`Are you sure you want to release the vehicle for booking ${this.currentBookingId}? This action cannot be undone.`);
-
-
-
-                console.log('User confirmed:', confirmed);
-
-
-
+                this.closeConfirmModal();
                 
-
-
-
-                if (!confirmed) {
-
-
-
-                    console.log('User cancelled - returning');
-
-
-
-                    return; // Staff cancelled the operation
-
-
-
-                }
-
-
-
-                
-
-
-
                 try {
-
-
-
-                    this.showLoading();
-
-
-
-                    console.log('Sending request to process exit...');
-
-
-
+                    this.showProgressBar();
                     
-
-
-
-                    const response = await fetch(`/api/sync/exit/process/${this.currentBookingId}`, {
-
-
-
-                        method: 'POST'
-
-
-
+                    // First fetch the full booking details
+                    const bookingResponse = await fetch('/api/exit/active-bookings', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                    
+                    let bookingDetails = {};
+                    if (bookingResponse.ok) {
+                        const bookings = await bookingResponse.json();
+                        const booking = bookings.find(b => b.bookingId === this.currentBookingId);
+                        if (booking) {
+                            bookingDetails = booking;
+                        }
+                    }
+                    
+                    const response = await fetch(`/api/exit/process/${this.currentBookingId}`, {
+                        method: 'POST',
+                        credentials: 'include'
                     });
 
-
-
-                    
-
-
-
-                    console.log('Response status:', response.status);
-
-
-
-                    
-
-
-
                     if (!response.ok) {
-
-
-
                         throw new Error(`HTTP error! status: ${response.status}`);
-
-
-
                     }
-
-
-
-                    
-
-
 
                     const result = await response.json();
                     
-                    console.log('Process result:', result);
-                    console.log('Result success:', result.success);
-                    console.log('Result keys:', Object.keys(result));
-
-                    // Extract exit details from nested structure
-                    const exitDetails = result.exitDetails || result;
-                    console.log('Extracted exitDetails:', exitDetails);
-
-                    if (result.success && exitDetails) {
-                        // Store booking details for receipt BEFORE notifying
-                        this.currentBookingCode = exitDetails.bookingCode;
-                        this.currentBookingId = exitDetails.bookingId;
-                        
-                        // Store the complete exit details for receipt
-                        this.currentBookingDetails = exitDetails;
-
-                        
-
-
-
-                        // Create detailed exit data with COMPLETE booking information
-
-                        const exitData = {
-                            bookingId: exitDetails.bookingId,
-                            bookingCode: exitDetails.bookingCode || 'N/A',
-                            processedAt: new Date().toISOString(),
-                            exitTime: new Date().toLocaleString('en-US', { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                hour12: true 
-                            }),
-                            // Use stored booking details (original data from booking)
-                            vehicleNumber: exitDetails.vehicleNumber || 'Unknown',
-                            customerName: exitDetails.customerName || 'Unknown',
-                            phoneNumber: exitDetails.phoneNumber || 'Unknown',
-                            vehicleType: exitDetails.vehicleType || 'Unknown',
-                            slotNumber: exitDetails.slotNumber || 'Unknown',
-                            floor: exitDetails.floor || 'Unknown',
-                            totalFee: exitDetails.totalFee || 0,
-                            entryTime: exitDetails.entryTime || 'Unknown',
-                            duration: exitDetails.duration || 'Unknown',
-                            hoursCharged: exitDetails.hoursCharged || 0
-                        };
-
-
-                        
-                        
-
-
-
-                        console.log('=== REAL EXIT DATA BEING STORED ===');
-
-
-
-                        console.log('Exit data:', exitData);
-
-
-
-                        console.log('=== END REAL EXIT DATA ===');
-
-
-
-                        
-
-
-
-                        // Store the exit data for records
-
-
-
-                        localStorage.setItem('latestExitData', JSON.stringify(exitData));
-
-
-
-                        
-
-
-
-                        // Close fee modal (but preserve booking data)
-
-
-
-                        this.closeFeeModalWithoutClearing();
-
-
-
-
-
-        // Show release confirmation with receipt options
-                        this.showReleaseConfirmation(exitDetails);
-
-                        // Update booking lists and statistics
-                        this.loadActiveBookings();
-                        this.loadStatistics();
-                        
-                        // Mark this booking as processed to prevent duplicate processing
-                        const processedKey = `exit_processed_${this.currentBookingId}`;
-                        sessionStorage.setItem(processedKey, 'true');
-                        console.log('Marked booking as processed:', this.currentBookingId);
-
-
-
-
-                        // Clear booking data after notification is sent
-
-
-
-                        setTimeout(() => {
-
-
-
-                            this.currentBookingId = null;
-
-
-
-                            this.currentBookingCode = null;
-
-
-
-                        }, 2000); // Clear after 2 seconds
-
-
-
-                    } else {
-
-
-
-                        this.showNotification(result.message || 'Failed to process exit', 'error');
-
-
-
-                    }
-
-
-
-                } catch (error) {
-
-
-
-                    console.error('Error processing exit:', error);
-
-
-
-                    this.showNotification('Error processing exit: ' + error.message, 'error');
-
-
-
-                } finally {
-
-
-
-                    this.hideLoading();
-
-
-
-                }
-
-
-
-            }
-
-
-
-
-
-
-
-
-
-
-            downloadExitReceipt(bookingId) {
-
-
-
-                console.log('=== Testing exit receipt download ===');
-
-
-
-                console.log('Booking ID:', bookingId);
-
-
-
-                
-
-
-
-                // Test if the endpoint exists
-
-
-
-                fetch(`/api/exit/receipt/${bookingId}`)
-
-
-
-                    .then(response => {
-
-
-
-                        console.log('Exit receipt download endpoint status:', response.status);
-
-
-
-                        if (response.ok) {
-
-
-
-                            console.log('Exit receipt download endpoint working');
-
-
-
-                            // Create download link with proper encoding
-
-
-
-                            const link = document.createElement('a');
-
-
-
-                            link.href = `/api/exit/receipt/${bookingId}`;
-
-
-
-                            link.download = `exit_receipt_${bookingId}.txt`;
-
-
-
-                            link.style.display = 'none';
-
-
-
-                            document.body.appendChild(link);
-
-
-
-                            link.click();
-
-
-
-                            document.body.removeChild(link);
-
-
-
-                        } else {
-
-
-
-                            console.error('Exit receipt download endpoint failed:', response.status);
-
-
-
-                            alert('Exit receipt download not available. Status: ' + response.status);
-
-
-
-                        }
-
-
-
-                    })
-
-
-
-                    .catch(error => {
-
-
-
-                        console.error('Exit receipt download error:', error);
-
-
-
-                        alert('Exit receipt download error: ' + error.message);
-
-
-
-                    });
-
-
-
-            }
-
-
-
-
-
-
-
-            closeFeeModal() {
-
-
-
-                const modal = document.getElementById('feeModal');
-
-
-
-                modal.classList.remove('open');
-
-
-
-                this.currentBookingId = null;
-
-
-
-                this.currentBookingCode = null;
-
-
-
-            }
-
-
-
-            
-
-
-
-            closeFeeModalWithoutClearing() {
-
-
-
-                const modal = document.getElementById('feeModal');
-
-
-
-                modal.classList.remove('open');
-
-
-
-                // Don't clear booking data - preserve it for notification
-
-
-
-            }
-
-
-
-
-
-
-
-            showSkeletonLoader() {
-
-
-
-                const content = document.getElementById('activeBookingsContent');
-
-
-
-                content.innerHTML = '';
-
-
-
-                
-
-
-
-                // Create skeleton loader for table
-
-
-
-                const skeletonTable = document.createElement('div');
-
-
-
-                skeletonTable.innerHTML = `
-
-
-
-                    <div style="display: flex; justify-content: space-between; padding: var(--space-4);">
-
-
-
-                        <div class="skeleton skeleton-text large" style="width: 200px;"></div>
-
-
-
-                        <div class="skeleton skeleton-text small" style="width: 80px;"></div>
-
-
-
-                    </div>
-
-
-
-                    <div style="border-top: 1px solid var(--border-primary); margin-top: var(--space-2);">
-
-
-
-                        ${Array(5).fill('').map(() => `
-
-
-
-                            <div style="display: flex; padding: var(--space-4); border-bottom: 1px solid var(--border-primary);">
-
-
-
-                                ${Array(6).fill('').map(() => '<div class="skeleton skeleton-text" style="flex: 1; margin: 0 var(--space-2);"></div>').join('')}
-
-
-
-                            </div>
-
-
-
-                        `).join('')}
-
-
-
-                    </div>
-
-
-
-                `;
-
-
-
-                content.appendChild(skeletonTable);
-
-
-
-            }
-
-
-
-            
-
-
-
-            showProgressBar() {
-
-
-
-                const progressBar = document.getElementById('progressBar');
-
-
-
-                const progressFill = document.getElementById('progressBarFill');
-
-
-
-                
-
-
-
-                progressBar.style.display = 'block';
-
-
-
-                progressFill.style.width = '0%';
-
-
-
-                
-
-
-
-                // Simulate progress
-
-
-
-                let progress = 0;
-
-
-
-                const interval = setInterval(() => {
-
-
-
-                    progress += 10;
-
-
-
-                    progressFill.style.width = progress + '%';
-
-
-
+                    // Merge booking details with result
+                    const releasedData = {
+                        ...bookingDetails,
+                        ...this.currentBookingDetails,
+                        exitTime: new Date().toISOString(),
+                        totalFee: result.totalFee || this.currentBookingDetails?.totalFee || 0,
+                        totalAmount: result.totalFee || this.currentBookingDetails?.totalFee || 0
+                    };
                     
-
-
-
-                    if (progress >= 100) {
-
-
-
-                        clearInterval(interval);
-
-
-
-                    }
-
-
-
-                }, 100);
-
-
-
+                    const released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+                    released.unshift(releasedData);
+                    localStorage.setItem('releasedVehicles', JSON.stringify(released));
+                    
+                    // Download receipt
+                    this.downloadReceipt(releasedData);
+                    
+                    this.showNotification('Vehicle released successfully! Receipt downloaded.', 'success');
+                    
+                    // Refresh data
+                    this.loadActiveBookings();
+                    this.loadStatistics();
+                    
+                    // Notify other pages
+                    this.notifyOtherPages('vehicle_exit', releasedData);
+                    
+                } catch (error) {
+                    console.error('Error processing exit:', error);
+                    this.showNotification('Error processing exit: ' + error.message, 'error');
+                } finally {
+                    this.hideProgressBar();
+                    this.currentBookingId = null;
+                    this.currentBookingDetails = null;
+                }
             }
 
+            downloadReceipt(exitData) {
+                const receiptContent = `
+SMART PARKING SYSTEM - EXIT RECEIPT
+=====================================
 
+Booking Code: ${exitData.bookingCode || 'N/A'}
+Vehicle Number: ${exitData.vehicleNumber || 'N/A'}
+Customer Name: ${exitData.customerName || 'N/A'}
 
-            
+PARKING DETAILS:
+----------------
+Entry Time: ${exitData.bookingTime ? new Date(exitData.bookingTime).toLocaleString() : (exitData.entryTime ? new Date(exitData.entryTime).toLocaleString() : 'N/A')}
+Exit Time: ${new Date(exitData.exitTime).toLocaleString()}
+Duration: ${exitData.duration || exitData.durationMinutes || 'N/A'} minutes
+Slot Number: ${exitData.slotNumber || 'N/A'}
+Floor: ${exitData.floor || 'N/A'}
 
+PAYMENT DETAILS:
+----------------
+Base Fare: ₹20
+Total Amount Paid: ₹${exitData.totalFee || exitData.totalAmount || '0'}
 
+Thank you for using Smart Parking System!
+=====================================
+Receipt Generated: ${new Date().toLocaleString()}
+`;
 
-            hideProgressBar() {
-
-
-
-                const progressBar = document.getElementById('progressBar');
-
-
-
-                progressBar.style.display = 'none';
-
-
-
+                const blob = new Blob([receiptContent], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `receipt_${exitData.bookingCode || exitData.vehicleNumber || 'exit'}_${new Date().getTime()}.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                console.log('Receipt downloaded:', link.download);
             }
 
-
-
-
-
-
-
-            showLoading() {
-
-
-
-                this.showSkeletonLoader();
-
-
-
-                this.showProgressBar();
-
-
-
-            }
-
-
-
-
-
-
-
-            hideLoading() {
-
-
-
-                this.hideProgressBar();
-
-
-
-            }
-
-
-
-
-
-
-
-            showNotification(message, type = 'success') {
-
-
-
-                const notification = document.getElementById('notification');
-
-
-
-                notification.textContent = message;
-
-
-
-                notification.className = `notification ${type}`;
-
-
-
-                notification.classList.add('show');
-
-
-
-
-
-
-
-                setTimeout(() => {
-
-
-
-                    notification.classList.remove('show');
-
-
-
-                }, 5000);
-
-
-
-            }
-
-
-
-            
-
-
-
-             
-
-
-
-                
-
-
-                
-
-
-
-                // Check if currentBookingId is set
-                if (!this.currentBookingId) {
-                    console.error('No currentBookingId set, cannot notify other pages');
-                    return;
-                }
-
-
-                // Prevent multiple notifications for the same exit
-
-
-
-                const notificationKey = `exit_notified_${this.currentBookingId}`;
-
-                const alreadyNotified = sessionStorage.getItem(notificationKey);
-
-
-
-                
-
-                if (alreadyNotified) 
-
-
-
-                    console.log('=== EXIT ALREADY NOTIFIED, SKIPPING DUPLICATE NOTIFICATION ===');
-
-
-
-                    return;
-
-
-
-                }
-
-
-
-                
-
-                // Get the real exit data that was already stored
-
-
-
-                const storedExitData = localStorage.getItem('latestExitData');
-
-
-
-                let exitData;
-
-
-
-                
-
-                if (storedExitData) 
-
-
-
-                    try 
-
-
-
-                        exitData = JSON.parse(storedExitData);
-
-
-
-                        console.log('Using stored real exit data:', exitData);
-
-
-
-                    catch (error) 
-
-
-
-                        console.error('Error parsing stored exit data:', error);
-
-
-
-                        exitData = null;
-
-
-
-                    }
-
-
-
-                }
-
-
-
-                
-
-                // Create a single, clean notification message
-
-
-
-                const message = 
-
-
-
-                    type: 'vehicle_exit',
-
-
-
-                    timestamp: Date.now(),
-
-
-
-                    bookingId: this.currentBookingId,
-
-
-
-                    data: 
-
-
-
-                        bookingId: this.currentBookingId,
-
-
-
-                        bookingCode: this.currentBookingCode || 'N/A',
-
-
-
-                        exitData: exitData
-
-
-
-                    }
-
-
-
-                };
-
-
-
-                
-
-                console.log('=== SENDING CLEAN NOTIFICATION ===');
-
-
-
-                console.log('Notification data:', message);
-
-
-
-                
-
-                // Use only one reliable method: BroadcastChannel + localStorage
-
-
-
-                try 
-
-
-
-                    const channel = new BroadcastChannel('parking_updates');
-
-
-
-                    channel.postMessage(message);
-
-
-
-                    channel.close();
-
-
-
-                    console.log('BroadcastChannel message sent');
-
-
-
-                catch (error) 
-
-
-
-                    console.log('BroadcastChannel not supported:', error);
-
-
-
-                }
-
-
-
-                
-
-                // Single localStorage update (no multiple setTimeouts)
-
-
-
-                localStorage.setItem('adminPageUpdate', JSON.stringify(message));
-
-
-
-                localStorage.setItem('latestExitData', JSON.stringify(exitData));
-
-
-
-                
-
-                console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
-
-
-
-                
-
-                // Clear the notification flag after a delay
-
-
-
-                setTimeout(() => 
-
-
-
-                    sessionStorage.removeItem(notificationKey);
-
-
-
-                }, 5000);
-
-
-
-            }
-
-
-
-            notifyOtherPagesUpdate() {
-                console.log('=== notifyOtherPagesUpdate called ===');
-                                                
-                if (!this.currentBookingId) {
-                    console.error('No currentBookingId set, cannot notify other pages');
-                    return;
-                }
-                
-                // Prevent multiple notifications for the same exit
-                const notificationKey = `exit_notified_${this.currentBookingId}`;
-                const alreadyNotified = sessionStorage.getItem(notificationKey);
-                
-                if (alreadyNotified) {
-                    console.log('=== EXIT ALREADY NOTIFIED, SKIPPING DUPLICATE NOTIFICATION ===');
-                    return;
-                }
-                
-                // Get the real exit data that was already stored
-                const storedExitData = localStorage.getItem('latestExitData');
-                let exitData;
-                
-                if (storedExitData) {
-                    try {
-                        exitData = JSON.parse(storedExitData);
-                        console.log('Using stored real exit data:', exitData);
-                    } catch (error) {
-                        console.error('Error parsing stored exit data:', error);
-                        exitData = null;
-                    }
-                }
-                
-                // Create a single, clean notification message
-                const message = {
-                    type: 'vehicle_exit',
-                    timestamp: Date.now(),
-                    bookingId: this.currentBookingId,
-                    data: {
-                        bookingId: this.currentBookingId,
-                        bookingCode: this.currentBookingCode || 'N/A',
-                        exitData: exitData
-                    }
-                };
-                
-                console.log('=== SENDING CLEAN NOTIFICATION ===');
-                console.log('Notification data:', message);
-                
-                // Use only one reliable method: BroadcastChannel + localStorage
+            notifyOtherPages(type, data) {
                 try {
                     const channel = new BroadcastChannel('parking_updates');
-                    channel.postMessage(message);
+                    channel.postMessage({
+                        type: type,
+                        timestamp: Date.now(),
+                        data: data
+                    });
                     channel.close();
-                    console.log('BroadcastChannel message sent');
                 } catch (error) {
-                    console.log('BroadcastChannel not supported:', error);
+                    console.log('BroadcastChannel not supported');
                 }
                 
-                // Single localStorage update (no multiple setTimeouts)
-                localStorage.setItem('adminPageUpdate', JSON.stringify(message));
-                localStorage.setItem('latestExitData', JSON.stringify(exitData));
-                
-                console.log('=== NOTIFICATION SENT SUCCESSFULLY ===');
-                
-                // Clear the notification flag after a delay
-                setTimeout(() => {
-                    sessionStorage.removeItem(notificationKey);
-                }, 5000);
+                localStorage.setItem('exitUpdate', JSON.stringify({
+                    type: type,
+                    timestamp: Date.now(),
+                    data: data
+                }));
             }
 
+            refreshData() {
+                this.loadActiveBookings();
+                this.loadStatistics();
+                this.showNotification('Data refreshed', 'success');
+            }
 
+            async searchVehicle(searchTerm) {
+                if (!searchTerm || searchTerm.trim() === '') {
+                    this.showNotification('Please enter a booking ID or vehicle number', 'error');
+                    return;
+                }
+                
+                searchTerm = searchTerm.trim().toUpperCase();
+                
+                try {
+                    this.showProgressBar();
+                    
+                    // First load all active bookings
+                    const response = await fetch('/api/exit/active-bookings', {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const bookings = await response.json();
+                    
+                    // Search by booking ID or vehicle number
+                    const results = bookings.filter(booking => 
+                        booking.bookingId.toString() === searchTerm || 
+                        booking.vehicleNumber.toUpperCase().includes(searchTerm) ||
+                        booking.bookingCode.toUpperCase() === searchTerm
+                    );
+                    
+                    this.displaySearchResults(results, searchTerm);
+                    
+                } catch (error) {
+                    console.error('Error searching vehicle:', error);
+                    this.showNotification('Error searching: ' + error.message, 'error');
+                } finally {
+                    this.hideProgressBar();
+                }
+            }
+
+            displaySearchResults(results, searchTerm) {
+                const resultsContainer = document.getElementById('searchResults');
+                
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div style="padding: var(--space-4); background: var(--bg-tertiary); border-radius: var(--radius-sm); text-align: center; color: var(--text-secondary);">
+                            <i class="fas fa-search" style="font-size: 24px; margin-bottom: var(--space-2); opacity: 0.5;"></i>
+                            <p>No results found for "${this.escapeHtml(searchTerm)}"</p>
+                        </div>
+                    `;
+                    resultsContainer.style.display = 'block';
+                    return;
+                }
+                
+                let html = `<div style="margin-bottom: var(--space-2); font-weight: 600; color: var(--text-secondary);">
+                    <i class="fas fa-check-circle" style="color: var(--success-color);"></i> 
+                    ${results.length} result(s) found
+                </div>`;
+                
+                results.forEach(booking => {
+                    const entryTime = new Date(booking.bookingTime).toLocaleString();
+                    html += `
+                        <div class="booking-card" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 15px !important; padding: 15px !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; background: var(--info-color)15 !important; border: 2px solid var(--info-color) !important;">
+                            <div class="booking-header" style="min-width: 120px !important; flex-shrink: 0 !important;">
+                                <div class="vehicle-number">${this.escapeHtml(booking.vehicleNumber)}</div>
+                                <div class="booking-code">${this.escapeHtml(booking.bookingCode)}</div>
+                            </div>
+                            
+                            <div class="booking-details-horizontal" style="display: flex !important; flex-direction: row !important; gap: 20px !important; flex: 1 !important; align-items: center !important;">
+                                <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+                                    <span class="detail-label">Booking ID</span>
+                                    <span class="detail-value"><span class="booking-id-badge">#${this.escapeHtml(booking.bookingId)}</span></span>
+                                </div>
+                                <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+                                    <span class="detail-label">Customer</span>
+                                    <span class="detail-value">${this.escapeHtml(booking.customerName)}</span>
+                                </div>
+                                <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+                                    <span class="detail-label">Entry</span>
+                                    <span class="detail-value">${this.escapeHtml(entryTime)}</span>
+                                </div>
+                                <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+                                    <span class="detail-label">Slot</span>
+                                    <span class="detail-value">F${this.escapeHtml(booking.floor)}-S${this.escapeHtml(booking.slotNumber)}</span>
+                                </div>
+                                <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+                                    <span class="detail-label">Duration</span>
+                                    <span class="detail-value">${this.escapeHtml(booking.durationMinutes)}m</span>
+                                </div>
+                            </div>
+                            
+                            <div class="booking-actions" style="display: flex !important; flex-direction: row !important; gap: 10px !important; min-width: 100px !important; flex-shrink: 0 !important;">
+                                <button class="btn btn-release" onclick="showReleaseConfirm(${booking.bookingId})" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important; min-width: 90px !important; padding: 8px 12px !important; font-size: 12px !important; background: #ff6b35 !important; color: white !important; border: none !important; border-radius: 4px !important; cursor: pointer !important;">
+                                    <i class="fas fa-sign-out-alt"></i> Release
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsContainer.innerHTML = html;
+                resultsContainer.style.display = 'block';
+            }
         }
 
-
-    </script>
-    
-    <!-- Include exit-fix.js for showReleaseConfirmation method -->
-    <script src="exit-fix.js"></script>
-    
-    <!-- Initialize ExitManagement class -->
-    <script>
+        // Initialize ExitManagement
         let exitManagement;
         
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing ExitManagement...');
             exitManagement = new ExitManagement();
+            exitManagement.init();
             console.log('ExitManagement initialized');
         });
         
         // Cleanup when page is unloaded
         window.addEventListener('beforeunload', function() {
             if (exitManagement) {
-                console.log('Page unloading, cleaning up ExitManagement...');
                 exitManagement.cleanup();
             }
         });
         
         // Global functions for onclick handlers
-        function loadActiveBookings() {
-            if (exitManagement) {
-                exitManagement.loadActiveBookings();
-            } else {
-                console.error('ExitManagement not initialized');
-            }
-        }
-        
-        function calculateFee(bookingId) {
-            if (exitManagement) {
-                exitManagement.calculateFee(bookingId);
-            } else {
-                console.error('ExitManagement not initialized');
-            }
-        }
-        
-        function processExit() {
-            if (exitManagement) {
-                exitManagement.processExit();
-            } else {
-                console.error('ExitManagement not initialized');
-            }
-        }
-        
-        function closeFeeModal() {
-            if (exitManagement) {
-                exitManagement.closeFeeModal();
-            } else {
-                console.error('ExitManagement not initialized');
-            }
+        function refreshData() {
+            location.reload();
         }
         
         function logout() {
-            console.log('Logout clicked');
+            // Clear authentication
+            sessionStorage.removeItem('exitAuthenticated');
+            sessionStorage.removeItem('exitUser');
+            // Redirect to auth page
             window.location.href = '/auth.html';
         }
         
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('feeModal');
-            if (event.target === modal) {
-                modal.classList.remove('open');
+        function viewBookingStatus() {
+            // Open index.html in view mode in a new tab
+            window.open('/index.html?viewMode=true', '_blank');
+        }
+        
+        function searchVehicle() {
+            const searchInput = document.getElementById('searchInput');
+            if (exitManagement && searchInput) {
+                exitManagement.searchVehicle(searchInput.value);
             }
         }
+        
+        // Allow Enter key to trigger search
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchVehicle();
+                    }
+                });
+            }
+        });
+        
+        function calculateFee(bookingId) {
+            if (exitManagement) exitManagement.calculateFee(bookingId);
+        }
+        
+        function showReleaseConfirm(bookingId) {
+            if (exitManagement) exitManagement.showReleaseConfirm(bookingId);
+        }
+        
+        function confirmRelease() {
+            if (exitManagement) exitManagement.confirmRelease();
+        }
+        
+        function closeFeeModal() {
+            if (exitManagement) exitManagement.closeFeeModal();
+        }
+        
+        function closeConfirmModal() {
+            if (exitManagement) exitManagement.closeConfirmModal();
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('open');
+            }
+        };
     </script>
-
-
 </body>
-
-
 </html>
-
-
-
