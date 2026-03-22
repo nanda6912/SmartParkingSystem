@@ -140,11 +140,18 @@ public class ExitService {
             booking.setParkingFee((int) Math.round(fee));
             booking.setIsActive(false);
             
+            // Add null safety check for parking slot
+            ParkingSlot slot = booking.getParkingSlot();
+            if (slot == null) {
+                log.warn("Booking {} has no associated parking slot in processExit", bookingId);
+                throw new RuntimeException("Booking has no associated parking slot");
+            }
+            
             try {
+                // Save booking first
                 Booking savedBooking = bookingRepository.save(booking);
                 
                 // Update slot status only after booking is successfully saved
-                ParkingSlot slot = booking.getParkingSlot();
                 slot.setStatus(com.smartparking.enums.SlotStatus.AVAILABLE);
                 slot.setLockUntil(null);
                 parkingSlotRepository.save(slot);
@@ -170,6 +177,7 @@ public class ExitService {
                 exitDetails.put("hoursCharged", hours);
                 exitDetails.put("hourlyRate", HOURLY_RATE);
                 exitDetails.put("totalFee", fee);
+                exitDetails.put("slotId", slot.getSlotId());
                 exitDetails.put("slotNumber", slot.getSlotNumber());
                 exitDetails.put("floor", slot.getFloor());
                 exitDetails.put("slotReleased", true);
@@ -212,9 +220,19 @@ public class ExitService {
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");
         receipt.append("VEHICLE TYPE: ").append(booking.getVehicleType()).append("\n");
-        receipt.append("SLOT ID: ").append(booking.getParkingSlot().getSlotId()).append("\n");
-        receipt.append("SLOT NUMBER: ").append(booking.getParkingSlot().getSlotNumber()).append("\n");
-        receipt.append("FLOOR: ").append(booking.getParkingSlot().getFloor()).append("\n");
+        
+        // Add null safety check for parking slot
+        ParkingSlot receiptSlot = booking.getParkingSlot();
+        if (receiptSlot != null) {
+            receipt.append("SLOT ID: ").append(receiptSlot.getSlotId()).append("\n");
+            receipt.append("SLOT NUMBER: ").append(receiptSlot.getSlotNumber()).append("\n");
+            receipt.append("FLOOR: ").append(receiptSlot.getFloor()).append("\n");
+        } else {
+            receipt.append("SLOT ID: UNKNOWN\n");
+            receipt.append("SLOT NUMBER: N/A\n");
+            receipt.append("FLOOR: N/A\n");
+            log.warn("Booking {} has no associated parking slot in generateExitReceipt", booking.getId());
+        }
         receipt.append("ENTRY TIME: ").append(booking.getBookingTime().format(FORMATTER)).append("\n");
         receipt.append("EXIT TIME: ").append(booking.getExitTime() != null ? booking.getExitTime().format(FORMATTER) : "Still Parked").append("\n");
         
