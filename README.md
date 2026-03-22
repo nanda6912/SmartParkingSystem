@@ -268,6 +268,15 @@ export DB_PASSWORD="your-password"
 
 ### Default Users
 
+> **⚠️ SECURITY WARNING**: These default credentials are **INSECURE** and intended for development only. **MUST be changed before any production deployment!**
+>
+> **Required Actions for Production:**
+> - **Rotate or remove default accounts** immediately
+> - Set admin credentials via **environment variables** or secure setup flow
+> - Enforce **strong password policy** (minimum 12 characters, mixed case, numbers, symbols)
+> - Disable or regenerate default user during **first-run provisioning**
+> - Never commit actual credentials to version control
+
 #### Exit Page
 - **Username**: admin
 - **Password**: admin123
@@ -299,7 +308,7 @@ SmartParkingSystem/
 │   │       │   ├── auth.html   # Exit authentication
 │   │       │   ├── exit.html   # Exit management
 │   │       │   └── index.html  # Main booking page
-│   │       ├── application.properties         # PostgreSQL configuration
+│   │       ├── application.properties         # Application configuration (PostgreSQL)
 │   └── test/                  # Test files
 ├── pom.xml                    # Maven configuration
 ├── setup-database.bat        # Database setup script

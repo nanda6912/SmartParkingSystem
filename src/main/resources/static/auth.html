@@ -210,11 +210,8 @@
     </div>
 
     <script>
-        // Exit page credentials - can be modified as needed
-        const EXIT_CREDENTIALS = {
-            username: 'admin',
-            password: 'admin123'
-        };
+        // Server-side authentication - POST credentials to secure backend
+        const LOGIN_ENDPOINT = '/api/auth/login';
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
@@ -228,7 +225,7 @@
             }
         });
         
-        function handleAuth(event) {
+        async function handleAuth(event) {
             event.preventDefault();
             
             const username = document.getElementById('username').value.trim();
@@ -247,11 +244,26 @@
             // Show loading state
             showLoading();
             
-            // Simulate authentication delay for UX
-            setTimeout(() => {
-                // Check credentials
-                if (username === EXIT_CREDENTIALS.username && password === EXIT_CREDENTIALS.password) {
-                    // Store authentication in sessionStorage
+            try {
+                // POST credentials to server-side endpoint
+                const response = await fetch(LOGIN_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Store server-issued token
+                    if (data.token) {
+                        sessionStorage.setItem('exitToken', data.token);
+                    }
                     sessionStorage.setItem('exitAuthenticated', 'true');
                     sessionStorage.setItem('exitUser', JSON.stringify({
                         username: username,
@@ -268,9 +280,13 @@
                     }, 800);
                 } else {
                     hideLoading();
-                    showError('Invalid credentials. Please try again.');
+                    showError(data.message || 'Invalid credentials. Please try again.');
                 }
-            }, 500);
+            } catch (error) {
+                hideLoading();
+                console.error('Authentication error:', error);
+                showError('Authentication failed. Please try again later.');
+            }
         }
         
         function showLoading() {

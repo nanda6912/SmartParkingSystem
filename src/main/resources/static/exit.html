@@ -276,7 +276,7 @@
         
         .booking-code {
             background: var(--primary-color);
-            color: rgb(129,124,124);
+            color: #ffffff;
             padding: 2px 8px;
             border-radius: var(--radius-sm);
             font-size: 11px;
@@ -330,7 +330,7 @@
         
         .btn-calculate {
             background: var(--info-color);
-            color: rgb(129, 124, 124);
+            color: #ffffff;
         }
         
         .btn-calculate:hover {
@@ -339,7 +339,7 @@
         
         .btn-release {
             background: var(--success-color);
-            color: rgb(121, 117, 117);
+            color: #ffffff;
         }
         
         .btn-release:hover {
@@ -457,7 +457,7 @@
         
         .btn-confirm {
             background: var(--success-color);
-            color: rgb(129, 124, 124);
+            color: #ffffff;
             flex: 1;
             padding: var(--space-3);
             border: none;
@@ -482,7 +482,7 @@
             top: var(--space-4);
             right: var(--space-4);
             background: var(--success-color);
-            color: rgb(129,124,124);
+            color: #ffffff;
             padding: var(--space-4) var(--space-6);
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-lg);
@@ -1210,9 +1210,33 @@
                         totalAmount: result.totalFee || this.currentBookingDetails?.totalFee || 0
                     };
                     
-                    const released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+                    // Limit localStorage to prevent unbounded growth
+                    const MAX_RELEASED = 100;
+                    let released = [];
+                    try {
+                        released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+                    } catch (e) {
+                        released = [];
+                    }
                     released.unshift(releasedData);
-                    localStorage.setItem('releasedVehicles', JSON.stringify(released));
+                    // Trim to max size
+                    if (released.length > MAX_RELEASED) {
+                        released = released.slice(0, MAX_RELEASED);
+                    }
+                    try {
+                        localStorage.setItem('releasedVehicles', JSON.stringify(released));
+                    } catch (e) {
+                        // Handle quota exceeded - remove oldest entries
+                        if (e.name === 'QuotaExceededError') {
+                            released.pop();
+                            try {
+                                localStorage.setItem('releasedVehicles', JSON.stringify(released));
+                            } catch (e2) {
+                                // If still failing, clear the key
+                                localStorage.removeItem('releasedVehicles');
+                            }
+                        }
+                    }
                     
                     // Download receipt
                     this.downloadReceipt(releasedData);
@@ -1331,9 +1355,9 @@ Receipt Generated: ${new Date().toLocaleString()}
                     
                     // Search by booking ID or vehicle number
                     const results = bookings.filter(booking => 
-                        booking.bookingId.toString() === searchTerm || 
-                        booking.vehicleNumber.toUpperCase().includes(searchTerm) ||
-                        booking.bookingCode.toUpperCase() === searchTerm
+                        booking.bookingId?.toString() === searchTerm || 
+                        booking.vehicleNumber?.toUpperCase().includes(searchTerm) ||
+                        booking.bookingCode?.toUpperCase() === searchTerm
                     );
                     
                     this.displaySearchResults(results, searchTerm);

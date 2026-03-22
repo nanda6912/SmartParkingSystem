@@ -303,8 +303,10 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
-    outline: none;
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 /* ===== UTILITIES ===== */
@@ -326,7 +328,6 @@ input:focus, select:focus, textarea:focus {
 .gap-4 { gap: var(--space-4); }
 
 /* ===== TYPOGRAPHY ===== */
-/* Using local Cambria font with fallbacks */
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.3;

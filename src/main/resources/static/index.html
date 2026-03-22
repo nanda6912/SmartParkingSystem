@@ -2964,49 +2964,6 @@
 
 
 
-                    slotElement.innerHTML = `
-
-
-
-
-
-
-
-                        <div class="slot-number">${slot.slotNumber}</div>
-
-
-
-
-
-
-
-                        <div class="slot-status">${slot.status}</div>
-
-
-
-
-
-
-
-                        ${timerHtml}
-
-
-
-
-
-
-
-                    `;
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3201,6 +3158,20 @@
 
 
                     });
+
+
+
+
+
+
+
+                    if (!response.ok) {
+
+                        const errorText = await response.text();
+
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+
+                    }
 
 
 
@@ -4124,48 +4095,11 @@
 
 
 
-
-
-
-
             clearValidationErrors() {
-
-
-
-
-
-
-
-                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
-
-
-
-
-
-
-
+                ['vehicleNumber', 'customerName', 'phoneNumber', 'vehicleType'].forEach(fieldId => {
                     document.getElementById(fieldId).classList.remove('error');
-
-
-
-
-
-
-
                     document.getElementById(`${fieldId}Error`).textContent = '';
-
-
-
-
-
-
-
                 });
-
-
-
-
-
 
 
             }
@@ -5062,7 +4996,7 @@
 
 
 
-                        ${persistent ? '<button onclick="window.closeNotification()" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
+                        ${persistent ? '<button class="close-notification-btn" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
 
 
 
