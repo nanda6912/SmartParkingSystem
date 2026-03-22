@@ -271,11 +271,15 @@ export DB_PASSWORD="your-password"
 > **⚠️ SECURITY WARNING**: These default credentials are **INSECURE** and intended for development only. **MUST be changed before any production deployment!**
 >
 > **Required Actions for Production:**
-> - **Rotate or remove default accounts** immediately
-> - Set admin credentials via **environment variables** or secure setup flow
-> - Enforce **strong password policy** (minimum 12 characters, mixed case, numbers, symbols)
-> - Disable or regenerate default user during **first-run provisioning**
-> - Never commit actual credentials to version control
+> - **Change default passwords immediately** - Access the database directly or create a migration script to update the default user passwords
+> - **Do not commit actual credentials to version control** - Use environment variables for sensitive configuration (JWT_SECRET, DB_PASSWORD)
+> - **Restrict access** - Configure firewall rules and access controls to limit who can reach the admin endpoints
+> - **Monitor authentication attempts** - Review application logs regularly for suspicious login activity
+>
+> **Current Limitations:**
+> - Password policy enforcement is not programmatically implemented (manual enforcement recommended)
+> - No automated first-run provisioning flow exists - passwords must be changed manually in the database
+> - Admin credentials are not configurable via environment variables - stored in the database
 
 #### Exit Page
 - **Username**: admin

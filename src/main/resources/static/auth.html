@@ -194,12 +194,12 @@
         <form id="authForm" onsubmit="handleAuth(event)" class="auth-form">
             <div class="form-group">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" id="username" name="username" class="form-input" required placeholder="Enter username">
+                <input type="text" id="username" name="username" class="form-input" required placeholder="Enter username" autocomplete="username">
             </div>
 
             <div class="form-group">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" name="password" class="form-input" required placeholder="Enter password">
+                <input type="password" id="password" name="password" class="form-input" required placeholder="Enter password" autocomplete="current-password">
             </div>
 
             <div id="error" class="notification error" style="display: none;"></div>
@@ -253,7 +253,8 @@
                     },
                     body: JSON.stringify({
                         username: username,
-                        password: password
+                        password: password,
+                        role: 'exit'
                     })
                 });
                 

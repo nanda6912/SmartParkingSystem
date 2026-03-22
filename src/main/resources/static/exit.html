@@ -953,7 +953,7 @@
                                 </div>
                                 <div class="booking-cell">
                                     <span class="booking-cell-label">Slot</span>
-                                    <span class="booking-cell-value">${this.escapeHtml(booking.floor)}-${this.escapeHtml(booking.slotNumber)}</span>
+                                    <span class="booking-cell-value">${this.escapeHtml(booking.slotId || `${booking.floor}-${booking.slotNumber}`)}</span>
                                 </div>
                                 <div class="booking-cell">
                                     <span class="booking-cell-label">Duration</span>
@@ -1274,6 +1274,7 @@ PARKING DETAILS:
 Entry Time: ${exitData.bookingTime ? new Date(exitData.bookingTime).toLocaleString() : (exitData.entryTime ? new Date(exitData.entryTime).toLocaleString() : 'N/A')}
 Exit Time: ${new Date(exitData.exitTime).toLocaleString()}
 Duration: ${exitData.duration || exitData.durationMinutes || 'N/A'} minutes
+Slot ID: ${exitData.slotId || 'N/A'}
 Slot Number: ${exitData.slotNumber || 'N/A'}
 Floor: ${exitData.floor || 'N/A'}
 
@@ -1356,8 +1357,8 @@ Receipt Generated: ${new Date().toLocaleString()}
                     // Search by booking ID or vehicle number
                     const results = bookings.filter(booking => 
                         booking.bookingId?.toString() === searchTerm || 
-                        booking.vehicleNumber?.toUpperCase().includes(searchTerm) ||
-                        booking.bookingCode?.toUpperCase() === searchTerm
+                        (booking.vehicleNumber || '').toUpperCase().includes(searchTerm) ||
+                        (booking.bookingCode || '').toUpperCase() === searchTerm
                     );
                     
                     this.displaySearchResults(results, searchTerm);
@@ -1413,7 +1414,7 @@ Receipt Generated: ${new Date().toLocaleString()}
                                 </div>
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
                                     <span class="detail-label">Slot</span>
-                                    <span class="detail-value">F${this.escapeHtml(booking.floor)}-S${this.escapeHtml(booking.slotNumber)}</span>
+                                    <span class="detail-value">${this.escapeHtml(booking.slotId || `F${booking.floor}-S${booking.slotNumber}`)}</span>
                                 </div>
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
                                     <span class="detail-label">Duration</span>

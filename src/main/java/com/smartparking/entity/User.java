@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -39,6 +40,9 @@ public class User {
     
     @Column(name = "is_active")
     private Boolean isActive = true;
+    
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
     
     @Version
     private Long version;
@@ -107,6 +111,14 @@ public class User {
     
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+    
+    public LocalDateTime getLastLogin() {
+        return lastLogin;
+    }
+    
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
     }
     
     public Long getVersion() {

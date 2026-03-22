@@ -9,6 +9,7 @@ public class ParkingSlotDTO {
     private Long id;
     private Integer slotNumber;
     private Integer floor;
+    private String slotId;
     private SlotStatus status;
     private LocalDateTime lockUntil;
     private Long remainingLockSeconds;
@@ -37,6 +38,14 @@ public class ParkingSlotDTO {
     
     public void setFloor(Integer floor) {
         this.floor = floor;
+    }
+    
+    public String getSlotId() {
+        return slotId;
+    }
+    
+    public void setSlotId(String slotId) {
+        this.slotId = slotId;
     }
     
     public SlotStatus getStatus() {

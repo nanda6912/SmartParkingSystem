@@ -8,6 +8,8 @@ import com.smartparking.entity.ParkingSlot;
 import com.smartparking.enums.SlotStatus;
 import com.smartparking.repository.BookingRepository;
 import com.smartparking.repository.ParkingSlotRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ParkingService {
+    
+    private static final Logger log = LoggerFactory.getLogger(ParkingService.class);
     
     @Autowired
     private ParkingSlotRepository parkingSlotRepository;
@@ -44,7 +48,7 @@ public class ParkingService {
     public List<ParkingSlotDTO> getAllSlots() {
         try {
             List<ParkingSlot> slots = parkingSlotRepository.findAll();
-            System.out.println("Found " + slots.size() + " slots");
+            log.debug("Found {} slots", slots.size());
             return slots.stream()
                     .sorted((a, b) -> {
                         // Sort by floor first, then by slot number
@@ -57,8 +61,7 @@ public class ParkingService {
                     .map(this::convertToDTO)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            System.out.println("Error in getAllSlots: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error in getAllSlots: {}", e.getMessage(), e);
             throw e;
         }
     }
@@ -102,29 +105,30 @@ public class ParkingService {
     
     public BookingResponseDTO bookSlot(BookingRequestDTO bookingRequest) {
         try {
-            System.out.println("=== BOOKING REQUEST DEBUG ===");
-            System.out.println("Slot ID: " + bookingRequest.getSlotId());
-            System.out.println("Vehicle Number: " + bookingRequest.getVehicleNumber());
-            System.out.println("Customer Name: " + bookingRequest.getCustomerName());
-            System.out.println("Phone Number: " + bookingRequest.getPhoneNumber());
-            System.out.println("Vehicle Type: " + bookingRequest.getVehicleType());
+            log.debug("=== BOOKING REQUEST DEBUG ===");
+            log.debug("Slot ID: {}", bookingRequest.getSlotId());
+            log.debug("Vehicle Number: {}", bookingRequest.getVehicleNumber());
+            log.debug("Customer Name: {}", bookingRequest.getCustomerName());
+            log.debug("Phone Number: {}", bookingRequest.getPhoneNumber());
+            log.debug("Vehicle Type: {}", bookingRequest.getVehicleType());
             
             Optional<ParkingSlot> slotOpt = parkingSlotRepository.findByIdWithLock(bookingRequest.getSlotId());
             if (slotOpt.isEmpty()) {
-                System.out.println("ERROR: Slot not found");
+                log.warn("Slot not found for ID: {}", bookingRequest.getSlotId());
                 return new BookingResponseDTO("Slot not found");
             }
             
             ParkingSlot slot = slotOpt.get();
-            System.out.println("Slot found - Status: " + slot.getStatus() + ", Locked until: " + slot.getLockUntil());
+            log.debug("Slot found - ID: {}, Status: {}, Locked until: {}", 
+                     slot.getId(), slot.getStatus(), slot.getLockUntil());
             
             if (slot.getStatus() != SlotStatus.LOCKED) {
-                System.out.println("ERROR: Slot is not locked - Current status: " + slot.getStatus());
+                log.warn("Slot {} is not locked - Current status: {}", slot.getId(), slot.getStatus());
                 return new BookingResponseDTO("Slot is not locked. Please lock the slot first.");
             }
             
             if (slot.getLockUntil() != null && slot.getLockUntil().isBefore(LocalDateTime.now())) {
-                System.out.println("ERROR: Lock expired");
+                log.info("Lock expired for slot {}", slot.getId());
                 slot.setStatus(SlotStatus.AVAILABLE);
                 slot.setLockUntil(null);
                 parkingSlotRepository.save(slot);
@@ -133,11 +137,11 @@ public class ParkingService {
             
             // Check if vehicle is currently parked (only active bookings, not exited ones)
             Optional<Booking> existingActiveBooking = bookingRepository.findByVehicleNumberAndIsActiveTrue(bookingRequest.getVehicleNumber().toUpperCase());
-            System.out.println("Checking vehicle: " + bookingRequest.getVehicleNumber().toUpperCase());
-            System.out.println("Existing active booking found: " + existingActiveBooking.isPresent());
+            log.debug("Checking vehicle: {}", bookingRequest.getVehicleNumber().toUpperCase());
+            log.debug("Existing active booking found: {}", existingActiveBooking.isPresent());
             
             if (existingActiveBooking.isPresent()) {
-                System.out.println("Vehicle is currently parked, blocking booking");
+                log.warn("Vehicle {} is currently parked, blocking new booking", bookingRequest.getVehicleNumber());
                 return new BookingResponseDTO("Vehicle is currently parked");
             }
             
@@ -174,10 +178,14 @@ public class ParkingService {
     }
     
     private ParkingSlotDTO convertToDTO(ParkingSlot slot) {
+        if (slot == null) {
+            return null;
+        }
         ParkingSlotDTO dto = new ParkingSlotDTO();
         dto.setId(slot.getId());
         dto.setSlotNumber(slot.getSlotNumber());
         dto.setFloor(slot.getFloor());
+        dto.setSlotId(slot.getSlotId() != null ? slot.getSlotId() : "UNKNOWN");
         dto.setStatus(slot.getStatus());
         
         // Defensive null handling for lockUntil
@@ -188,7 +196,7 @@ public class ParkingService {
                 long remainingSeconds = java.time.Duration.between(LocalDateTime.now(), slot.getLockUntil()).getSeconds();
                 dto.setRemainingLockSeconds(Math.max(0, remainingSeconds));
             } catch (Exception e) {
-                // If calculation fails, set to 0
+                log.warn("Error calculating remaining lock seconds for slot {}: {}", slot.getId(), e.getMessage());
                 dto.setRemainingLockSeconds(0L);
             }
         }
@@ -197,9 +205,23 @@ public class ParkingService {
     }
     
     private BookingResponseDTO convertToResponseDTO(Booking booking) {
+        if (booking == null || booking.getParkingSlot() == null) {
+            log.error("Cannot convert null booking or booking with null parking slot to DTO");
+            BookingResponseDTO errorDto = new BookingResponseDTO("Invalid booking data");
+            errorDto.setSlotStatus(SlotStatus.AVAILABLE);
+            errorDto.setBookingCode("ERROR");
+            errorDto.setSlotId(0L);
+            errorDto.setSlotIdString("UNKNOWN");
+            errorDto.setSlotNumber(0);
+            errorDto.setFloor(0);
+            return errorDto;
+        }
+        
         BookingResponseDTO dto = new BookingResponseDTO();
         dto.setBookingCode(booking.getBookingCode());
         dto.setSlotId(booking.getParkingSlot().getId());
+        dto.setSlotIdString(booking.getParkingSlot().getSlotId() != null ? 
+                booking.getParkingSlot().getSlotId() : "UNKNOWN");
         dto.setSlotNumber(booking.getParkingSlot().getSlotNumber());
         dto.setFloor(booking.getParkingSlot().getFloor());
         dto.setVehicleNumber(booking.getVehicleNumber());

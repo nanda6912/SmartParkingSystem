@@ -9,6 +9,7 @@ public class BookingResponseDTO {
     
     private String bookingCode;
     private Long slotId;
+    private String slotIdString;
     private Integer slotNumber;
     private Integer floor;
     private String vehicleNumber;
@@ -41,6 +42,14 @@ public class BookingResponseDTO {
     
     public void setSlotId(Long slotId) {
         this.slotId = slotId;
+    }
+    
+    public String getSlotIdString() {
+        return slotIdString;
+    }
+    
+    public void setSlotIdString(String slotIdString) {
+        this.slotIdString = slotIdString;
     }
     
     public Integer getSlotNumber() {

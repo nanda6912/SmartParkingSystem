@@ -201,6 +201,7 @@ public class ExitService {
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");
         receipt.append("VEHICLE TYPE: ").append(booking.getVehicleType()).append("\n");
+        receipt.append("SLOT ID: ").append(booking.getParkingSlot().getSlotId()).append("\n");
         receipt.append("SLOT NUMBER: ").append(booking.getParkingSlot().getSlotNumber()).append("\n");
         receipt.append("FLOOR: ").append(booking.getParkingSlot().getFloor()).append("\n");
         receipt.append("ENTRY TIME: ").append(booking.getBookingTime().format(FORMATTER)).append("\n");
@@ -355,6 +356,7 @@ public class ExitService {
         dto.put("customerName", booking.getCustomerName());
         dto.put("phoneNumber", booking.getPhoneNumber());
         dto.put("vehicleType", booking.getVehicleType());
+        dto.put("slotId", booking.getParkingSlot().getSlotId());
         dto.put("slotNumber", booking.getParkingSlot().getSlotNumber());
         dto.put("floor", booking.getParkingSlot().getFloor());
         dto.put("bookingTime", booking.getBookingTime().format(FORMATTER));

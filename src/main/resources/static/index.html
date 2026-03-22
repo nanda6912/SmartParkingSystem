@@ -387,57 +387,6 @@
 
 
 
-
-
-
-        .floor-tabs {
-
-
-
-
-
-
-
-            display: flex;
-
-
-
-
-
-
-
-            gap: var(--space-2);
-
-
-
-
-
-
-
-            margin-bottom: var(--space-6);
-
-
-
-
-
-
-
-            padding: var(--space-2);
-
-
-
-
-
-
-
-            background: var(--bg-tertiary);
-
-
-
-
-
-
-
             border-radius: var(--radius-md);
 
 
@@ -632,9 +581,52 @@
 
 
 
+        .floors-container {
+            display: flex;
+            gap: var(--space-8);
+            margin-bottom: var(--space-6);
+            padding: var(--space-2);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+        }
+
+        .floor-section {
+            flex: 1;
+        }
+
+        .floor-title {
+            text-align: center;
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .skeleton-slot {
+            aspect-ratio: 1;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .skeleton-content {
+            width: 60%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
         .stats-row {
-
-
 
 
 
@@ -1224,92 +1216,24 @@
 
 
 
-            <!-- Floor Tabs -->
-
-
-
-
-
-
-
-            <div class="floor-tabs">
-
-
-
-
-
-
-
-                <button class="floor-tab active" data-floor="1">Floor 1</button>
-
-
-
-
-
-
-
-                <button class="floor-tab" data-floor="2">Floor 2</button>
-
-
-
-
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <!-- Parking Section -->
-
-
-
-
-
-
-
-            <div class="parking-section">
-
-
-
-
-
-
-
-                <div class="parking-grid" id="parkingGrid">
-
-
-
-
-
-
-
-                    <!-- Parking slots will be dynamically generated -->
-
-
-
-
-
-
-
+            <!-- Two-Floor Layout -->
+            <div class="floors-container">
+                <!-- Floor 1 Section -->
+                <div class="floor-section">
+                    <h3 class="floor-title">Floor 1 (Ground)</h3>
+                    <div class="parking-grid" id="parkingGridFloor1">
+                        <!-- Parking slots will be dynamically generated -->
+                    </div>
                 </div>
-
-
-
-
-
+                
+                <!-- Floor 2 Section -->
+                <div class="floor-section">
+                    <h3 class="floor-title">Floor 2 (First)</h3>
+                    <div class="parking-grid" id="parkingGridFloor2">
+                        <!-- Parking slots will be dynamically generated -->
+                    </div>
+                </div>
+            </div>
 
 
             </div>
@@ -1872,20 +1796,10 @@
 
 
 
-                // Show view mode banner if in view mode
-
-
-
-                if (this.viewMode) {
-
-
-
-                    this.showViewModeBanner();
-
-
-
-                }
-
+                // View mode banner removed - slots are now viewable without banner
+                // if (this.viewMode) {
+                //     this.showViewModeBanner();
+                // }
 
 
 
@@ -1961,18 +1875,6 @@
 
 
                         <span><strong>View Mode</strong> - You can only view slot statuses. Booking is disabled.</span>
-
-
-
-                        <button onclick="window.location.href='/exit.html'" class="btn-exit-return">
-
-
-
-                            <i class="fas fa-arrow-left"></i> Return to Exit Page
-
-
-
-                        </button>
 
 
 
@@ -2528,502 +2430,122 @@
 
 
 
-
-
-
-
             async loadParkingSlots() {
-
-
-
-
-
-
-
                 try {
-
-
-
-
-
-
-
                     this.showSkeletonLoader();
-
-
-
-
-
-
-
                     this.showProgressBar();
 
-
-
-
-
-
-
-                    console.log(`Loading parking slots for floor ${this.currentFloor}...`);
-
-
-
-
-
-
-
+                    console.log('Loading parking slots for all floors...');
                     
-
-
-
-
-
-
-
-                    let response = await fetch(`/api/parking-slots/floor/${this.currentFloor}`);
-
-
-
-
-
-
-
-                    console.log('Response status:', response.status);
-
-
-
-
-
-
-
-                    
-
-
-
-
-
-
-
-                    // Handle rate limiting with retry
-
-
-
-
-
-
-
-                    if (response.status === 429) {
-
-
-
-
-
-
-
-                        const retryAfter = parseInt(response.headers.get('Retry-After')) || 10;
-
-
-
-
-
-
-
-                        console.log(`Rate limited, retrying after ${retryAfter} seconds...`);
-
-
-
-
-
-
-
-                        
-
-
-
-
-
-
-
-                        // Show rate limit message
-
-
-
-
-
-
-
-                        this.showNotification(`Rate limit exceeded. Retrying in ${retryAfter} seconds...`, 'warning');
-
-
-
-
-
-
-
-                        
-
-
-
-
-
-
-
-                        // Wait and retry once
-
-
-
-
-
-
-
-                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-
-
-
-
-
-
-
-                        response = await fetch(`/api/parking-slots/floor/${this.currentFloor}`);
-
-
-
-
-
-
-
-                        console.log('Retry response status:', response.status);
-
-
-
-
-
-
-
+                    // Load both floors with individual error handling for resilience
+                    const results = await Promise.allSettled([
+                        this.loadFloorData(1),
+                        this.loadFloorData(2)
+                    ]);
+
+                    // Process results individually to handle partial failures
+                    const floor1Data = results[0].status === 'fulfilled' ? results[0].value : [];
+                    const floor2Data = results[1].status === 'fulfilled' ? results[1].value : [];
+
+                    // Log any failures but continue with available data
+                    if (results[0].status === 'rejected') {
+                        console.error('Floor 1 loading failed:', results[0].reason);
+                        this.showNotification('Floor 1 data unavailable. Some slots may not display.', 'warning');
+                    }
+                    if (results[1].status === 'rejected') {
+                        console.error('Floor 2 loading failed:', results[1].reason);
+                        this.showNotification('Floor 2 data unavailable. Some slots may not display.', 'warning');
                     }
 
+                    // Combine data for statistics
+                    this.slots = [...floor1Data, ...floor2Data];
 
-
-
-
-
-
+                    // Render each floor separately (empty arrays will clear the grid)
+                    this.renderFloor(floor1Data, 'parkingGridFloor1', 1);
+                    this.renderFloor(floor2Data, 'parkingGridFloor2', 2);
                     
-
-
-
-
-
-
-
-                    if (!response.ok) {
-
-
-
-
-
-
-
-                        throw new Error(`HTTP error! status: ${response.status}`);
-
-
-
-
-
-
-
-                    }
-
-
-
-
-
-
-
-                    
-
-
-
-
-
-
-
-                    const slots = await response.json();
-
-
-
-
-
-
-
-                    console.log('Loaded slots:', slots.length);
-
-
-
-
-
-
-
-                    this.slots = slots;
-
-
-
-
-
-
-
-                    this.renderParkingGrid();
-
-
-
-
-
-
-
                     this.updateStats();
-
-
-
-
-
-
+                    this.startLockTimers();
 
                 } catch (error) {
-
-
-
-
-
-
-
-                    console.error('Error loading parking slots:', error);
-
-
-
-
-
-
-
+                    console.error('Unexpected error loading parking slots:', error);
                     this.showNotification(`Error loading parking slots: ${error.message}`, 'error');
-
-
-
-
-
-
-
                 } finally {
-
-
-
-
-
-
-
                     this.hideLoading();
-
-
-
-
-
-
-
                 }
-
-
-
-
-
-
-
             }
 
+            async loadFloorData(floor) {
+                try {
+                    const response = await fetch(`/api/parking-slots/floor/${floor}`);
+                    
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            // Rate limited - wait and retry once
+                            console.log(`Rate limited for floor ${floor}, retrying...`);
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            const retryResponse = await fetch(`/api/parking-slots/floor/${floor}`);
+                            if (!retryResponse.ok) {
+                                throw new Error(`HTTP error after retry! status: ${retryResponse.status}`);
+                            }
+                            return await retryResponse.json();
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
 
+                    const data = await response.json();
+                    console.log(`Floor ${floor} slots loaded:`, data.length);
+                    return data;
+                } catch (error) {
+                    console.error(`Error loading floor ${floor}:`, error);
+                    throw error;
+                }
+            }
 
-
-
-
-
-
-
-
-
-
-
-
-
-            renderParkingGrid() {
-
-
-
-
-
-
-
-                const grid = document.getElementById('parkingGrid');
-
-
-
-
-
-
+            renderFloor(slots, gridId, floorNumber) {
+                const grid = document.getElementById(gridId);
+                if (!grid) {
+                    console.error(`Grid element not found: ${gridId}`);
+                    return;
+                }
 
                 grid.innerHTML = '';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                this.slots.forEach(slot => {
-
-
-
-
-
-
-
+                slots.forEach(slot => {
                     const slotElement = document.createElement('div');
-
-
-
-
-
-
-
                     slotElement.className = `parking-slot ${slot.status.toLowerCase()}`;
-
-
-
-
-
-
-
                     slotElement.dataset.slotId = slot.id;
 
-
-
-
-
-
-
-                    
-
-
-
-
-
-
-
                     let timerHtml = '';
-
-
-
-
-
-
-
                     if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
-
-
-
-
-
-
-
                         timerHtml = `<div class="lock-timer">${Math.ceil(slot.remainingLockSeconds)}s</div>`;
-
-
-
-
-
-
-
                     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                     // Only allow slot selection if NOT in view mode and slot is available
-
                     if (slot.status === 'AVAILABLE' && !this.viewMode) {
-
                         slotElement.addEventListener('click', () => this.selectSlot(slot));
-
                     }
 
                     
-
                     // Add view-mode class to all slots when in view mode (for visual indicator)
-
                     if (this.viewMode) {
-
                         slotElement.classList.add('view-mode');
-
                     }
 
-
+                    // Add slot content to the slot element
+                    slotElement.innerHTML = `
+                        <div class="slot-id">${slot.slotId || slot.id}</div>
+                        <div class="slot-status">${slot.status}</div>
+                        ${timerHtml}
+                    `;
 
                     grid.appendChild(slotElement);
-
-
-
-
-
-
-
                 });
-
-
-
-
-
-
-
             }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+            // Old renderParkingGrid method removed - now using renderFloor for two-floor layout
 
             updateStats() {
-
-
 
 
 
@@ -3340,12 +2862,14 @@
 
 
 
-
-
-
-
-
-
+            startLockTimers() {
+                // Start timers for all locked slots
+                this.slots.forEach(slot => {
+                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
+                        this.startLockTimer(slot.id, slot.remainingLockSeconds);
+                    }
+                });
+            }
 
             startLockTimer(slotId, seconds) {
 
@@ -4426,7 +3950,7 @@
 
 
 
-                        this.showNotification(`Booking confirmed! Slot ${slotData.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
+                        this.showNotification(`Booking confirmed! Slot ${slotData.slotId || slotData.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
 
 
 
@@ -5037,6 +4561,12 @@
 
 
                 notification.classList.add('show');
+                
+                // Add event listener for close button if present
+                const closeBtn = notification.querySelector('.close-notification-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => window.closeNotification());
+                }
 
 
 
@@ -5117,99 +4647,23 @@
 
 
             showSkeletonLoader() {
-
-
-
-
-
-
-
-                const grid = document.getElementById('parkingGrid');
-
-
-
-
-
-
-
-                grid.innerHTML = '';
-
-
-
-
-
-
-
+                const grid1 = document.getElementById('parkingGridFloor1');
+                const grid2 = document.getElementById('parkingGridFloor2');
                 
-
-
-
-
-
-
-
-                // Create skeleton loaders for parking slots
-
-
-
-
-
-
-
-                for (let i = 0; i < 20; i++) {
-
-
-
-
-
-
-
-                    const skeleton = document.createElement('div');
-
-
-
-
-
-
-
-                    skeleton.className = 'skeleton skeleton-text';
-
-
-
-
-
-
-
-                    skeleton.style.aspectRatio = '1';
-
-
-
-
-
-
-
-                    skeleton.style.borderRadius = 'var(--radius-md)';
-
-
-
-
-
-
-
-                    grid.appendChild(skeleton);
-
-
-
-
-
-
-
-                }
-
-
-
-
-
+                if (grid1) grid1.innerHTML = '';
+                if (grid2) grid2.innerHTML = '';
+                
+                // Add skeleton loading animation for both floors
+                [grid1, grid2].forEach(grid => {
+                    if (grid) {
+                        for (let i = 0; i < 10; i++) {
+                            const skeleton = document.createElement('div');
+                            skeleton.className = 'skeleton-slot';
+                            skeleton.innerHTML = '<div class="skeleton-content"></div>';
+                            grid.appendChild(skeleton);
+                        }
+                    }
+                });
 
 
             }
