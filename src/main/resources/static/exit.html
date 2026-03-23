@@ -622,9 +622,6 @@
                     <button class="btn-refresh" onclick="refreshData()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
-                    <button class="btn-refresh" onclick="logout()" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-secondary);">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
                 </div>
             </div>
             
@@ -744,14 +741,7 @@
     </div>
     
     <script>
-        // Authentication Check - Redirect to auth if not authenticated
-        (function checkAuth() {
-            const isAuthenticated = sessionStorage.getItem('exitAuthenticated');
-            if (!isAuthenticated) {
-                window.location.href = '/auth.html';
-                return;
-            }
-        })();
+        // Authentication removed - Direct access allowed
         
         class ExitManagement {
             constructor() {
@@ -856,7 +846,6 @@
 
                     const response = await fetch('/api/exit/active-bookings', {
                         method: 'GET',
-                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
@@ -888,8 +877,7 @@
             async loadStatistics() {
                 try {
                     const response = await fetch('/api/exit/active-bookings', {
-                        method: 'GET',
-                        credentials: 'include'
+                        method: 'GET'
                     });
 
                     if (response.ok) {
@@ -1076,7 +1064,6 @@
                     
                     const response = await fetch(`/api/exit/calculate-fee/${bookingId}`, {
                         method: 'GET',
-                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
@@ -1177,8 +1164,7 @@
                     
                     // First fetch the full booking details
                     const bookingResponse = await fetch('/api/exit/active-bookings', {
-                        method: 'GET',
-                        credentials: 'include'
+                        method: 'GET'
                     });
                     
                     let bookingDetails = {};
@@ -1191,8 +1177,7 @@
                     }
                     
                     const response = await fetch(`/api/exit/process/${this.currentBookingId}`, {
-                        method: 'POST',
-                        credentials: 'include'
+                        method: 'POST'
                     });
 
                     if (!response.ok) {
@@ -1341,7 +1326,6 @@ Receipt Generated: ${new Date().toLocaleString()}
                     // First load all active bookings
                     const response = await fetch('/api/exit/active-bookings', {
                         method: 'GET',
-                        credentials: 'include',
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
@@ -1459,11 +1443,8 @@ Receipt Generated: ${new Date().toLocaleString()}
         }
         
         function logout() {
-            // Clear authentication
-            sessionStorage.removeItem('exitAuthenticated');
-            sessionStorage.removeItem('exitUser');
-            // Redirect to auth page
-            window.location.href = '/auth.html';
+            // Authentication removed - just refresh the page
+            location.reload();
         }
         
         function viewBookingStatus() {

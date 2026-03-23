@@ -60,9 +60,7 @@ public class ReceiptService {
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");
         receipt.append("VEHICLE TYPE: ").append(booking.getVehicleType()).append("\n");
-        receipt.append("SLOT ID: ").append(booking.getParkingSlot().getSlotId()).append("\n");
-        receipt.append("SLOT NUMBER: ").append(booking.getParkingSlot().getSlotNumber()).append("\n");
-        receipt.append("FLOOR: ").append(booking.getParkingSlot().getFloor()).append("\n");
+        receipt.append("SLOT NUMBER: ").append(booking.getParkingSlot().getSlotId()).append("\n");
         receipt.append("BOOKING TIME: ").append(booking.getBookingTime().format(formatter)).append("\n");
         
         if (booking.getExitTime() != null) {

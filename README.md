@@ -1,18 +1,8 @@
-# Smart Parking Slot Reservation System
+# Smart Parking Management System
 
-A comprehensive full-stack parking management system built with Java 21, Spring Boot, PostgreSQL, and modern web technologies.
+A comprehensive parking management system built with Java 21, Spring Boot, PostgreSQL, and modern web technologies.
 
-## 🚀 Latest Features & Enhancements
-
-### 🔐 Exit Page Authentication (NEW!)
-- **Client-side Authentication**: Simple credentials-based access control
-- **Session Management**: Uses sessionStorage for authentication state
-- **Logout Functionality**: Clear session and redirect to auth page
-- **View Booking Status**: Open booking page in view-only mode in new tab
-
-**Default Credentials:**
-- Username: `admin`
-- Password: `admin123`
+## 🚀 Features
 
 ### ✨ Professional UI & Design System
 - **Modern Design System**: Unified CSS variables and components
@@ -20,17 +10,24 @@ A comprehensive full-stack parking management system built with Java 21, Spring 
 - **Ghost Badges**: Subtle status indicators (Available, Booked, Locked)
 - **Skeleton Loaders**: Smooth loading experience
 
-### 🎯 Advanced Admin Dashboard
+### 🎯 Exit Management Dashboard
 - **Real-time Synchronization**: Instant updates after vehicle exits
 - **Complete Data Display**: Phone numbers, vehicle types, duration, hours charged
-- **Clean UI**: Removed duplicate refresh buttons for better UX
 - **Live Statistics**: Today's exits, revenue, and active bookings
+- **Fee Calculation**: Automatic parking fee computation
+- **Receipt Generation**: Professional receipt downloads
 
-### 🔧 Enhanced Exit Process (NEW!)
+### 🔧 Enhanced Exit Process
 - **Staff Confirmation Dialog**: Professional confirmation before vehicle release
 - **Release Confirmation Modal**: Clear feedback with receipt download options
 - **Controlled Receipt Download**: Staff-controlled download timing
 - **Professional Workflow**: Enhanced user experience for parking operations
+
+### 📊 Parking Slot Management
+- **Real-time Slot Status**: Available, Booked, Locked states
+- **Floor-based Organization**: Multi-floor parking structure
+- **Vehicle Type Support**: Cars, Bikes, SUVs, Vans
+- **Booking Management**: Create and manage parking reservations
 - **Complete Data Preservation**: Full booking details maintained through exit process
 
 ### 📊 Real-time Data Synchronization (NEW!)
@@ -79,9 +76,8 @@ A comprehensive full-stack parking management system built with Java 21, Spring 
 
 ### 📱 Page-Specific Features
 - **Main Booking Page**: Real-time slot grid with visual status indicators
-- **Admin Dashboard**: Live statistics, exit tracking, revenue reports, and professional tables
 - **Exit Management**: Staff confirmation dialogs, active bookings tracking, and receipt generation
-- **Authentication Page**: Role-based login with modern form styling
+- **Direct Access**: No authentication required - immediate access to all features
 
 ### 🔄 Real-time Updates
 - **Auto-refresh**: Frontend updates every 10 seconds (optimized performance)
@@ -94,10 +90,9 @@ A comprehensive full-stack parking management system built with Java 21, Spring 
 - **Form Validation**: Real-time validation with helpful error messages
 - **Confirmation Dialogs**: Professional confirmation for critical actions
 - **Receipt Options**: Multiple download methods for user convenience
-- **Role-based Access**: Admin and staff interfaces with appropriate functionality
+- **Direct Access**: Immediate access to all features without login
 
-## Security & Performance
-- **JWT Authentication**: Secure token-based authentication for admin and staff
+## Performance & Reliability
 - **Enhanced Rate Limiting**: User-friendly limits (50 locks, 30 bookings, 300 general requests per hour)
 - **Input Validation**: Both frontend and backend validation with custom JSON deserializer
 - **Concurrent Control**: Database-level locking for slot operations
@@ -109,8 +104,6 @@ A comprehensive full-stack parking management system built with Java 21, Spring 
 - **Java 21**: Latest Java features and performance
 - **Spring Boot 3.2.0**: Modern Spring framework
 - **PostgreSQL**: Robust relational database
-- **Spring Security**: Authentication and authorization
-- **JWT**: Token-based authentication
 - **Spring Data JPA**: Database operations
 - **Maven**: Dependency management
 
@@ -173,7 +166,6 @@ mvn spring-boot:run "-Dspring.profiles.active=prod"
 4. **Access the application**
 - **Main Application**: http://localhost:8081/index.html
 - **Exit Management**: http://localhost:8081/exit.html
-- **Authentication**: http://localhost:8081/auth.html
 
 ## 📡 API Endpoints
 
@@ -189,10 +181,6 @@ mvn spring-boot:run "-Dspring.profiles.active=prod"
 - `GET /api/exit/receipt/{bookingId}` - Download receipt by booking ID
 - `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
 
-### Authentication
-- `POST /api/auth/login` - User authentication (for admin)
-- `POST /api/auth/refresh` - Refresh JWT token
-
 ## 🔧 Configuration
 
 ### Application Properties Files
@@ -201,9 +189,6 @@ mvn spring-boot:run "-Dspring.profiles.active=prod"
 
 ### Environment Variables
 ```bash
-# JWT Secret (generate with: openssl rand -base64 32)
-export JWT_SECRET="your-secret-key"
-
 # Database (optional - can use properties file)
 export DB_URL="jdbc:postgresql://localhost:5432/smart_parking_db"
 export DB_USERNAME="postgres"
@@ -240,109 +225,91 @@ export DB_PASSWORD="your-password"
 - **Check Vehicle Status**: `GET /api/exit/debug/vehicle/{vehicleNumber}`
 - **Debug Booking Requests**: `POST /api/parking-slots/book-debug`
 
-## 📅 Recent Updates (March 2026)
+## 📅 Latest Updates (March 2026)
 
-### 🎉 Major UI & UX Enhancements Released
-- **Professional Typography**: Cambria font family implemented across all pages
-- **Bold Headings**: Cambria Bold for all titles and headings for better hierarchy
-- **Admin Dashboard Cleanup**: Removed duplicate refresh buttons, improved data display
-- **Real-time Synchronization**: Advanced multi-method communication for instant updates
-- **Complete Data Preservation**: Phone numbers, vehicle types, and all booking details maintained
-- **Modern Design System**: Unified CSS variables and components for consistency
+### 🚀 Authentication Removal - Direct Access System
+- **Removed Authentication System**: Complete removal of login/logout functionality
+- **Direct Access**: Immediate access to all parking management features
+- **Simplified Architecture**: No user management, roles, or session handling
+- **Clean Database**: Removed users table and authentication-related data
+- **Streamlined UI**: Removed login pages and authentication redirects
+
+### ✨ Professional UI & Design System
+- **Modern Design System**: Unified CSS variables and components
+- **Responsive Layout**: Mobile-friendly interface
+- **Ghost Badges**: Subtle status indicators (Available, Booked, Locked)
+- **Skeleton Loaders**: Smooth loading experience
+- **Professional Typography**: Cambria font family across all pages
+
+### 🎯 Enhanced Exit Management
+- **Real-time Synchronization**: Advanced multi-method communication
+- **Complete Data Display**: Phone numbers, vehicle types, duration, hours charged
+- **Live Statistics**: Today's exits, revenue, and active bookings
+- **Fee Calculation**: Automatic parking fee computation
+- **Receipt Generation**: Professional receipt downloads
+- **Staff Confirmation Dialogs**: Professional confirmation before vehicle release
+
+### 📊 Parking Slot Management
+- **Real-time Slot Status**: Available, Booked, Locked states
+- **Floor-based Organization**: Multi-floor parking structure (200 slots total)
+- **Human-Readable Slot IDs**: AG06, BG15, AF22 format for easy identification
+- **Vehicle Type Support**: Cars, Bikes, SUVs, Vans
+- **Booking Management**: Create and manage parking reservations
+- **5-minute Slot Lock**: Extended lock duration for better user experience
+- **Vehicle Re-booking Support**: Same vehicles can book again after exit
+- **Clean Receipt Format**: Simplified slot display (shows only slot ID like AG06)
+- **Optimized Database Structure**: Efficient slot and booking management
 
 ### 🔧 Technical Improvements
-- **Advanced Synchronization**: BroadcastChannel, localStorage events, and polling mechanisms
-- **Duplicate Prevention**: Advanced notification deduplication using sessionStorage and Sets
-- **Enhanced Exit Process**: Professional staff confirmation dialogs and release workflows
-- **Vehicle Re-booking Support**: Same vehicles can book again after exit
+- **Enhanced Rate Limiting**: 50 locks, 30 bookings, 300 general requests per hour
+- **Input Validation**: Both frontend and backend validation
+- **Concurrent Control**: Database-level locking for slot operations
+- **Debug Support**: Comprehensive logging and troubleshooting endpoints
 - **Professional Receipt System**: Dual download methods with UTF-8 encoding
-- **Enhanced Rate Limiting**: 50x more bookings, 10x more locks for better UX
+- **Streamlined Architecture**: Direct access without authentication overhead
+- **Optimized Performance**: Fast response times and efficient database queries
 
-### 🐛 Bug Fixes
-- **Fixed Font Inconsistency**: Cambria font now consistently applied across all pages
-- **Fixed Duplicate UI Elements**: Removed extra refresh buttons from admin dashboard
-- **Fixed Data Loss**: Complete booking details now preserved through exit process
-- **Fixed "Unknown" Values**: Phone numbers and vehicle types now display correctly
-- **Fixed Sync Issues**: Admin dashboard updates immediately after vehicle exit
-- **Fixed Duplicate Notifications**: Advanced deduplication prevents multiple updates
-
-### Default Users
-
-> **⚠️ SECURITY WARNING**: These default credentials are **INSECURE** and intended for development only. **MUST be changed before any production deployment!**
->
-> **Required Actions for Production:**
-> - **Change default passwords immediately** - Access the database directly or create a migration script to update the default user passwords
-> - **Do not commit actual credentials to version control** - Use environment variables for sensitive configuration (JWT_SECRET, DB_PASSWORD)
-> - **Restrict access** - Configure firewall rules and access controls to limit who can reach the admin endpoints
-> - **Monitor authentication attempts** - Review application logs regularly for suspicious login activity
->
-> **Current Limitations:**
-> - Password policy enforcement is not programmatically implemented (manual enforcement recommended)
-> - No automated first-run provisioning flow exists - passwords must be changed manually in the database
-> - Admin credentials are not configurable via environment variables - stored in the database
-
-#### Exit Page
-- **Username**: admin
-- **Password**: admin123
-
-#### Admin Dashboard (JWT)
-- **Username**: admin
-- **Password**: admin123
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 SmartParkingSystem/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/smartparking/
-│   │   │   ├── controller/     # REST controllers
+│   │   │   ├── controller/     # REST controllers (Parking, Exit, Home)
 │   │   │   ├── dto/           # Data transfer objects
-│   │   │   ├── entity/        # JPA entities (Booking, ParkingSlot, User)
-│   │   │   ├── enums/         # Enumerations
-│   │   │   ├── filter/        # Security filters
+│   │   │   ├── entity/        # JPA entities (Booking, ParkingSlot)
+│   │   │   ├── enums/         # Enumerations (SlotStatus, VehicleType)
+│   │   │   ├── filter/        # Request filters (Rate limiting)
+│   │   │   ├── ratelimit/     # Rate limiting implementation
 │   │   │   ├── repository/    # Data repositories
 │   │   │   ├── scheduler/     # Scheduled tasks
-│   │   │   ├── security/      # Security configuration
-│   │   │   ├── service/       # Business logic
-│   │   │   └── config/        # Web configuration
+│   │   │   └── service/       # Business logic services
 │   │   └── resources/
-│   │       ├── static/        # Frontend files
-│   │       │   ├── styles/     # CSS design system
-│   │       │   ├── auth.html   # Exit authentication
-│   │       │   ├── exit.html   # Exit management
-│   │       │   └── index.html  # Main booking page
-│   │       ├── application.properties         # Application configuration (PostgreSQL)
-│   └── test/                  # Test files
-├── pom.xml                    # Maven configuration
-├── setup-database.bat        # Database setup script
-├── .gitignore               # Git ignore rules
-└── README.md                # Project documentation
+│   │       ├── static/        # HTML pages and assets
+│   │       │   ├── index.html     # Parking management page
+│   │       │   ├── exit.html      # Exit management page
+│   │       │   └── styles/        # CSS stylesheets
+│   │       └── application.properties  # Configuration
+├── pom.xml                    # Maven dependencies
+├── README.md                  # Project documentation
+└── setup-database.bat         # Database setup script
 ```
 
-## Security Implementation
+## 🎯 Key Features
 
-### JWT Authentication
-- **Token-based authentication** using JSON Web Tokens (JWT)
-- **Token expiration**: 24 hours (configurable via `jwt.expiration`)
-- **Secret key**: Configured via environment variable `JWT_SECRET` or default in properties
-- **Algorithm**: HS256 for signing tokens
+### Direct Access System
+- **No Authentication Required**: Immediate access to all features
+- **Simplified User Experience**: Direct navigation to parking and exit management
+- **Clean Interface**: Streamlined UI without login barriers
 
-### Implementation Details
-- **Filter**: `JwtAuthenticationFilter` - Intercepts requests and validates JWT tokens
-- **Entry Point**: `JwtAuthenticationEntryPoint` - Handles unauthorized access attempts
-- **Util**: `JwtUtil` - Token generation, validation, and extraction
-- **Security Config**: `SecurityConfig` - Configures security rules and filters
-
-### Protected Endpoints
-- `/api/admin/**` - Admin-only endpoints
-- `/api/staff/**` - Staff and Admin access
-- All API endpoints except public ones require authentication
-
-### Public Endpoints
-- `/api/parking-slots/**` - View parking slots (GET)
-- `/api/auth/login` - Login endpoint
-- `/` - Static resources
+### Core Functionality
+- **Real-time Parking Management**: 200 slots across 2 floors with human-readable IDs
+- **Vehicle Exit Processing**: Fee calculation and receipt generation
+- **Booking System**: Slot locking and reservation management
+- **Data Synchronization**: Real-time updates across all interfaces
+- **Professional Receipts**: Clean format with slot ID display (e.g., AG06)
+- **Multi-floor Support**: Organized parking structure with clear slot identification
 
 ## Rate Limiting Implementation
 
@@ -374,8 +341,39 @@ Implements a token bucket algorithm for rate limiting with the following feature
 ```
 X-RateLimit-Limit: 50
 X-RateLimit-Remaining: 45
-X-RateLimit-Reset: 3600
+X-RateLimit-Reset: 1640995200
 ```
+
+## 🎯 Slot ID Format
+
+### Structure
+The parking system uses a human-readable slot ID format for easy identification:
+
+**Format**: `[Area][Floor][Number]`
+
+### Examples
+- **AG06**: Area A, Ground Floor (1), Slot 06
+- **BG15**: Area B, Ground Floor (1), Slot 15  
+- **AF22**: Area A, Floor 2, Slot 22
+- **DF08**: Area D, Floor 2, Slot 08
+
+### Floor Layout
+- **Floor 1**: 5 areas (A-E), 20 slots each = 100 slots
+  - AG01-AG20, BG01-BG20, CG01-CG20, DG01-DG20, EG01-EG20
+- **Floor 2**: 5 areas (A-E), 20 slots each = 100 slots
+  - AF01-AF20, BF01-BF20, CF01-CF20, DF01-DF20, EF01-EF20
+
+### Receipt Display
+- **Before**: SLOT ID: AG06, SLOT NUMBER: 6, FLOOR: 1 (confusing)
+- **After**: SLOT NUMBER: AG06 (clean and clear)
+
+### Internal Structure
+The system maintains both formats internally:
+- `slot_id`: Human-readable (AG06) - shown to users
+- `slot_number`: Numeric (6) - used for sorting
+- `floor`: Numeric (1) - used for grouping
+
+This provides the best of both worlds: user-friendly display and efficient database operations.
 
 ## License
 
