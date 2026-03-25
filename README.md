@@ -122,13 +122,6 @@ CREATE DATABASE smart_parking_db;
 
 -- The application will auto-create tables on startup
 ```
-
-### Connection Details (configured in application.properties)
-- **Host**: localhost:5432
-- **Database**: smart_parking_db
-- **Username**: postgres
-- **Password**: Nanda@123
-
 ## Installation & Setup
 
 ### Prerequisites
