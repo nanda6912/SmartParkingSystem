@@ -28,6 +28,8 @@
 - Real-time data synchronization across interfaces
 - Local development configured for localhost PostgreSQL
 - Root path (/) redirects to parking page
+- Automatic parking slot initialization (200 slots on first run)
+- Auto table creation with ddl-auto=update
 
 ## 🏗️ Current System Architecture
 
