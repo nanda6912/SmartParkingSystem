@@ -84,11 +84,8 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Spring Boot
+# Spring Boot - only ignore local overrides
 application-local.properties
-application-dev.properties
-application-prod.properties
-src/main/resources/application.properties
 
 # Database
 *.db

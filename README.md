@@ -146,18 +146,15 @@ CREATE DATABASE smart_parking_db;
 
 3. **Run the application**
 
-Development mode (H2 database):
 ```bash
 mvn spring-boot:run
 ```
 
-Production mode (PostgreSQL):
-```powershell
-mvn spring-boot:run "-Dspring.profiles.active=prod"
-```
+The app uses `application-dev.properties` with PostgreSQL on localhost:5432.
 
 4. **Access the application**
-- **Main Application**: http://localhost:8081/index.html
+- **Main Page**: http://localhost:8081/ (redirects to parking page)
+- **Parking**: http://localhost:8081/index.html
 - **Exit Management**: http://localhost:8081/exit.html
 
 ## 📡 API Endpoints
@@ -177,16 +174,17 @@ mvn spring-boot:run "-Dspring.profiles.active=prod"
 ## 🔧 Configuration
 
 ### Application Properties Files
-- `application.properties` - Development configuration (H2 database)
+- `application-dev.properties` - Development configuration (PostgreSQL with defaults)
 - `application-prod.properties` - Production configuration (PostgreSQL)
 
-### Environment Variables
-```bash
-# Database (optional - can use properties file)
-export DB_URL="jdbc:postgresql://localhost:5432/smart_parking_db"
-export DB_USERNAME="postgres"
-export DB_PASSWORD="your-password"
-```
+### Local Development
+
+For local development, the application uses `application-dev.properties` with default values:
+- Database: PostgreSQL on localhost:5432
+- Server Port: 8081
+- SSL: Disabled
+
+Simply run with: `mvn spring-boot:run`
 
 ## 🐛 Troubleshooting
 
@@ -283,10 +281,12 @@ SmartParkingSystem/
 │   │       │   ├── index.html     # Parking management page
 │   │       │   ├── exit.html      # Exit management page
 │   │       │   └── styles/        # CSS stylesheets
-│   │       └── application.properties  # Configuration
+│   │       ├── application.properties      # Base configuration
+│   │       ├── application-dev.properties    # Development config
+│   │       └── application-prod.properties   # Production config
 ├── pom.xml                    # Maven dependencies
 ├── README.md                  # Project documentation
-└── setup-database.bat         # Database setup script
+└── .gitignore                 # Git ignore rules
 ```
 
 ## 🎯 Key Features

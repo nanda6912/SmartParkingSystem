@@ -26,6 +26,8 @@
 - Enhanced rate limiting (50 locks, 30 bookings per hour)
 - Professional UI with modern design system
 - Real-time data synchronization across interfaces
+- Local development configured for localhost PostgreSQL
+- Root path (/) redirects to parking page
 
 ## 🏗️ Current System Architecture
 
