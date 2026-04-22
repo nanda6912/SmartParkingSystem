@@ -675,8 +675,9 @@
                         this.closeBookingForm();
                         // Notify exit page about new booking
                         this.notifyExitPage(result);
-                        // Reload slots to show updated status
+                        // Reload slots to show updated status (small delay to ensure DB transaction commits)
                         try {
+                            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
                             await this.loadParkingSlots();
                         } catch (loadError) {
                             console.warn('Error reloading slots after booking:', loadError);

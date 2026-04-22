@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bookings", 
-       uniqueConstraints = @UniqueConstraint(columnNames = "vehicle_number"))
+       uniqueConstraints = @UniqueConstraint(
+           name = "uk_active_vehicle",
+           columnNames = {"vehicle_number", "is_active"}
+       ))
 public class Booking {
     
     @Id
@@ -29,7 +32,7 @@ public class Booking {
     @NotBlank(message = "Vehicle number is required")
     @Pattern(regexp = "^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$", 
              message = "Vehicle number must be in format: XX00XX0000 (uppercase)")
-    @Column(name = "vehicle_number", nullable = false, unique = true, updatable = false)
+    @Column(name = "vehicle_number", nullable = false, updatable = false)
     private String vehicleNumber;
     
     @NotBlank(message = "Name is required")
