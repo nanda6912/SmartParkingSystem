@@ -36,7 +36,9 @@ import java.util.List;
 
 import java.util.Optional;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
+
+import java.util.UUID;
 
 import java.util.stream.Collectors;
 
@@ -70,6 +72,8 @@ public class ParkingService {
 
     private static final int BOOKING_CODE_LENGTH = 5;
 
+    private final Random random = new Random();
+
     
 
     private String generateBookingCode() {
@@ -78,7 +82,7 @@ public class ParkingService {
 
         for (int i = 0; i < BOOKING_CODE_LENGTH; i++) {
 
-            code.append(CHARACTERS.charAt(ThreadLocalRandom.current().nextInt(CHARACTERS.length())));
+            code.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
 
         }
 
@@ -202,8 +206,7 @@ public class ParkingService {
 
         } catch (Exception e) {
 
-            log.error("Error locking slot", e);
-            return new BookingResponseDTO("Error locking slot");
+            return new BookingResponseDTO("Error locking slot: " + e.getMessage());
 
         }
 
@@ -221,16 +224,9 @@ public class ParkingService {
 
             log.debug("Vehicle Number: {}", bookingRequest.getVehicleNumber());
 
-            // Mask PII: show only first initial and last 4 digits of phone
-            String customerName = bookingRequest.getCustomerName();
-            String maskedName = customerName != null && customerName.length() > 0 ? 
-                customerName.charAt(0) + "***" : "***";
-            log.debug("Customer Name: {}", maskedName);
+            log.debug("Customer Name: {}", bookingRequest.getCustomerName());
 
-            String phoneNumber = bookingRequest.getPhoneNumber();
-            String maskedPhone = phoneNumber != null && phoneNumber.length() >= 4 ? 
-                "***" + phoneNumber.substring(phoneNumber.length() - 4) : "***";
-            log.debug("Phone Number: {}", maskedPhone);
+            log.debug("Phone Number: {}", bookingRequest.getPhoneNumber());
 
             log.debug("Vehicle Type: {}", bookingRequest.getVehicleType());
 
@@ -284,19 +280,7 @@ public class ParkingService {
 
             // Normalize vehicle number (trim whitespace and convert to uppercase)
 
-            String vehicleNumber = bookingRequest.getVehicleNumber();
-            if (vehicleNumber == null) {
-                log.warn("Vehicle number is null in booking request");
-                return new BookingResponseDTO("Vehicle number is required");
-            }
-            
-            String trimmedVehicleNumber = vehicleNumber.trim();
-            if (trimmedVehicleNumber.isEmpty()) {
-                log.warn("Vehicle number is empty or whitespace only in booking request");
-                return new BookingResponseDTO("Vehicle number cannot be empty or whitespace only");
-            }
-            
-            String normalizedVehicleNumber = trimmedVehicleNumber.toUpperCase();
+            String normalizedVehicleNumber = bookingRequest.getVehicleNumber().trim().toUpperCase();
 
             log.debug("Normalized vehicle number: {}", normalizedVehicleNumber);
 
@@ -358,8 +342,7 @@ public class ParkingService {
 
         } catch (Exception e) {
 
-            log.error("Error booking slot", e);
-            return new BookingResponseDTO("Error booking slot");
+            return new BookingResponseDTO("Error booking slot: " + e.getMessage());
 
         }
 
