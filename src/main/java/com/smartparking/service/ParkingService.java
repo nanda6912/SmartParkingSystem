@@ -290,7 +290,13 @@ public class ParkingService {
                 return new BookingResponseDTO("Vehicle number is required");
             }
             
-            String normalizedVehicleNumber = vehicleNumber.trim().toUpperCase();
+            String trimmedVehicleNumber = vehicleNumber.trim();
+            if (trimmedVehicleNumber.isEmpty()) {
+                log.warn("Vehicle number is empty or whitespace only in booking request");
+                return new BookingResponseDTO("Vehicle number cannot be empty or whitespace only");
+            }
+            
+            String normalizedVehicleNumber = trimmedVehicleNumber.toUpperCase();
 
             log.debug("Normalized vehicle number: {}", normalizedVehicleNumber);
 

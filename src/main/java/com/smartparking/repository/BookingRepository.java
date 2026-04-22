@@ -42,7 +42,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findExitedBookingsFromDate(@Param("date") LocalDateTime date);
     
     /**
-     * Find active booking by vehicle number
+     * Find active booking by vehicle number with pessimistic lock to prevent race conditions
      */
-    Optional<Booking> findByVehicleNumberAndIsActiveTrue(String vehicleNumber);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Booking b WHERE b.vehicleNumber = :vehicleNumber AND b.isActive = true")
+    Optional<Booking> findByVehicleNumberAndIsActiveTrue(@Param("vehicleNumber") String vehicleNumber);
 }
