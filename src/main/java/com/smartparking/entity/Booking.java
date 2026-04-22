@@ -9,11 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bookings", 
-       uniqueConstraints = @UniqueConstraint(
-           name = "uk_active_vehicle",
-           columnNames = {"vehicle_number", "is_active"}
-       ))
+@Table(name = "bookings")
 public class Booking {
     
     @Id
