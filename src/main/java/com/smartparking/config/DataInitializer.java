@@ -25,8 +25,8 @@ public class DataInitializer implements CommandLineRunner {
         if (count == 0) {
             log.info("No parking slots found. Initializing 600 slots...");
             
-            // Floor 1: 5 areas (A-E), 60 slots each = 300 slots
-            // Floor 2: 5 areas (A-E), 60 slots each = 300 slots
+            // Floor 1: 15 areas (A-O), 20 slots each = 300 slots
+            // Floor 2: 15 areas (A-O), 20 slots each = 300 slots
             for (int floor = 1; floor <= 2; floor++) {
                 for (int slotNum = 1; slotNum <= 300; slotNum++) {
                     ParkingSlot slot = new ParkingSlot(slotNum, floor);

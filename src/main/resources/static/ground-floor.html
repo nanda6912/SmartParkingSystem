@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ground Floor Parking - Smart Parking System</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/styles/design-system.css">
     <style>
         /* Page-specific styles only */
@@ -42,7 +43,7 @@
         .parking-slot.available:hover {
             background: var(--bg-secondary);
         }
-        .parking-slot.booked {
+        .parking-slot.occupied {
             border-color: #DC2626;
             color: #7F1D1D;
             background: #FEF2F2;
@@ -167,6 +168,111 @@
             aspect-ratio: 1;
             margin: var(--space-1);
         }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border: none;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-primary {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        .btn-secondary {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+        }
+        .error {
+            color: #DC2626;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -269,6 +375,11 @@
                     e.preventDefault();
                     this.submitBooking();
                 });
+                document.getElementById('bookingModal').addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        this.closeBookingForm();
+                    }
+                });
                 ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
                     document.getElementById(fieldId).addEventListener('input', (e) => {
                         this.validateField(fieldId);
@@ -279,12 +390,11 @@
             async loadParkingSlots() {
                 try {
                     this.showSkeletonLoader();
-                    console.log(`Loading Ground Floor parking slots...`);
                     
                     const response = await fetch(`/api/parking-slots/floor/${this.floorNumber}`);
+                    
                     if (!response.ok) {
                         if (response.status === 429) {
-                            console.log('Rate limited, retrying...');
                             await new Promise(resolve => setTimeout(resolve, 2000));
                             const retryResponse = await fetch(`/api/parking-slots/floor/${this.floorNumber}`);
                             if (!retryResponse.ok) {
@@ -295,13 +405,11 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
-                    console.log(`Ground Floor slots loaded:`, data.length);
                     this.slots = data;
                     this.renderFloor(data, 'parkingGridGroundFloor');
                     this.updateStats();
                     this.startLockTimers();
                 } catch (error) {
-                    console.error('Error loading Ground Floor parking slots:', error);
                     this.showNotification(`Error loading Ground Floor parking slots: ${error.message}`, 'error');
                 } finally {
                     this.hideLoading();
@@ -352,11 +460,13 @@
                     const response = await fetch(`/api/parking-slots/lock/${slot.id}`, {
                         method: 'POST'
                     });
+                    
                     if (!response.ok) {
                         const errorText = await response.text();
                         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                     }
                     const result = await response.json();
+                    
                     if (result.slotStatus === 'LOCKED') {
                         this.selectedSlot = slot;
                         this.showBookingForm();
@@ -374,13 +484,18 @@
             showBookingForm() {
                 if (!this.selectedSlot) return;
                 document.getElementById('slotId').value = this.selectedSlot.slotId || this.selectedSlot.id;
-                document.getElementById('bookingModal').style.display = 'block';
+                const modal = document.getElementById('bookingModal');
+                modal.style.display = 'block';
+                // Prevent body scroll when modal is open
+                document.body.style.overflow = 'hidden';
             }
 
             closeBookingForm() {
                 document.getElementById('bookingModal').style.display = 'none';
                 document.getElementById('bookingFormElement').reset();
                 this.clearErrors();
+                // Restore body scroll when modal is closed
+                document.body.style.overflow = 'auto';
             }
 
             async submitBooking() {
@@ -409,10 +524,13 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const result = await response.json();
-                    console.log('Booking result:', result);
                     if (result.bookingCode) {
                         this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
                         this.closeBookingForm();
+                        // Download booking confirmation text file
+                        this.downloadBookingConfirmation(result);
+                        // Notify exit page about new booking
+                        this.notifyExitPage(result);
                         try {
                             await new Promise(resolve => setTimeout(resolve, 500));
                             await this.loadParkingSlots();
@@ -574,6 +692,95 @@
                 }
                 
                 return notification;
+            }
+
+            notifyExitPage(bookingResult) {
+                // Send notification to exit page about new booking
+                try {
+                    const message = {
+                        type: 'new_booking',
+                        timestamp: Date.now(),
+                        data: {
+                            bookingCode: bookingResult.bookingCode,
+                            vehicleNumber: bookingResult.vehicleNumber,
+                            customerName: bookingResult.customerName,
+                            slotNumber: bookingResult.slotNumber,
+                            entryTime: bookingResult.entryTime
+                        }
+                    };
+                    // Use BroadcastChannel for real-time communication
+                    const channel = new BroadcastChannel('parking_updates');
+                    channel.postMessage(message);
+                    channel.close();
+                    console.log('Notified exit page about new booking:', message);
+                    // Also set localStorage as fallback
+                    localStorage.setItem('newBooking', JSON.stringify({
+                        ...message,
+                        timestamp: Date.now()
+                    }));
+                } catch (error) {
+                    console.log('BroadcastChannel not supported, using localStorage only');
+                    // Fallback to localStorage only
+                    localStorage.setItem('newBooking', JSON.stringify({
+                        type: 'new_booking',
+                        timestamp: Date.now(),
+                        data: {
+                            bookingCode: bookingResult.bookingCode,
+                            vehicleNumber: bookingResult.vehicleNumber,
+                            customerName: bookingResult.customerName,
+                            slotNumber: bookingResult.slotNumber,
+                            entryTime: bookingResult.entryTime
+                        }
+                    }));
+                }
+            }
+
+            downloadBookingConfirmation(bookingResult) {
+                try {
+                    // Create booking confirmation text content
+                    const confirmationText = `
+PARKING BOOKING CONFIRMATION
+=============================
+
+Booking Details:
+----------------
+Booking Code: ${bookingResult.bookingCode}
+Slot Number: ${bookingResult.slotIdString || bookingResult.slotNumber}
+Vehicle Number: ${bookingResult.vehicleNumber}
+Customer Name: ${bookingResult.customerName}
+Vehicle Type: ${bookingResult.vehicleType}
+Date: ${new Date().toLocaleDateString()}
+Time: ${new Date().toLocaleTimeString()}
+
+Floor: Ground Floor
+Status: CONFIRMED
+
+Important Notes:
+--------------
+- Please arrive 10 minutes before your booking time
+- Keep this booking confirmation for your records
+- Display booking code at entry for quick processing
+- For assistance, contact parking support
+
+Thank you for choosing Smart Parking System!
+                    `;
+
+                    // Create and download text file
+                    const blob = new Blob([confirmationText], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `booking-confirmation-${bookingResult.bookingCode}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    this.showNotification('Booking confirmation downloaded successfully!', 'success');
+                } catch (error) {
+                    console.error('Error downloading booking confirmation:', error);
+                    this.showNotification('Failed to download booking confirmation', 'error');
+                }
             }
         }
 

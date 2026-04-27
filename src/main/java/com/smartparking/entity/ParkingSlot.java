@@ -64,10 +64,10 @@ public class ParkingSlot {
             throw new IllegalArgumentException("floor and slotNumber cannot be null");
         }
         // Generate floor-based alphabetic groups
-        // Floor 1: AG01-AG60, BG01-BG60, CG01-CG60, DG01-DG60, EG01-EG60
-        // Floor 2: AF01-AF60, BF01-BF60, CF01-CF60, DF01-DF60, EF01-EF60
-        char groupLetter = (char) ('A' + ((slotNumber - 1) / 60));
-        int slotInGroup = ((slotNumber - 1) % 60) + 1;
+        // Floor 1: AG01-AG20, BG01-BG20, ... OG01-OG20 (15 areas A-O, 20 slots each = 300 slots)
+        // Floor 2: AF01-AF20, BF01-BF20, ... OF01-OF20 (15 areas A-O, 20 slots each = 300 slots)
+        char groupLetter = (char) ('A' + ((slotNumber - 1) / 20));
+        int slotInGroup = ((slotNumber - 1) % 20) + 1;
         char floorLetter = (floor == 1) ? 'G' : 'F';
         
         return String.format("%c%c%02d", groupLetter, floorLetter, slotInGroup);

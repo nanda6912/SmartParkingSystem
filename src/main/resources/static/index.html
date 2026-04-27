@@ -237,48 +237,7 @@
         </main>
     </div>
     <!-- Modal Overlay -->
-    <div class="modal-overlay" id="overlay">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 class="modal-title">Complete Your Booking</h2>
-                <button class="modal-close" onclick="closeBookingForm()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="bookingFormElement">
-                    <div class="form-group">
-                        <label for="vehicleNumber" class="form-label">Vehicle Number *</label>
-                        <input type="text" id="vehicleNumber" name="vehicleNumber" class="form-input" placeholder="XX00XX0000" required>
-                        <div class="error-message" id="vehicleNumberError"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="customerName" class="form-label">Your Name *</label>
-                        <input type="text" id="customerName" name="customerName" class="form-input" placeholder="Max 20 characters" required>
-                        <div class="error-message" id="customerNameError"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="phoneNumber" class="form-label">Phone Number *</label>
-                        <input type="text" id="phoneNumber" name="phoneNumber" class="form-input" placeholder="10 digits" required>
-                        <div class="error-message" id="phoneNumberError"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="vehicleType" class="form-label">Vehicle Type *</label>
-                        <select id="vehicleType" name="vehicleType" class="form-input" required>
-                            <option value="">Select Vehicle Type</option>
-                            <option value="CAR">Car</option>
-                            <option value="BIKE">Bike</option>
-                            <option value="SUV">SUV</option>
-                            <option value="VAN">Van</option>
-                        </select>
-                        <div class="error-message" id="vehicleTypeError"></div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeBookingForm()">Cancel</button>
-                <button type="submit" class="btn btn-primary" form="bookingFormElement">Confirm Booking</button>
-            </div>
-        </div>
-    </div>
+    <!-- Booking modal removed - index.html is view-only -->
     <!-- Notification -->
     <div class="notification" id="notification"></div>
     <script>
@@ -393,22 +352,7 @@
                         this.loadParkingSlots();
                     });
                 });
-                // Overlay click to close
-                document.getElementById('overlay').addEventListener('click', (e) => {
-                    if (e.target === e.currentTarget) {
-                        this.closeBookingForm();
-                    }
-                });
-                document.getElementById('bookingFormElement').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.submitBooking();
-                });
-                // Form validation
-                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
-                    document.getElementById(fieldId).addEventListener('input', (e) => {
-                        this.validateField(fieldId);
-                    });
-                });
+                // Booking event listeners removed - index.html is view-only
             }
             async loadParkingSlots() {
                 try {
@@ -485,14 +429,9 @@
                     if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
                         timerHtml = `<div class="lock-timer">${Math.ceil(slot.remainingLockSeconds)}s</div>`;
                     }
-                    // Only allow slot selection if NOT in view mode and slot is available
-                    if (slot.status === 'AVAILABLE' && !this.viewMode) {
-                        slotElement.addEventListener('click', () => this.selectSlot(slot));
-                    }
-                    // Add view-mode class to all slots when in view mode (for visual indicator)
-                    if (this.viewMode) {
-                        slotElement.classList.add('view-mode');
-                    }
+                    // Index.html is view-only - no booking functionality
+                    // Add view-mode class to all slots for visual indicator
+                    slotElement.classList.add('view-mode');
                     // Add slot content to the slot element
                     slotElement.innerHTML = `
                         <div class="slot-id">${slot.slotId || slot.id}</div>
@@ -513,33 +452,7 @@
                 document.getElementById('lockedSlots').textContent = locked;
                 document.getElementById('occupiedSlots').textContent = occupied;
             }
-            async selectSlot(slot) {
-                try {
-                    this.showLoading();
-                    const response = await fetch(`/api/parking-slots/lock/${slot.id}`, {
-                        method: 'POST'
-                    });
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                    }
-                    const result = await response.json();
-                    if (result.slotStatus === 'LOCKED') {
-                        this.selectedSlot = slot;
-                        this.showBookingForm();
-                        this.showNotification('Slot locked! Please complete your booking within 2 minutes.', 'info');
-                        // Start countdown timer
-                        this.startLockTimer(slot.id, 120);
-                    } else {
-                        this.showNotification(result.message || 'Unable to lock slot', 'error');
-                    }
-                    this.loadParkingSlots();
-                } catch (error) {
-                    this.showNotification('Error locking slot', 'error');
-                } finally {
-                    this.hideLoading();
-                }
-            }
+            // selectSlot method removed - booking disabled on index.html (view-only mode)
             startLockTimers() {
                 // Start timers for all locked slots
                 this.slots.forEach(slot => {
@@ -792,10 +705,10 @@
                 const grid2 = document.getElementById('parkingGridFloor2');
                 if (grid1) grid1.innerHTML = '';
                 if (grid2) grid2.innerHTML = '';
-                // Add skeleton loading animation for both floors
+                // Add skeleton loading animation for both floors (30 skeletons to represent 300 slots)
                 [grid1, grid2].forEach(grid => {
                     if (grid) {
-                        for (let i = 0; i < 10; i++) {
+                        for (let i = 0; i < 30; i++) {
                             const skeleton = document.createElement('div');
                             skeleton.className = 'skeleton-slot';
                             skeleton.innerHTML = '<div class="skeleton-content"></div>';
