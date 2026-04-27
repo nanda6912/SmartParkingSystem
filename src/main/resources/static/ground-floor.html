@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ground Floor Parking - Smart Parking System</title>
+    <link rel="stylesheet" href="/styles/design-system.css">
+    <style>
+        /* Page-specific styles only */
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg-primary);
+        }
+        .parking-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: var(--space-2);
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-4);
+        }
+        .parking-slot {
+            aspect-ratio: 1;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color var(--transition-fast);
+            position: relative;
+            background: var(--bg-secondary);
+            padding: var(--space-1);
+        }
+        .parking-slot:hover {
+            border-color: var(--accent-primary);
+        }
+        .parking-slot.available:hover {
+            background: var(--bg-secondary);
+        }
+        .parking-slot.booked {
+            border-color: #DC2626;
+            color: #7F1D1D;
+            background: #FEF2F2;
+            cursor: not-allowed;
+            font-weight: 600;
+        }
+        .parking-slot.locked {
+            border-color: #F59E0B;
+            color: #92400E;
+            background: #FEF3C7;
+            cursor: not-allowed;
+            font-weight: 600;
+        }
+        .slot-id {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+        }
+        .slot-status {
+            font-size: 0.625rem;
+            opacity: 0.8;
+        }
+        .lock-timer {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #F59E0B;
+            color: white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 0.625rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .floor-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+        .floor-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+        .floor-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-3);
+        }
+        .stat-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+        .navigation {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            margin-bottom: var(--space-4);
+        }
+        .nav-buttons {
+            display: flex;
+            gap: var(--space-2);
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            padding: var(--space-2) var(--space-4);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+        }
+        .nav-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        .nav-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-8);
+            color: var(--text-secondary);
+        }
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-primary) 50%, var(--bg-secondary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-slot {
+            aspect-ratio: 1;
+            margin: var(--space-1);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="content-area" style="flex: 1; padding: var(--space-6);">
+            
+            <!-- Floor Header -->
+            <div class="floor-header">
+                <h1 class="floor-title">🏢 Ground Floor Parking</h1>
+                <div class="floor-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSlots">0</div>
+                        <div class="stat-label">Total Slots</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="availableSlots">0</div>
+                        <div class="stat-label">Available</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="lockedSlots">0</div>
+                        <div class="stat-label">Locked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="occupiedSlots">0</div>
+                        <div class="stat-label">Occupied</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parking Grid -->
+            <div id="parkingGridGroundFloor" class="parking-grid">
+                <div class="loading">Loading Ground Floor parking slots...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal (copied from index.html) -->
+    <div id="bookingModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Book Parking Slot</h2>
+                <button class="close-btn" onclick="parkingApp.closeBookingForm()">&times;</button>
+            </div>
+            <form id="bookingFormElement">
+                <div class="form-group">
+                    <label for="slotId">Slot ID:</label>
+                    <input type="text" id="slotId" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="vehicleNumber">Vehicle Number:</label>
+                    <input type="text" id="vehicleNumber" required pattern="^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$" placeholder="XX00XX0000">
+                    <div class="error" id="vehicleNumberError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="customerName">Customer Name:</label>
+                    <input type="text" id="customerName" required pattern="^[A-Za-z\s]+$" placeholder="John Doe">
+                    <div class="error" id="customerNameError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number:</label>
+                    <input type="tel" id="phoneNumber" required pattern="^[0-9]{10}$" placeholder="9876543210">
+                    <div class="error" id="phoneNumberError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="vehicleType">Vehicle Type:</label>
+                    <select id="vehicleType" required>
+                        <option value="">Select Vehicle Type</option>
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Bike</option>
+                        <option value="SUV">SUV</option>
+                        <option value="VAN">Van</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Book Slot</button>
+                    <button type="button" class="btn btn-secondary" onclick="parkingApp.closeBookingForm()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        class GroundFloorParkingApp {
+            constructor() {
+                this.slots = [];
+                this.selectedSlot = null;
+                this.lockTimers = {};
+                this.floorNumber = 1; // Ground floor is floor 1 in the database (AG01 slots)
+                this.init();
+            }
+
+            async init() {
+                this.setupEventListeners();
+                await this.loadParkingSlots();
+                this.startLockTimers();
+            }
+
+            setupEventListeners() {
+                document.getElementById('bookingFormElement').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.submitBooking();
+                });
+                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
+                    document.getElementById(fieldId).addEventListener('input', (e) => {
+                        this.validateField(fieldId);
+                    });
+                });
+            }
+
+            async loadParkingSlots() {
+                try {
+                    this.showSkeletonLoader();
+                    console.log(`Loading Ground Floor parking slots...`);
+                    
+                    const response = await fetch(`/api/parking-slots/floor/${this.floorNumber}`);
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            console.log('Rate limited, retrying...');
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            const retryResponse = await fetch(`/api/parking-slots/floor/${this.floorNumber}`);
+                            if (!retryResponse.ok) {
+                                throw new Error(`HTTP error after retry! status: ${retryResponse.status}`);
+                            }
+                            return await retryResponse.json();
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    console.log(`Ground Floor slots loaded:`, data.length);
+                    this.slots = data;
+                    this.renderFloor(data, 'parkingGridGroundFloor');
+                    this.updateStats();
+                    this.startLockTimers();
+                } catch (error) {
+                    console.error('Error loading Ground Floor parking slots:', error);
+                    this.showNotification(`Error loading Ground Floor parking slots: ${error.message}`, 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            renderFloor(slots, gridId) {
+                const grid = document.getElementById(gridId);
+                if (!grid) {
+                    console.error(`Grid element not found: ${gridId}`);
+                    return;
+                }
+                grid.innerHTML = '';
+                slots.forEach(slot => {
+                    const slotElement = document.createElement('div');
+                    slotElement.className = `parking-slot ${slot.status.toLowerCase()}`;
+                    slotElement.dataset.slotId = slot.id;
+                    let timerHtml = '';
+                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
+                        timerHtml = `<div class="lock-timer">${Math.ceil(slot.remainingLockSeconds)}s</div>`;
+                    }
+                    if (slot.status === 'AVAILABLE') {
+                        slotElement.addEventListener('click', () => this.selectSlot(slot));
+                    }
+                    slotElement.innerHTML = `
+                        <div class="slot-id">${slot.slotId || slot.id}</div>
+                        <div class="slot-status">${slot.status}</div>
+                        ${timerHtml}
+                    `;
+                    grid.appendChild(slotElement);
+                });
+            }
+
+            updateStats() {
+                const total = this.slots.length;
+                const available = this.slots.filter(s => s.status === 'AVAILABLE').length;
+                const locked = this.slots.filter(s => s.status === 'LOCKED').length;
+                const occupied = this.slots.filter(s => s.status === 'OCCUPIED').length;
+                document.getElementById('totalSlots').textContent = total;
+                document.getElementById('availableSlots').textContent = available;
+                document.getElementById('lockedSlots').textContent = locked;
+                document.getElementById('occupiedSlots').textContent = occupied;
+            }
+
+            async selectSlot(slot) {
+                try {
+                    this.showLoading();
+                    const response = await fetch(`/api/parking-slots/lock/${slot.id}`, {
+                        method: 'POST'
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                    const result = await response.json();
+                    if (result.slotStatus === 'LOCKED') {
+                        this.selectedSlot = slot;
+                        this.showBookingForm();
+                    } else {
+                        this.showNotification(result.message || 'Failed to lock slot', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error selecting slot:', error);
+                    this.showNotification(`Error selecting slot: ${error.message}`, 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            showBookingForm() {
+                if (!this.selectedSlot) return;
+                document.getElementById('slotId').value = this.selectedSlot.slotId || this.selectedSlot.id;
+                document.getElementById('bookingModal').style.display = 'block';
+            }
+
+            closeBookingForm() {
+                document.getElementById('bookingModal').style.display = 'none';
+                document.getElementById('bookingFormElement').reset();
+                this.clearErrors();
+            }
+
+            async submitBooking() {
+                if (!this.validateForm()) {
+                    return;
+                }
+
+                const bookingData = {
+                    slotId: this.selectedSlot.id,
+                    vehicleNumber: document.getElementById('vehicleNumber').value.trim(),
+                    customerName: document.getElementById('customerName').value.trim(),
+                    phoneNumber: document.getElementById('phoneNumber').value.trim(),
+                    vehicleType: document.getElementById('vehicleType').value
+                };
+
+                try {
+                    this.showLoading();
+                    const response = await fetch('/api/parking-slots/book', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(bookingData)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    console.log('Booking result:', result);
+                    if (result.bookingCode) {
+                        this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
+                        this.closeBookingForm();
+                        try {
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            await this.loadParkingSlots();
+                        } catch (loadError) {
+                            console.warn('Error reloading slots after booking:', loadError);
+                        }
+                        if (this.lockTimers[this.selectedSlot.id]) {
+                            clearInterval(this.lockTimers[this.selectedSlot.id]);
+                            delete this.lockTimers[this.selectedSlot.id];
+                        }
+                    } else {
+                        this.showNotification(result.message || 'Booking failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error submitting booking:', error);
+                    this.showNotification(`Error submitting booking: ${error.message}`, 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            validateForm() {
+                let isValid = true;
+                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
+                    if (!this.validateField(fieldId)) {
+                        isValid = false;
+                    }
+                });
+                return isValid;
+            }
+
+            validateField(fieldId) {
+                const field = document.getElementById(fieldId);
+                const errorElement = document.getElementById(`${fieldId}Error`);
+                let isValid = true;
+                let errorMessage = '';
+
+                if (fieldId === 'vehicleNumber') {
+                    const pattern = /^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/;
+                    if (!field.value.trim()) {
+                        errorMessage = 'Vehicle number is required';
+                        isValid = false;
+                    } else if (!pattern.test(field.value.trim().toUpperCase())) {
+                        errorMessage = 'Vehicle number must be in format: XX00XX0000';
+                        isValid = false;
+                    }
+                } else if (fieldId === 'customerName') {
+                    const pattern = /^[A-Za-z\s]+$/;
+                    if (!field.value.trim()) {
+                        errorMessage = 'Customer name is required';
+                        isValid = false;
+                    } else if (!pattern.test(field.value.trim())) {
+                        errorMessage = 'Name must contain only alphabets';
+                        isValid = false;
+                    }
+                } else if (fieldId === 'phoneNumber') {
+                    const pattern = /^[0-9]{10}$/;
+                    if (!field.value.trim()) {
+                        errorMessage = 'Phone number is required';
+                        isValid = false;
+                    } else if (!pattern.test(field.value.trim())) {
+                        errorMessage = 'Phone number must be exactly 10 digits';
+                        isValid = false;
+                    }
+                }
+
+                errorElement.textContent = errorMessage;
+                field.style.borderColor = isValid ? '' : '#DC2626';
+                return isValid;
+            }
+
+            clearErrors() {
+                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
+                    document.getElementById(`${fieldId}Error`).textContent = '';
+                    document.getElementById(fieldId).style.borderColor = '';
+                });
+            }
+
+            startLockTimers() {
+                Object.keys(this.lockTimers).forEach(timerId => {
+                    clearInterval(this.lockTimers[timerId]);
+                });
+                this.lockTimers = {};
+
+                this.slots.forEach(slot => {
+                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
+                        this.startLockTimer(slot);
+                    }
+                });
+            }
+
+            startLockTimer(slot) {
+                let remainingSeconds = slot.remainingLockSeconds;
+                this.lockTimers[slot.id] = setInterval(() => {
+                    remainingSeconds--;
+                    if (remainingSeconds <= 0) {
+                        clearInterval(this.lockTimers[slot.id]);
+                        delete this.lockTimers[slot.id];
+                        this.loadParkingSlots();
+                    } else {
+                        const slotElement = document.querySelector(`[data-slot-id="${slot.id}"] .lock-timer`);
+                        if (slotElement) {
+                            slotElement.textContent = `${Math.ceil(remainingSeconds)}s`;
+                        }
+                    }
+                }, 1000);
+            }
+
+            showSkeletonLoader() {
+                const grid = document.getElementById('parkingGridGroundFloor');
+                grid.innerHTML = '';
+                for (let i = 0; i < 300; i++) {
+                    const skeleton = document.createElement('div');
+                    skeleton.className = 'parking-slot skeleton skeleton-slot';
+                    grid.appendChild(skeleton);
+                }
+            }
+
+            showLoading() {
+                document.body.style.cursor = 'wait';
+            }
+
+            hideLoading() {
+                document.body.style.cursor = 'default';
+            }
+
+            showNotification(message, type = 'info', bookingCode = null, autoHide = true) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 16px 24px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 500;
+                    z-index: 10000;
+                    max-width: 400px;
+                    word-wrap: break-word;
+                    background: ${type === 'success' ? '#10B981' : type === 'error' ? '#DC2626' : '#3B82F6'};
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                `;
+                
+                let content = message;
+                if (bookingCode) {
+                    content += `<br><strong>Booking Code: ${bookingCode}</strong>`;
+                }
+                notification.innerHTML = content;
+                
+                document.body.appendChild(notification);
+                
+                if (autoHide) {
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 5000);
+                }
+                
+                return notification;
+            }
+        }
+
+        // Initialize the app
+        const parkingApp = new GroundFloorParkingApp();
+    </script>
+</body>
+</html>

@@ -47,8 +47,8 @@ public class ParkingSlot {
         if (slotNumber == null || floor == null) {
             throw new IllegalArgumentException("slotNumber and floor cannot be null");
         }
-        if (slotNumber < 1 || slotNumber > 100) {
-            throw new IllegalArgumentException("slotNumber must be between 1 and 100");
+        if (slotNumber < 1 || slotNumber > 300) {
+            throw new IllegalArgumentException("slotNumber must be between 1 and 300");
         }
         if (floor < 1 || floor > 2) {
             throw new IllegalArgumentException("floor must be 1 or 2");
@@ -64,10 +64,10 @@ public class ParkingSlot {
             throw new IllegalArgumentException("floor and slotNumber cannot be null");
         }
         // Generate floor-based alphabetic groups
-        // Floor 1: AG01-AG20, BG01-BG20, CG01-CG20, DG01-DG20, EG01-EG20
-        // Floor 2: AF01-AF20, BF01-BF20, CF01-CF20, DF01-DF20, EF01-EF20
-        char groupLetter = (char) ('A' + ((slotNumber - 1) / 20));
-        int slotInGroup = ((slotNumber - 1) % 20) + 1;
+        // Floor 1: AG01-AG60, BG01-BG60, CG01-CG60, DG01-DG60, EG01-EG60
+        // Floor 2: AF01-AF60, BF01-BF60, CF01-CF60, DF01-DF60, EF01-EF60
+        char groupLetter = (char) ('A' + ((slotNumber - 1) / 60));
+        int slotInGroup = ((slotNumber - 1) % 60) + 1;
         char floorLetter = (floor == 1) ? 'G' : 'F';
         
         return String.format("%c%c%02d", groupLetter, floorLetter, slotInGroup);
