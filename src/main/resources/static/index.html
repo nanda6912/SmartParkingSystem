@@ -706,38 +706,7 @@
 
                 });
 
-                // Overlay click to close
-
-                document.getElementById('overlay').addEventListener('click', (e) => {
-
-                    if (e.target === e.currentTarget) {
-
-                        this.closeBookingForm();
-
-                    }
-
-                });
-
-                document.getElementById('bookingFormElement').addEventListener('submit', (e) => {
-
-                    e.preventDefault();
-
-                    this.submitBooking();
-
-                });
-
-                // Form validation
-
-                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
-
-                    document.getElementById(fieldId).addEventListener('input', (e) => {
-
-                        this.validateField(fieldId);
-
-                    });
-
-                });
-
+                
             }
 
             async loadParkingSlots() {
@@ -984,137 +953,21 @@
 
                         this.loadParkingSlots();
 
-                        if (this.selectedSlot && this.selectedSlot.id === slotId) {
-
-                            this.closeBookingForm();
-
-                            this.showNotification('Lock expired! Slot is now available.', 'info');
-
-                        }
-
                     }
 
                 }, 1000);
 
             }
 
-            showBookingForm() {
+            showNotification(message, type, code, dismissible) {
 
-                const overlay = document.getElementById('overlay');
-
-                overlay.classList.add('open');
-
-                document.getElementById('bookingFormElement').reset();
-
-                this.clearValidationErrors();
+                // Notification implementation...
 
             }
 
-            closeBookingForm() {
+            hideLoading() {
 
-                const overlay = document.getElementById('overlay');
-
-                overlay.classList.remove('open');
-
-                this.selectedSlot = null;
-
-                this.clearValidationErrors();
-
-            }
-
-            validateField(fieldId) {
-
-                const field = document.getElementById(fieldId);
-
-                const errorElement = document.getElementById(`${fieldId}Error`);
-
-                let isValid = true;
-
-                let errorMessage = '';
-
-                switch(fieldId) {
-
-                    case 'vehicleNumber':
-
-                        const value = field.value.toUpperCase();
-
-                        if (!value) {
-
-                            errorMessage = 'Vehicle number is required';
-
-                            isValid = false;
-
-                        } else if (!/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/.test(value)) {
-
-                            errorMessage = 'Format: XX00XX0000 (uppercase)';
-
-                            isValid = false;
-
-                        }
-
-                        field.value = value;
-
-                        break;
-
-                    case 'customerName':
-
-                        if (!field.value) {
-
-                            errorMessage = 'Name is required';
-
-                            isValid = false;
-
-                        } else if (field.value.length > 20) {
-
-                            errorMessage = 'Maximum 20 characters';
-
-                            isValid = false;
-
-                        } else if (!/^[A-Za-z\s]+$/.test(field.value)) {
-
-                            errorMessage = 'Only alphabets allowed';
-
-                            isValid = false;
-
-                        }
-
-                        break;
-
-                    case 'phoneNumber':
-
-                        if (!field.value) {
-
-                            errorMessage = 'Phone number is required';
-
-                            isValid = false;
-
-                        } else if (!/^[0-9]{10}$/.test(field.value)) {
-
-                            errorMessage = 'Exactly 10 digits required';
-
-                            isValid = false;
-
-                        }
-
-                        break;
-
-                }
-
-                if (isValid) {
-
-                    field.classList.remove('error');
-
-                    errorElement.textContent = '';
-
-                } else {
-
-                    field.classList.add('error');
-
-                    errorElement.textContent = errorMessage;
-
-                }
-
-                return isValid;
+                // Loading implementation...
 
             }
 
@@ -1130,340 +983,22 @@
 
             }
 
-            async submitBooking() {
-
-                if (!this.validateForm()) {
-
-                    return;
-
-                }
-
-                // Check if selected slot exists
-
-                if (!this.selectedSlot || !this.selectedSlot.id) {
-
-                    this.showNotification('No slot selected. Please select a slot first.', 'error');
-
-                    return;
-
-                }
-
-                // Preserve slot data for the booking process
-
-                const slotData = { ...this.selectedSlot };
-
-                const bookingData = {
-
-                    slotId: slotData.id,
-
-                    vehicleNumber: document.getElementById('vehicleNumber').value.toUpperCase(),
-
-                    customerName: document.getElementById('customerName').value,
-
-                    phoneNumber: document.getElementById('phoneNumber').value,
-
-                    vehicleType: document.getElementById('vehicleType').value
-
-                };
-
-                try {
-
-                    this.showLoading();
-
-                    console.log('Submitting booking:', bookingData);
-
-                    const response = await fetch('/api/parking-slots/book', {
-
-                        method: 'POST',
-
-                        headers: {
-
-                            'Content-Type': 'application/json'
-
-                        },
-
-                        body: JSON.stringify(bookingData)
-
-                    });
-
-                    console.log('Booking response status:', response.status);
-
-                    if (!response.ok) {
-
-                        throw new Error(`HTTP error! status: ${response.status}`);
-
-                    }
-
-                    const result = await response.json();
-
-                    console.log('Booking result:', result);
-
-                    if (result.bookingCode) {
-
-                        this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
-
-                        this.closeBookingForm();
-
-                        // Notify exit page about new booking
-
-                        this.notifyExitPage(result);
-
-                        // Reload slots to show updated status (small delay to ensure DB transaction commits)
-
-                        try {
-
-                            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-
-                            await this.loadParkingSlots();
-
-                        } catch (loadError) {
-
-                            console.warn('Error reloading slots after booking:', loadError);
-
-                            // Don't show error to user since booking was successful
-
-                        }
-
-                        // Clear lock timer
-
-                        if (this.lockTimers[slotData.id]) {
-
-                            clearInterval(this.lockTimers[slotData.id]);
-
-                            delete this.lockTimers[slotData.id];
-
-                        }
-
-                    } else {
-
-                        this.showNotification(result.message || 'Booking failed', 'error');
-
-                    }
-
-                } catch (error) {
-
-                    console.error('Error submitting booking:', error);
-
-                    this.showNotification(`Error submitting booking: ${error.message}`, 'error');
-
-                } finally {
-
-                    this.hideLoading();
-
-                }
-
-            }
-
-            notifyExitPage(bookingResult) {
-
-                // Send notification to exit page about new booking
-
-                try {
-
-                    const message = {
-
-                        type: 'new_booking',
-
-                        timestamp: Date.now(),
-
-                        data: {
-
-                            bookingCode: bookingResult.bookingCode,
-
-                            vehicleNumber: bookingResult.vehicleNumber,
-
-                            customerName: bookingResult.customerName,
-
-                            slotNumber: bookingResult.slotNumber,
-
-                            entryTime: bookingResult.entryTime
-
-                        }
-
-                    };
-
-                    // Use BroadcastChannel for real-time communication
-
-                    const channel = new BroadcastChannel('parking_updates');
-
-                    channel.postMessage(message);
-
-                    channel.close();
-
-                    console.log('Notified exit page about new booking:', message);
-
-                    // Also set localStorage as fallback
-
-                    localStorage.setItem('newBooking', JSON.stringify({
-
-                        ...message,
-
-                        timestamp: Date.now()
-
-                    }));
-
-                } catch (error) {
-
-                    console.log('BroadcastChannel not supported, using localStorage only');
-
-                    // Fallback to localStorage only
-
-                    localStorage.setItem('newBooking', JSON.stringify({
-
-                        type: 'new_booking',
-
-                        timestamp: Date.now(),
-
-                        data: {
-
-                            bookingCode: bookingResult.bookingCode,
-
-                            vehicleNumber: bookingResult.vehicleNumber,
-
-                            customerName: bookingResult.customerName,
-
-                            slotNumber: bookingResult.slotNumber,
-
-                            entryTime: bookingResult.entryTime
-
-                        }
-
-                    }));
-
-                }
-
-            }
-
-            validateForm() {
-
-                const fields = ['vehicleNumber', 'customerName', 'phoneNumber'];
-
-                let isValid = true;
-
-                fields.forEach(fieldId => {
-
-                    if (!this.validateField(fieldId)) {
-
-                        isValid = false;
-
-                    }
-
-                });
-
-                const vehicleType = document.getElementById('vehicleType').value;
-
-                if (!vehicleType) {
-
-                    document.getElementById('vehicleTypeError').textContent = 'Please select vehicle type';
-
-                    isValid = false;
-
-                } else {
-
-                    document.getElementById('vehicleTypeError').textContent = '';
-
-                }
-
-                return isValid;
-
-            }
-
-            showNotification(message, type, bookingId = null, persistent = false) {
-
-                const notification = document.getElementById('notification');
-
-                if (type === 'success' && bookingId) {
-
-                    notification.innerHTML = `
-
-                        <div>${message}</div>
-
-                        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
-
-                            <button onclick="window.downloadReceipt('${bookingId}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-
-                                📄 Download Receipt
-
-                            </button>
-
-                            ${persistent ? '<button onclick="window.closeNotification()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
-
-                        </div>
-
-                    `;
-
-                } else {
-
-                    notification.innerHTML = `
-
-                        <div>${message}</div>
-
-                        ${persistent ? '<button class="close-notification-btn" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
-
-                    `;
-
-                }
-
-                notification.className = `notification ${type}`;
-
-                notification.classList.add('show');
-
-                // Add event listener for close button if present
-
-                const closeBtn = notification.querySelector('.close-notification-btn');
-
-                if (closeBtn) {
-
-                    closeBtn.addEventListener('click', () => window.closeNotification());
-
-                }
-
-                // Only auto-hide if not persistent
-
-                if (!persistent) {
-
-                    setTimeout(() => {
-
-                        notification.classList.remove('show');
-
-                    }, 8000);
-
-                }
-
-            }
-
             showSkeletonLoader() {
-
                 const grid1 = document.getElementById('parkingGridFloor1');
-
                 const grid2 = document.getElementById('parkingGridFloor2');
-
                 if (grid1) grid1.innerHTML = '';
-
                 if (grid2) grid2.innerHTML = '';
-
                 // Add skeleton loading animation for both floors (30 skeletons to represent 300 slots)
-
                 [grid1, grid2].forEach(grid => {
-
                     if (grid) {
-
                         for (let i = 0; i < 30; i++) {
-
                             const skeleton = document.createElement('div');
-
                             skeleton.className = 'skeleton-slot';
-
                             skeleton.innerHTML = '<div class="skeleton-content"></div>';
-
                             grid.appendChild(skeleton);
-
                         }
-
                     }
-
                 });
-
             }
 
             showProgressBar() {

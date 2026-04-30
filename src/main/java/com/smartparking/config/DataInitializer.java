@@ -23,17 +23,18 @@ public class DataInitializer implements CommandLineRunner {
         long count = parkingSlotRepository.count();
         
         if (count == 0) {
-            log.info("No parking slots found. Initializing 200 slots...");
+            log.info("No parking slots found. Initializing 600 slots...");
             
-            // Floor 1: 5 areas (A-E), 20 slots each = 100 slots
+            // Floor 1: 15 areas (A-O), 20 slots each = 300 slots
+            // Floor 2: 15 areas (A-O), 20 slots each = 300 slots
             for (int floor = 1; floor <= 2; floor++) {
-                for (int slotNum = 1; slotNum <= 100; slotNum++) {
+                for (int slotNum = 1; slotNum <= 300; slotNum++) {
                     ParkingSlot slot = new ParkingSlot(slotNum, floor);
                     parkingSlotRepository.save(slot);
                 }
             }
             
-            log.info("Initialized 200 parking slots successfully");
+            log.info("Initialized 600 parking slots successfully");
         } else {
             log.info("Found {} existing parking slots. Skipping initialization.", count);
         }

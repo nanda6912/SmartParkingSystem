@@ -288,7 +288,7 @@ public class ParkingService {
 
             // Check if vehicle is currently parked (only active bookings, not exited ones)
 
-            Optional<Booking> existingActiveBooking = bookingRepository.findByVehicleNumberAndIsActiveTrue(normalizedVehicleNumber);
+            Optional<Booking> existingActiveBooking = bookingRepository.findActiveBookingByVehicleNumber(normalizedVehicleNumber);
 
             log.debug("Existing active booking found: {}", existingActiveBooking.isPresent());
 

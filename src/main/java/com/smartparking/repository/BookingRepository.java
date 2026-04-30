@@ -29,6 +29,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.isActive = true AND b.parkingSlot.floor = :floor")
     List<Booking> findActiveBookingsByFloor(@Param("floor") Integer floor);
     
+    @Query("SELECT b FROM Booking b WHERE b.vehicleNumber = :vehicleNumber AND b.isActive = true AND b.exitTime IS NULL")
+    Optional<Booking> findActiveBookingByVehicleNumber(@Param("vehicleNumber") String vehicleNumber);
+    
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.bookingTime BETWEEN :startTime AND :endTime AND b.isActive = false")
     Long countCompletedBookingsInPeriod(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
     
