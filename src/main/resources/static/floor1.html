@@ -526,6 +526,7 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const result = await response.json();
+                    console.log('Booking result:', result);
                     if (result.bookingCode) {
                         this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
                         this.closeBookingForm();

@@ -1,777 +1,1584 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Smart Parking System</title>
+
     <link rel="stylesheet" href="/styles/design-system.css">
+
     <style>
+
         /* Page-specific styles only */
+
         .main-container {
+
             display: flex;
+
             min-height: 100vh;
+
             background: var(--bg-primary);
+
         }
+
         .parking-grid {
+
             display: grid;
+
             grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+
             gap: var(--space-2);
+
             padding: var(--space-4);
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-md);
+
             margin-bottom: var(--space-4);
+
         }
+
         .parking-slot {
+
             aspect-ratio: 1;
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-sm);
+
             display: flex;
+
             flex-direction: column;
+
             align-items: center;
+
             justify-content: center;
+
             cursor: pointer;
+
             transition: border-color var(--transition-fast);
+
             position: relative;
+
             background: var(--bg-secondary);
+
             padding: var(--space-1);
+
         }
+
         .parking-slot:hover {
+
             border-color: var(--accent-primary);
+
         }
+
         .parking-slot.available:hover {
+
             background: var(--bg-secondary);
+
         }
+
         .parking-slot.booked {
+
             border-color: #DC2626;
+
             color: #7F1D1D;
+
             background: #FEF2F2;
+
             cursor: not-allowed;
+
             font-weight: 600;
+
         }
+
         .parking-slot.booked .slot-number {
+
             color: #991B1B;
+
             font-weight: 700;
+
         }
+
         .parking-slot.booked .slot-status {
+
             color: #DC2626;
+
             font-weight: 600;
+
         }
+
         .parking-slot.locked {
+
             border-color: var(--badge-locked-border);
+
             color: var(--badge-locked-text);
+
             background: var(--badge-locked-bg);
+
             cursor: not-allowed;
+
         }
+
         .slot-number {
+
             font-size: 12px;
+
             font-weight: 600;
+
             line-height: 1;
+
             margin-bottom: 2px;
+
         }
+
         .slot-status {
+
             font-size: 9px;
+
             text-transform: uppercase;
+
             letter-spacing: 0.05em;
+
             line-height: 1;
+
         }
+
         .lock-timer {
+
             position: absolute;
+
             top: var(--space-1);
+
             right: var(--space-1);
+
             background: var(--status-locked-bg);
+
             color: var(--status-locked-text);
+
             padding: var(--space-1) var(--space-2);
+
             border-radius: var(--radius-sm);
+
             font-size: 10px;
+
             font-weight: 600;
+
         }
+
             border-radius: var(--radius-md);
+
             width: fit-content;
+
         }
+
         .floor-tab {
+
             padding: var(--space-3) var(--space-5);
+
             background: transparent;
+
             border: none;
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-size: var(--font-size-sm);
+
             font-weight: 500;
+
             color: var(--text-tertiary);
+
             transition: var(--transition-fast);
+
         }
+
         .floor-tab:hover {
+
             color: var(--text-primary);
+
             background: var(--bg-secondary);
+
         }
+
         .floor-tab.active {
+
             background: var(--bg-secondary);
+
             color: var(--text-primary);
+
             border: 1px solid var(--border-secondary);
+
             box-shadow: var(--shadow-sm);
+
         }
+
         .floors-container {
+
             display: flex;
+
             gap: var(--space-8);
+
             margin-bottom: var(--space-6);
+
             padding: var(--space-2);
+
             background: var(--bg-tertiary);
+
             border-radius: var(--radius-md);
+
         }
+
         .floor-section {
+
             flex: 1;
+
         }
+
         .floor-title {
+
             text-align: center;
+
             margin-bottom: var(--space-4);
+
             color: var(--text-primary);
+
             font-size: var(--font-size-lg);
+
             font-weight: 600;
+
         }
+
         .skeleton-slot {
+
             aspect-ratio: 1;
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-sm);
+
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+
             background-size: 200% 100%;
+
             animation: skeleton-loading 1.5s infinite;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
         }
+
         .skeleton-content {
+
             width: 60%;
+
             height: 8px;
+
             background: rgba(255, 255, 255, 0.8);
+
             border-radius: 4px;
+
         }
+
         @keyframes skeleton-loading {
+
             0% { background-position: 200% 0; }
+
             100% { background-position: -200% 0; }
+
         }
+
         .stats-row {
+
             display: grid;
+
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
             gap: var(--space-4);
+
             margin-bottom: var(--space-6);
+
         }
+
         .stat-card {
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-md);
+
             padding: var(--space-6);
+
             text-align: center;
+
             transition: var(--transition-base);
+
             box-shadow: var(--shadow-sm);
+
         }
+
         .stat-card:hover {
+
             transform: translateY(-1px);
+
             box-shadow: var(--shadow-md);
+
         }
+
         .stat-value {
+
             font-size: var(--font-size-3xl);
+
             font-weight: 700;
+
             color: var(--accent-primary);
+
             margin-bottom: var(--space-2);
+
             line-height: 1.1;
+
         }
+
         .stat-label {
+
             font-size: var(--font-size-sm);
+
             color: var(--text-tertiary);
+
             text-transform: uppercase;
+
             letter-spacing: 0.05em;
+
             font-weight: 600;
+
         }
+
     </style>
+
 </head>
+
 <body>
+
     <!-- Progress Bar -->
+
     <div class="progress-bar" id="progressBar" style="display: none;">
+
         <div class="progress-bar-fill" id="progressBarFill"></div>
+
     </div>
+
     <div class="main-container">
+
         <!-- Main Content Area -->
+
         <main class="main-content-full">
+
             <!-- Page Header -->
+
             <div class="page-header">
+
                 <h1 class="page-title">🅿️ Smart Parking System</h1>
+
                 <p class="page-subtitle">Book your parking slot instantly</p>
+
             </div>
+
             <!-- Statistics Row -->
+
             <div class="stats-row">
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="totalSlots">200</div>
+
                     <div class="stat-label">Total Slots</div>
+
                 </div>
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="availableSlots">0</div>
+
                     <div class="stat-label">Available</div>
+
                 </div>
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="lockedSlots">0</div>
+
                     <div class="stat-label">Locked</div>
+
                 </div>
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="occupiedSlots">0</div>
+
                     <div class="stat-label">Occupied</div>
+
                 </div>
+
             </div>
+
             <!-- Two-Floor Layout -->
+
             <div class="floors-container">
+
                 <!-- Floor 1 Section -->
+
                 <div class="floor-section">
+
                     <h3 class="floor-title">Floor 1 (Ground)</h3>
+
                     <div class="parking-grid" id="parkingGridFloor1">
+
                         <!-- Parking slots will be dynamically generated -->
+
                     </div>
+
                 </div>
+
                 <!-- Floor 2 Section -->
+
                 <div class="floor-section">
+
                     <h3 class="floor-title">Floor 2 (First)</h3>
+
                     <div class="parking-grid" id="parkingGridFloor2">
+
                         <!-- Parking slots will be dynamically generated -->
+
                     </div>
+
                 </div>
+
             </div>
+
             </div>
+
         </main>
+
     </div>
+
     <!-- Modal Overlay -->
+
     <!-- Booking modal removed - index.html is view-only -->
+
     <!-- Notification -->
+
     <div class="notification" id="notification"></div>
+
     <script>
+
         class ParkingSystem {
+
             constructor() {
+
                 this.currentFloor = 1;
+
                 this.selectedSlot = null;
+
                 this.slots = [];
+
                 this.lockTimers = {};
+
                 // Check if in view mode (from exit page)
+
                 const urlParams = new URLSearchParams(window.location.search);
+
                 this.viewMode = urlParams.get('viewMode') === 'true' || sessionStorage.getItem('fromExitPage') === 'true';
+
                 // Clear the fromExitPage flag after reading it
+
                 if (sessionStorage.getItem('fromExitPage') === 'true') {
+
                     sessionStorage.removeItem('fromExitPage');
+
                 }
+
                 this.init();
+
             }
+
             init() {
+
                 // View mode banner removed - slots are now viewable without banner
+
                 // if (this.viewMode) {
+
                 //     this.showViewModeBanner();
+
                 // }
+
                 this.setupEventListeners();
+
                 this.loadParkingSlots();
+
                 this.startAutoRefresh();
+
             }
+
             showViewModeBanner() {
+
                 // Create view mode banner
+
                 const banner = document.createElement('div');
+
                 banner.id = 'viewModeBanner';
+
                 banner.className = 'view-mode-banner';
+
                 banner.innerHTML = `
+
                     <div class="view-mode-content">
+
                         <i class="fas fa-eye"></i>
+
                         <span><strong>View Mode</strong> - You can only view slot statuses. Booking is disabled.</span>
+
                     </div>
+
                 `;
+
                 // Insert banner at the top of the page
+
                 const mainContainer = document.querySelector('.main-container');
+
                 if (mainContainer) {
+
                     mainContainer.insertBefore(banner, mainContainer.firstChild);
+
                 }
+
                 // Add view mode styles if not already added
+
                 if (!document.getElementById('viewModeStyles')) {
+
                     const style = document.createElement('style');
+
                     style.id = 'viewModeStyles';
+
                     style.textContent = `
+
                         .view-mode-banner {
+
                             background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+
                             border-bottom: 2px solid #F59E0B;
+
                             padding: 12px 24px;
+
                             position: sticky;
+
                             top: 0;
+
                             z-index: 100;
+
                         }
+
                         .view-mode-content {
+
                             display: flex;
+
                             align-items: center;
+
                             justify-content: center;
+
                             gap: 12px;
+
                             max-width: 1200px;
+
                             margin: 0 auto;
+
                             font-size: 14px;
+
                             color: #92400E;
+
                         }
+
                         .view-mode-content i {
+
                             font-size: 18px;
+
                         }
+
                         .btn-exit-return {
+
                             margin-left: auto;
+
                             padding: 6px 12px;
+
                             background: #F59E0B;
+
                             color: white;
+
                             border: none;
+
                             border-radius: 4px;
+
                             cursor: pointer;
+
                             font-size: 13px;
+
                             display: flex;
+
                             align-items: center;
+
                             gap: 6px;
+
                             transition: all 0.2s;
+
                         }
+
                         .btn-exit-return:hover {
+
                             background: #D97706;
+
                         }
+
                         .parking-slot.view-mode {
+
                             cursor: default !important;
+
                             pointer-events: none;
+
                         }
+
                         .parking-slot.view-mode::after {
+
                             content: '';
+
                             position: absolute;
+
                             top: 2px;
+
                             right: 2px;
+
                             width: 6px;
+
                             height: 6px;
+
                             background: #F59E0B;
+
                             border-radius: 50%;
+
                         }
+
                     `;
+
                     document.head.appendChild(style);
+
                 }
+
             }
+
             setupEventListeners() {
+
                 // Floor tabs
+
                 document.querySelectorAll('.floor-tab').forEach(tab => {
+
                     tab.addEventListener('click', (e) => {
+
                         document.querySelectorAll('.floor-tab').forEach(t => t.classList.remove('active'));
+
                         e.target.classList.add('active');
+
                         this.currentFloor = parseInt(e.target.dataset.floor);
+
                         this.loadParkingSlots();
+
                     });
+
                 });
-                // Booking event listeners removed - index.html is view-only
-            }
-            async loadParkingSlots() {
-                try {
-                    this.showSkeletonLoader();
-                    this.showProgressBar();
-                    console.log('Loading parking slots for all floors...');
-                    // Load both floors with individual error handling for resilience
-                    const results = await Promise.allSettled([
-                        this.loadFloorData(1),
-                        this.loadFloorData(2)
-                    ]);
-                    // Process results individually to handle partial failures
-                    const floor1Data = results[0].status === 'fulfilled' ? results[0].value : [];
-                    const floor2Data = results[1].status === 'fulfilled' ? results[1].value : [];
-                    // Log any failures but continue with available data
-                    if (results[0].status === 'rejected') {
-                        console.error('Floor 1 loading failed:', results[0].reason);
-                        this.showNotification('Floor 1 data unavailable. Some slots may not display.', 'warning');
-                    }
-                    if (results[1].status === 'rejected') {
-                        console.error('Floor 2 loading failed:', results[1].reason);
-                        this.showNotification('Floor 2 data unavailable. Some slots may not display.', 'warning');
-                    }
-                    // Combine data for statistics
-                    this.slots = [...floor1Data, ...floor2Data];
-                    // Render each floor separately (empty arrays will clear the grid)
-                    this.renderFloor(floor1Data, 'parkingGridFloor1', 1);
-                    this.renderFloor(floor2Data, 'parkingGridFloor2', 2);
-                    this.updateStats();
-                    this.startLockTimers();
-                } catch (error) {
-                    console.error('Unexpected error loading parking slots:', error);
-                    this.showNotification(`Error loading parking slots: ${error.message}`, 'error');
-                } finally {
-                    this.hideLoading();
-                }
-            }
-            async loadFloorData(floor) {
-                try {
-                    const response = await fetch(`/api/parking-slots/floor/${floor}`);
-                    if (!response.ok) {
-                        if (response.status === 429) {
-                            // Rate limited - wait and retry once
-                            console.log(`Rate limited for floor ${floor}, retrying...`);
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            const retryResponse = await fetch(`/api/parking-slots/floor/${floor}`);
-                            if (!retryResponse.ok) {
-                                throw new Error(`HTTP error after retry! status: ${retryResponse.status}`);
-                            }
-                            return await retryResponse.json();
-                        }
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    console.log(`Floor ${floor} slots loaded:`, data.length);
-                    return data;
-                } catch (error) {
-                    console.error(`Error loading floor ${floor}:`, error);
-                    throw error;
-                }
-            }
-            renderFloor(slots, gridId, floorNumber) {
-                const grid = document.getElementById(gridId);
-                if (!grid) {
-                    console.error(`Grid element not found: ${gridId}`);
-                    return;
-                }
-                grid.innerHTML = '';
-                slots.forEach(slot => {
-                    const slotElement = document.createElement('div');
-                    slotElement.className = `parking-slot ${slot.status.toLowerCase()}`;
-                    slotElement.dataset.slotId = slot.id;
-                    let timerHtml = '';
-                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
-                        timerHtml = `<div class="lock-timer">${Math.ceil(slot.remainingLockSeconds)}s</div>`;
-                    }
-                    // Index.html is view-only - no booking functionality
-                    // Add view-mode class to all slots for visual indicator
-                    slotElement.classList.add('view-mode');
-                    // Add slot content to the slot element
-                    slotElement.innerHTML = `
-                        <div class="slot-id">${slot.slotId || slot.id}</div>
-                        <div class="slot-status">${slot.status}</div>
-                        ${timerHtml}
-                    `;
-                    grid.appendChild(slotElement);
-                });
-            }
-            // Old renderParkingGrid method removed - now using renderFloor for two-floor layout
-            updateStats() {
-                const total = this.slots.length;
-                const available = this.slots.filter(s => s.status === 'AVAILABLE').length;
-                const locked = this.slots.filter(s => s.status === 'LOCKED').length;
-                const occupied = this.slots.filter(s => s.status === 'OCCUPIED').length;
-                document.getElementById('totalSlots').textContent = total;
-                document.getElementById('availableSlots').textContent = available;
-                document.getElementById('lockedSlots').textContent = locked;
-                document.getElementById('occupiedSlots').textContent = occupied;
-            }
-            // selectSlot method removed - booking disabled on index.html (view-only mode)
-            startLockTimers() {
-                // Start timers for all locked slots
-                this.slots.forEach(slot => {
-                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
-                        this.startLockTimer(slot.id, slot.remainingLockSeconds);
-                    }
-                });
-            }
-            startLockTimer(slotId, seconds) {
-                if (this.lockTimers[slotId]) {
-                    clearInterval(this.lockTimers[slotId]);
-                }
-                let remainingSeconds = seconds;
-                this.lockTimers[slotId] = setInterval(() => {
-                    remainingSeconds--;
-                    const timerElement = document.querySelector(`[data-slot-id="${slotId}"] .lock-timer`);
-                    if (timerElement) {
-                        timerElement.textContent = `${remainingSeconds}s`;
-                    }
-                    if (remainingSeconds <= 0) {
-                        clearInterval(this.lockTimers[slotId]);
-                        delete this.lockTimers[slotId];
-                        this.loadParkingSlots();
-                        if (this.selectedSlot && this.selectedSlot.id === slotId) {
-                            this.closeBookingForm();
-                            this.showNotification('Lock expired! Slot is now available.', 'info');
-                        }
-                    }
-                }, 1000);
-            }
-            showBookingForm() {
-                const overlay = document.getElementById('overlay');
-                overlay.classList.add('open');
-                document.getElementById('bookingFormElement').reset();
-                this.clearValidationErrors();
-            }
-            closeBookingForm() {
-                const overlay = document.getElementById('overlay');
-                overlay.classList.remove('open');
-                this.selectedSlot = null;
-                this.clearValidationErrors();
-            }
-            validateField(fieldId) {
-                const field = document.getElementById(fieldId);
-                const errorElement = document.getElementById(`${fieldId}Error`);
-                let isValid = true;
-                let errorMessage = '';
-                switch(fieldId) {
-                    case 'vehicleNumber':
-                        const value = field.value.toUpperCase();
-                        if (!value) {
-                            errorMessage = 'Vehicle number is required';
-                            isValid = false;
-                        } else if (!/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/.test(value)) {
-                            errorMessage = 'Format: XX00XX0000 (uppercase)';
-                            isValid = false;
-                        }
-                        field.value = value;
-                        break;
-                    case 'customerName':
-                        if (!field.value) {
-                            errorMessage = 'Name is required';
-                            isValid = false;
-                        } else if (field.value.length > 20) {
-                            errorMessage = 'Maximum 20 characters';
-                            isValid = false;
-                        } else if (!/^[A-Za-z\s]+$/.test(field.value)) {
-                            errorMessage = 'Only alphabets allowed';
-                            isValid = false;
-                        }
-                        break;
-                    case 'phoneNumber':
-                        if (!field.value) {
-                            errorMessage = 'Phone number is required';
-                            isValid = false;
-                        } else if (!/^[0-9]{10}$/.test(field.value)) {
-                            errorMessage = 'Exactly 10 digits required';
-                            isValid = false;
-                        }
-                        break;
-                }
-                if (isValid) {
-                    field.classList.remove('error');
-                    errorElement.textContent = '';
-                } else {
-                    field.classList.add('error');
-                    errorElement.textContent = errorMessage;
-                }
-                return isValid;
-            }
-            clearValidationErrors() {
-                ['vehicleNumber', 'customerName', 'phoneNumber', 'vehicleType'].forEach(fieldId => {
-                    document.getElementById(fieldId).classList.remove('error');
-                    document.getElementById(`${fieldId}Error`).textContent = '';
-                });
-            }
-            async submitBooking() {
-                if (!this.validateForm()) {
-                    return;
-                }
-                // Check if selected slot exists
-                if (!this.selectedSlot || !this.selectedSlot.id) {
-                    this.showNotification('No slot selected. Please select a slot first.', 'error');
-                    return;
-                }
-                // Preserve slot data for the booking process
-                const slotData = { ...this.selectedSlot };
-                const bookingData = {
-                    slotId: slotData.id,
-                    vehicleNumber: document.getElementById('vehicleNumber').value.toUpperCase(),
-                    customerName: document.getElementById('customerName').value,
-                    phoneNumber: document.getElementById('phoneNumber').value,
-                    vehicleType: document.getElementById('vehicleType').value
-                };
-                try {
-                    this.showLoading();
-                    console.log('Submitting booking:', bookingData);
-                    const response = await fetch('/api/parking-slots/book', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(bookingData)
-                    });
-                    console.log('Booking response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const result = await response.json();
-                    console.log('Booking result:', result);
-                    if (result.bookingCode) {
-                        this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
+
+                // Overlay click to close
+
+                document.getElementById('overlay').addEventListener('click', (e) => {
+
+                    if (e.target === e.currentTarget) {
+
                         this.closeBookingForm();
-                        // Notify exit page about new booking
-                        this.notifyExitPage(result);
-                        // Reload slots to show updated status (small delay to ensure DB transaction commits)
-                        try {
-                            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-                            await this.loadParkingSlots();
-                        } catch (loadError) {
-                            console.warn('Error reloading slots after booking:', loadError);
-                            // Don't show error to user since booking was successful
-                        }
-                        // Clear lock timer
-                        if (this.lockTimers[slotData.id]) {
-                            clearInterval(this.lockTimers[slotData.id]);
-                            delete this.lockTimers[slotData.id];
-                        }
-                    } else {
-                        this.showNotification(result.message || 'Booking failed', 'error');
+
                     }
-                } catch (error) {
-                    console.error('Error submitting booking:', error);
-                    this.showNotification(`Error submitting booking: ${error.message}`, 'error');
-                } finally {
-                    this.hideLoading();
-                }
+
+                });
+
+                document.getElementById('bookingFormElement').addEventListener('submit', (e) => {
+
+                    e.preventDefault();
+
+                    this.submitBooking();
+
+                });
+
+                // Form validation
+
+                ['vehicleNumber', 'customerName', 'phoneNumber'].forEach(fieldId => {
+
+                    document.getElementById(fieldId).addEventListener('input', (e) => {
+
+                        this.validateField(fieldId);
+
+                    });
+
+                });
+
             }
-            notifyExitPage(bookingResult) {
-                // Send notification to exit page about new booking
+
+            async loadParkingSlots() {
+
                 try {
-                    const message = {
-                        type: 'new_booking',
-                        timestamp: Date.now(),
-                        data: {
-                            bookingCode: bookingResult.bookingCode,
-                            vehicleNumber: bookingResult.vehicleNumber,
-                            customerName: bookingResult.customerName,
-                            slotNumber: bookingResult.slotNumber,
-                            entryTime: bookingResult.entryTime
-                        }
-                    };
-                    // Use BroadcastChannel for real-time communication
-                    const channel = new BroadcastChannel('parking_updates');
-                    channel.postMessage(message);
-                    channel.close();
-                    console.log('Notified exit page about new booking:', message);
-                    // Also set localStorage as fallback
-                    localStorage.setItem('newBooking', JSON.stringify({
-                        ...message,
-                        timestamp: Date.now()
-                    }));
+
+                    this.showSkeletonLoader();
+
+                    this.showProgressBar();
+
+                    console.log('Loading parking slots for all floors...');
+
+                    // Load both floors with individual error handling for resilience
+
+                    const results = await Promise.allSettled([
+
+                        this.loadFloorData(1),
+
+                        this.loadFloorData(2)
+
+                    ]);
+
+                    // Process results individually to handle partial failures
+
+                    const floor1Data = results[0].status === 'fulfilled' ? results[0].value : [];
+
+                    const floor2Data = results[1].status === 'fulfilled' ? results[1].value : [];
+
+                    // Log any failures but continue with available data
+
+                    if (results[0].status === 'rejected') {
+
+                        console.error('Floor 1 loading failed:', results[0].reason);
+
+                        this.showNotification('Floor 1 data unavailable. Some slots may not display.', 'warning');
+
+                    }
+
+                    if (results[1].status === 'rejected') {
+
+                        console.error('Floor 2 loading failed:', results[1].reason);
+
+                        this.showNotification('Floor 2 data unavailable. Some slots may not display.', 'warning');
+
+                    }
+
+                    // Combine data for statistics
+
+                    this.slots = [...floor1Data, ...floor2Data];
+
+                    // Render each floor separately (empty arrays will clear the grid)
+
+                    this.renderFloor(floor1Data, 'parkingGridFloor1', 1);
+
+                    this.renderFloor(floor2Data, 'parkingGridFloor2', 2);
+
+                    this.updateStats();
+
+                    this.startLockTimers();
+
                 } catch (error) {
-                    console.log('BroadcastChannel not supported, using localStorage only');
-                    // Fallback to localStorage only
-                    localStorage.setItem('newBooking', JSON.stringify({
-                        type: 'new_booking',
-                        timestamp: Date.now(),
-                        data: {
-                            bookingCode: bookingResult.bookingCode,
-                            vehicleNumber: bookingResult.vehicleNumber,
-                            customerName: bookingResult.customerName,
-                            slotNumber: bookingResult.slotNumber,
-                            entryTime: bookingResult.entryTime
-                        }
-                    }));
+
+                    console.error('Unexpected error loading parking slots:', error);
+
+                    this.showNotification(`Error loading parking slots: ${error.message}`, 'error');
+
+                } finally {
+
+                    this.hideLoading();
+
                 }
+
             }
-            validateForm() {
-                const fields = ['vehicleNumber', 'customerName', 'phoneNumber'];
+
+            async loadFloorData(floor) {
+
+                try {
+
+                    const response = await fetch(`/api/parking-slots/floor/${floor}`);
+
+                    if (!response.ok) {
+
+                        if (response.status === 429) {
+
+                            // Rate limited - wait and retry once
+
+                            console.log(`Rate limited for floor ${floor}, retrying...`);
+
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+
+                            const retryResponse = await fetch(`/api/parking-slots/floor/${floor}`);
+
+                            if (!retryResponse.ok) {
+
+                                throw new Error(`HTTP error after retry! status: ${retryResponse.status}`);
+
+                            }
+
+                            return await retryResponse.json();
+
+                        }
+
+                        throw new Error(`HTTP error! status: ${response.status}`);
+
+                    }
+
+                    const data = await response.json();
+
+                    console.log(`Floor ${floor} slots loaded:`, data.length);
+
+                    return data;
+
+                } catch (error) {
+
+                    console.error(`Error loading floor ${floor}:`, error);
+
+                    throw error;
+
+                }
+
+            }
+
+            renderFloor(slots, gridId, floorNumber) {
+
+                const grid = document.getElementById(gridId);
+
+                if (!grid) {
+
+                    console.error(`Grid element not found: ${gridId}`);
+
+                    return;
+
+                }
+
+                grid.innerHTML = '';
+
+                slots.forEach(slot => {
+
+                    const slotElement = document.createElement('div');
+
+                    slotElement.className = `parking-slot ${slot.status.toLowerCase()}`;
+
+                    slotElement.dataset.slotId = slot.id;
+
+                    let timerHtml = '';
+
+                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
+
+                        timerHtml = `<div class="lock-timer">${Math.ceil(slot.remainingLockSeconds)}s</div>`;
+
+                    }
+
+                    // Index.html is view-only - no booking functionality
+
+                    // Add view-mode class to all slots for visual indicator
+
+                    slotElement.classList.add('view-mode');
+
+                    // Add slot content to the slot element
+
+                    slotElement.innerHTML = `
+
+                        <div class="slot-id">${slot.slotId || slot.id}</div>
+
+                        <div class="slot-status">${slot.status}</div>
+
+                        ${timerHtml}
+
+                    `;
+
+                    grid.appendChild(slotElement);
+
+                });
+
+            }
+
+            // Old renderParkingGrid method removed - now using renderFloor for two-floor layout
+
+            updateStats() {
+
+                const total = this.slots.length;
+
+                const available = this.slots.filter(s => s.status === 'AVAILABLE').length;
+
+                const locked = this.slots.filter(s => s.status === 'LOCKED').length;
+
+                const occupied = this.slots.filter(s => s.status === 'OCCUPIED').length;
+
+                document.getElementById('totalSlots').textContent = total;
+
+                document.getElementById('availableSlots').textContent = available;
+
+                document.getElementById('lockedSlots').textContent = locked;
+
+                document.getElementById('occupiedSlots').textContent = occupied;
+
+            }
+
+            // selectSlot method removed - booking disabled on index.html (view-only mode)
+
+            startLockTimers() {
+
+                // Start timers for all locked slots
+
+                this.slots.forEach(slot => {
+
+                    if (slot.status === 'LOCKED' && slot.remainingLockSeconds > 0) {
+
+                        this.startLockTimer(slot.id, slot.remainingLockSeconds);
+
+                    }
+
+                });
+
+            }
+
+            startLockTimer(slotId, seconds) {
+
+                if (this.lockTimers[slotId]) {
+
+                    clearInterval(this.lockTimers[slotId]);
+
+                }
+
+                let remainingSeconds = seconds;
+
+                this.lockTimers[slotId] = setInterval(() => {
+
+                    remainingSeconds--;
+
+                    const timerElement = document.querySelector(`[data-slot-id="${slotId}"] .lock-timer`);
+
+                    if (timerElement) {
+
+                        timerElement.textContent = `${remainingSeconds}s`;
+
+                    }
+
+                    if (remainingSeconds <= 0) {
+
+                        clearInterval(this.lockTimers[slotId]);
+
+                        delete this.lockTimers[slotId];
+
+                        this.loadParkingSlots();
+
+                        if (this.selectedSlot && this.selectedSlot.id === slotId) {
+
+                            this.closeBookingForm();
+
+                            this.showNotification('Lock expired! Slot is now available.', 'info');
+
+                        }
+
+                    }
+
+                }, 1000);
+
+            }
+
+            showBookingForm() {
+
+                const overlay = document.getElementById('overlay');
+
+                overlay.classList.add('open');
+
+                document.getElementById('bookingFormElement').reset();
+
+                this.clearValidationErrors();
+
+            }
+
+            closeBookingForm() {
+
+                const overlay = document.getElementById('overlay');
+
+                overlay.classList.remove('open');
+
+                this.selectedSlot = null;
+
+                this.clearValidationErrors();
+
+            }
+
+            validateField(fieldId) {
+
+                const field = document.getElementById(fieldId);
+
+                const errorElement = document.getElementById(`${fieldId}Error`);
+
                 let isValid = true;
-                fields.forEach(fieldId => {
-                    if (!this.validateField(fieldId)) {
-                        isValid = false;
-                    }
-                });
-                const vehicleType = document.getElementById('vehicleType').value;
-                if (!vehicleType) {
-                    document.getElementById('vehicleTypeError').textContent = 'Please select vehicle type';
-                    isValid = false;
-                } else {
-                    document.getElementById('vehicleTypeError').textContent = '';
-                }
-                return isValid;
-            }
-            showNotification(message, type, bookingId = null, persistent = false) {
-                const notification = document.getElementById('notification');
-                if (type === 'success' && bookingId) {
-                    notification.innerHTML = `
-                        <div>${message}</div>
-                        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
-                            <button onclick="window.downloadReceipt('${bookingId}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                📄 Download Receipt
-                            </button>
-                            ${persistent ? '<button onclick="window.closeNotification()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
-                        </div>
-                    `;
-                } else {
-                    notification.innerHTML = `
-                        <div>${message}</div>
-                        ${persistent ? '<button class="close-notification-btn" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
-                    `;
-                }
-                notification.className = `notification ${type}`;
-                notification.classList.add('show');
-                // Add event listener for close button if present
-                const closeBtn = notification.querySelector('.close-notification-btn');
-                if (closeBtn) {
-                    closeBtn.addEventListener('click', () => window.closeNotification());
-                }
-                // Only auto-hide if not persistent
-                if (!persistent) {
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 8000);
-                }
-            }
-            showSkeletonLoader() {
-                const grid1 = document.getElementById('parkingGridFloor1');
-                const grid2 = document.getElementById('parkingGridFloor2');
-                if (grid1) grid1.innerHTML = '';
-                if (grid2) grid2.innerHTML = '';
-                // Add skeleton loading animation for both floors (30 skeletons to represent 300 slots)
-                [grid1, grid2].forEach(grid => {
-                    if (grid) {
-                        for (let i = 0; i < 30; i++) {
-                            const skeleton = document.createElement('div');
-                            skeleton.className = 'skeleton-slot';
-                            skeleton.innerHTML = '<div class="skeleton-content"></div>';
-                            grid.appendChild(skeleton);
+
+                let errorMessage = '';
+
+                switch(fieldId) {
+
+                    case 'vehicleNumber':
+
+                        const value = field.value.toUpperCase();
+
+                        if (!value) {
+
+                            errorMessage = 'Vehicle number is required';
+
+                            isValid = false;
+
+                        } else if (!/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/.test(value)) {
+
+                            errorMessage = 'Format: XX00XX0000 (uppercase)';
+
+                            isValid = false;
+
                         }
-                    }
+
+                        field.value = value;
+
+                        break;
+
+                    case 'customerName':
+
+                        if (!field.value) {
+
+                            errorMessage = 'Name is required';
+
+                            isValid = false;
+
+                        } else if (field.value.length > 20) {
+
+                            errorMessage = 'Maximum 20 characters';
+
+                            isValid = false;
+
+                        } else if (!/^[A-Za-z\s]+$/.test(field.value)) {
+
+                            errorMessage = 'Only alphabets allowed';
+
+                            isValid = false;
+
+                        }
+
+                        break;
+
+                    case 'phoneNumber':
+
+                        if (!field.value) {
+
+                            errorMessage = 'Phone number is required';
+
+                            isValid = false;
+
+                        } else if (!/^[0-9]{10}$/.test(field.value)) {
+
+                            errorMessage = 'Exactly 10 digits required';
+
+                            isValid = false;
+
+                        }
+
+                        break;
+
+                }
+
+                if (isValid) {
+
+                    field.classList.remove('error');
+
+                    errorElement.textContent = '';
+
+                } else {
+
+                    field.classList.add('error');
+
+                    errorElement.textContent = errorMessage;
+
+                }
+
+                return isValid;
+
+            }
+
+            clearValidationErrors() {
+
+                ['vehicleNumber', 'customerName', 'phoneNumber', 'vehicleType'].forEach(fieldId => {
+
+                    document.getElementById(fieldId).classList.remove('error');
+
+                    document.getElementById(`${fieldId}Error`).textContent = '';
+
                 });
+
             }
-            showProgressBar() {
-                const progressBar = document.getElementById('progressBar');
-                const progressFill = document.getElementById('progressBarFill');
-                progressBar.style.display = 'block';
-                progressFill.style.width = '0%';
-                // Simulate progress
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 10;
-                    progressFill.style.width = progress + '%';
-                    if (progress >= 100) {
-                        clearInterval(interval);
+
+            async submitBooking() {
+
+                if (!this.validateForm()) {
+
+                    return;
+
+                }
+
+                // Check if selected slot exists
+
+                if (!this.selectedSlot || !this.selectedSlot.id) {
+
+                    this.showNotification('No slot selected. Please select a slot first.', 'error');
+
+                    return;
+
+                }
+
+                // Preserve slot data for the booking process
+
+                const slotData = { ...this.selectedSlot };
+
+                const bookingData = {
+
+                    slotId: slotData.id,
+
+                    vehicleNumber: document.getElementById('vehicleNumber').value.toUpperCase(),
+
+                    customerName: document.getElementById('customerName').value,
+
+                    phoneNumber: document.getElementById('phoneNumber').value,
+
+                    vehicleType: document.getElementById('vehicleType').value
+
+                };
+
+                try {
+
+                    this.showLoading();
+
+                    console.log('Submitting booking:', bookingData);
+
+                    const response = await fetch('/api/parking-slots/book', {
+
+                        method: 'POST',
+
+                        headers: {
+
+                            'Content-Type': 'application/json'
+
+                        },
+
+                        body: JSON.stringify(bookingData)
+
+                    });
+
+                    console.log('Booking response status:', response.status);
+
+                    if (!response.ok) {
+
+                        throw new Error(`HTTP error! status: ${response.status}`);
+
                     }
-                }, 100);
+
+                    const result = await response.json();
+
+                    console.log('Booking result:', result);
+
+                    if (result.bookingCode) {
+
+                        this.showNotification(`Booking confirmed! Slot ${result.slotIdString || result.slotNumber} booked successfully.`, 'success', result.bookingCode, true);
+
+                        this.closeBookingForm();
+
+                        // Notify exit page about new booking
+
+                        this.notifyExitPage(result);
+
+                        // Reload slots to show updated status (small delay to ensure DB transaction commits)
+
+                        try {
+
+                            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+
+                            await this.loadParkingSlots();
+
+                        } catch (loadError) {
+
+                            console.warn('Error reloading slots after booking:', loadError);
+
+                            // Don't show error to user since booking was successful
+
+                        }
+
+                        // Clear lock timer
+
+                        if (this.lockTimers[slotData.id]) {
+
+                            clearInterval(this.lockTimers[slotData.id]);
+
+                            delete this.lockTimers[slotData.id];
+
+                        }
+
+                    } else {
+
+                        this.showNotification(result.message || 'Booking failed', 'error');
+
+                    }
+
+                } catch (error) {
+
+                    console.error('Error submitting booking:', error);
+
+                    this.showNotification(`Error submitting booking: ${error.message}`, 'error');
+
+                } finally {
+
+                    this.hideLoading();
+
+                }
+
             }
-            hideProgressBar() {
+
+            notifyExitPage(bookingResult) {
+
+                // Send notification to exit page about new booking
+
+                try {
+
+                    const message = {
+
+                        type: 'new_booking',
+
+                        timestamp: Date.now(),
+
+                        data: {
+
+                            bookingCode: bookingResult.bookingCode,
+
+                            vehicleNumber: bookingResult.vehicleNumber,
+
+                            customerName: bookingResult.customerName,
+
+                            slotNumber: bookingResult.slotNumber,
+
+                            entryTime: bookingResult.entryTime
+
+                        }
+
+                    };
+
+                    // Use BroadcastChannel for real-time communication
+
+                    const channel = new BroadcastChannel('parking_updates');
+
+                    channel.postMessage(message);
+
+                    channel.close();
+
+                    console.log('Notified exit page about new booking:', message);
+
+                    // Also set localStorage as fallback
+
+                    localStorage.setItem('newBooking', JSON.stringify({
+
+                        ...message,
+
+                        timestamp: Date.now()
+
+                    }));
+
+                } catch (error) {
+
+                    console.log('BroadcastChannel not supported, using localStorage only');
+
+                    // Fallback to localStorage only
+
+                    localStorage.setItem('newBooking', JSON.stringify({
+
+                        type: 'new_booking',
+
+                        timestamp: Date.now(),
+
+                        data: {
+
+                            bookingCode: bookingResult.bookingCode,
+
+                            vehicleNumber: bookingResult.vehicleNumber,
+
+                            customerName: bookingResult.customerName,
+
+                            slotNumber: bookingResult.slotNumber,
+
+                            entryTime: bookingResult.entryTime
+
+                        }
+
+                    }));
+
+                }
+
+            }
+
+            validateForm() {
+
+                const fields = ['vehicleNumber', 'customerName', 'phoneNumber'];
+
+                let isValid = true;
+
+                fields.forEach(fieldId => {
+
+                    if (!this.validateField(fieldId)) {
+
+                        isValid = false;
+
+                    }
+
+                });
+
+                const vehicleType = document.getElementById('vehicleType').value;
+
+                if (!vehicleType) {
+
+                    document.getElementById('vehicleTypeError').textContent = 'Please select vehicle type';
+
+                    isValid = false;
+
+                } else {
+
+                    document.getElementById('vehicleTypeError').textContent = '';
+
+                }
+
+                return isValid;
+
+            }
+
+            showNotification(message, type, bookingId = null, persistent = false) {
+
+                const notification = document.getElementById('notification');
+
+                if (type === 'success' && bookingId) {
+
+                    notification.innerHTML = `
+
+                        <div>${message}</div>
+
+                        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+
+                            <button onclick="window.downloadReceipt('${bookingId}')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+
+                                📄 Download Receipt
+
+                            </button>
+
+                            ${persistent ? '<button onclick="window.closeNotification()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
+
+                        </div>
+
+                    `;
+
+                } else {
+
+                    notification.innerHTML = `
+
+                        <div>${message}</div>
+
+                        ${persistent ? '<button class="close-notification-btn" style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">✖ Close</button>' : ''}
+
+                    `;
+
+                }
+
+                notification.className = `notification ${type}`;
+
+                notification.classList.add('show');
+
+                // Add event listener for close button if present
+
+                const closeBtn = notification.querySelector('.close-notification-btn');
+
+                if (closeBtn) {
+
+                    closeBtn.addEventListener('click', () => window.closeNotification());
+
+                }
+
+                // Only auto-hide if not persistent
+
+                if (!persistent) {
+
+                    setTimeout(() => {
+
+                        notification.classList.remove('show');
+
+                    }, 8000);
+
+                }
+
+            }
+
+            showSkeletonLoader() {
+
+                const grid1 = document.getElementById('parkingGridFloor1');
+
+                const grid2 = document.getElementById('parkingGridFloor2');
+
+                if (grid1) grid1.innerHTML = '';
+
+                if (grid2) grid2.innerHTML = '';
+
+                // Add skeleton loading animation for both floors (30 skeletons to represent 300 slots)
+
+                [grid1, grid2].forEach(grid => {
+
+                    if (grid) {
+
+                        for (let i = 0; i < 30; i++) {
+
+                            const skeleton = document.createElement('div');
+
+                            skeleton.className = 'skeleton-slot';
+
+                            skeleton.innerHTML = '<div class="skeleton-content"></div>';
+
+                            grid.appendChild(skeleton);
+
+                        }
+
+                    }
+
+                });
+
+            }
+
+            showProgressBar() {
+
                 const progressBar = document.getElementById('progressBar');
+
+                const progressFill = document.getElementById('progressBarFill');
+
+                progressBar.style.display = 'block';
+
+                progressFill.style.width = '0%';
+
+                // Simulate progress
+
+                let progress = 0;
+
+                const interval = setInterval(() => {
+
+                    progress += 10;
+
+                    progressFill.style.width = progress + '%';
+
+                    if (progress >= 100) {
+
+                        clearInterval(interval);
+
+                    }
+
+                }, 100);
+
+            }
+
+            hideProgressBar() {
+
+                const progressBar = document.getElementById('progressBar');
+
                 progressBar.style.display = 'none';
+
             }
+
             showLoading() {
+
                 this.showSkeletonLoader();
+
                 this.showProgressBar();
+
             }
+
             hideLoading() {
+
                 this.hideProgressBar();
+
             }
+
             startAutoRefresh() {
+
                 setInterval(() => {
+
                     this.loadParkingSlots();
+
                 }, 10000); // Increased from 5 seconds to 10 seconds
+
             }
+
         }
+
         // Global functions
+
         window.downloadReceipt = function(bookingCode) {
+
             const link = document.createElement('a');
+
             link.href = `/receipt/download/${bookingCode}`;
+
             link.download = `receipt_${bookingCode}.txt`;
+
             document.body.appendChild(link);
+
             link.click();
+
             document.body.removeChild(link);
+
         };
+
         window.closeNotification = function() {
+
             const notification = document.getElementById('notification');
+
             notification.classList.remove('show');
+
         };
+
         // Initialize the parking system when DOM is loaded
+
         document.addEventListener('DOMContentLoaded', () => {
+
             window.parkingSystem = new ParkingSystem();
+
         });
+
         // Global function for modal close
+
         window.closeBookingForm = function() {
+
             if (window.parkingSystem) {
+
                 window.parkingSystem.closeBookingForm();
+
             }
+
         }
+
     </script>
+
 </body>
+
 </html>
+
