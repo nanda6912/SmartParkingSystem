@@ -36,6 +36,8 @@ A comprehensive parking management system built with Java 21, Spring Boot, Postg
 - **Complete Exit Data**: Phone numbers, vehicle types, and all booking details preserved
 - **Instant Updates**: Admin dashboard updates immediately after vehicle exit
 - **Data Integrity**: Prevents duplicate entries and notifications
+- **Booking ID Preservation**: Fixed data mapping to ensure booking IDs display correctly for released vehicles
+- **Payment Data Sync**: Enhanced synchronization of payment method and transaction details
 
 ### 🎯 Advanced Booking System
 - **Vehicle Re-booking Support**: Same vehicle can book again after exit
@@ -50,6 +52,10 @@ A comprehensive parking management system built with Java 21, Spring Boot, Postg
 - **Smart Receipt Generation**: Works for both active and exited bookings
 - **User-friendly Filenames**: Uses booking codes for easy identification
 - **Enhanced Content**: Dynamic fee calculation and professional formatting
+- **Payment Mode Details**: UPI receipts include transaction ID, Cash receipts show payment mode
+- **Post-Payment Downloads**: Receipt download option immediately after payment confirmation
+- **Released Vehicle Receipts**: Download buttons for all released vehicles in exit history
+- **Fallback Receipt Generation**: Automatic frontend receipts when backend data unavailable
 
 ### 🔧 Technical Improvements
 - **Enhanced Error Handling**: Better error messages and recovery
@@ -194,19 +200,32 @@ Simply run with: `mvn spring-boot:run`
 **Solution**: The system now supports both booking ID and booking code downloads:
 - Use booking ID: `/api/exit/receipt/{bookingId}`
 - Use booking code: `/api/exit/receipt/by-code/{bookingCode}`
+- **New**: Automatic fallback receipt generation for vehicles with missing booking IDs
 
-#### 2. "Too Many Requests" Error
+#### 2. Booking ID Shows "N/A" for Released Vehicles
+**Solution**: Data synchronization issue has been fixed:
+- **Backend Fix**: Corrected data mapping in `ExitController.convertExitDetailsToSyncFormat()`
+- **Frontend Fix**: Enhanced fallback handling for missing booking IDs
+- **Result**: New vehicle releases will show correct booking IDs
+
+#### 3. "Unable to download receipt: No booking ID found"
+**Solution**: Fallback receipt generation implemented:
+- **Primary**: Backend API receipt with payment details
+- **Fallback**: Frontend-generated receipt with available information
+- **User Experience**: Receipt download always works regardless of data issues
+
+#### 4. "Too Many Requests" Error
 **Solution**: Rate limiting has been enhanced:
 - Bookings: 30 per hour (increased from 3)
 - Locks: 50 per hour (increased from 5)
 - General requests: 300 per hour (increased from 60)
 
-#### 3. Vehicle Cannot Be Re-booked After Exit
+#### 5. Vehicle Cannot Be Re-booked After Exit
 **Solution**: The system now supports vehicle re-booking:
 - Only active bookings are checked for duplicates
 - Exited vehicles can book again immediately
 
-#### 4. Slot Lock Expires Too Quickly
+#### 6. Slot Lock Expires Too Quickly
 **Solution**: Lock duration extended to 5 minutes:
 - Previous: 2 minutes
 - Current: 5 minutes
@@ -216,7 +235,28 @@ Simply run with: `mvn spring-boot:run`
 - **Check Vehicle Status**: `GET /api/exit/debug/vehicle/{vehicleNumber}`
 - **Debug Booking Requests**: `POST /api/parking-slots/book-debug`
 
-## 📅 Latest Updates (April 2026)
+## 📅 Latest Updates (May 2026)
+
+### 🎯 **Enhanced Receipt Download System**
+- **Post-Payment Receipts**: Receipt download option immediately after payment confirmation
+- **Released Vehicle Receipts**: Download buttons for all released vehicles in exit history
+- **Payment Mode Details**: UPI receipts include transaction ID, Cash receipts show payment mode
+- **Fallback Receipt Generation**: Automatic frontend receipts when backend data unavailable
+- **Professional Receipt Format**: Complete payment details with timestamps and proper formatting
+
+### 🔧 **Data Synchronization Fixes**
+- **Booking ID Preservation**: Fixed data mapping to ensure booking IDs display correctly for released vehicles
+- **Payment Data Sync**: Enhanced synchronization of payment method and transaction details
+- **Real-time Updates**: Improved data flow between backend and frontend for released vehicles
+- **Debug Logging**: Added comprehensive debugging for data synchronization issues
+
+### 📊 **Enhanced Exit Management**
+- **Complete Vehicle Information**: Booking ID, vehicle number, slot, and amount properly displayed
+- **Receipt Integration**: Seamless receipt download integration in payment confirmation flow
+- **User Experience**: Professional confirmation dialogs with receipt download options
+- **Error Handling**: Robust fallback mechanisms for receipt downloads
+
+## 📅 Previous Updates (April 2026)
 
 ### 🏗️ **Enhanced Slot System - 300 Slots Per Floor**
 - **Scaled Capacity**: Expanded from 100 to 300 slots per floor (600 total slots)

@@ -3,6 +3,7 @@ package com.smartparking.controller;
 import com.smartparking.entity.Booking;
 import com.smartparking.service.ExitService;
 import com.smartparking.service.DataSyncService;
+import com.smartparking.service.UPIPaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +38,9 @@ public class ExitController {
     
     @Autowired
     private DataSyncService dataSyncService;
+    
+    @Autowired
+    private UPIPaymentService upiPaymentService;
     
     /**
      * Get all active bookings for exit management
@@ -158,6 +163,13 @@ public class ExitController {
             Booking booking = exitService.findBookingById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found with ID: " + bookingId));
             
+            // Debug: Log booking payment details
+            System.err.println("Receipt Debug - Booking ID: " + bookingId);
+            System.err.println("Payment Method: " + booking.getPaymentMethod());
+            System.err.println("Transaction ID: " + booking.getTransactionId());
+            System.err.println("Payment Time: " + booking.getPaymentTime());
+            System.err.println("Parking Fee: " + booking.getParkingFee());
+            
             // Generate receipt content (works for both active and exited bookings)
             String receiptContent = exitService.generateExitReceipt(booking);
             
@@ -266,6 +278,20 @@ public class ExitController {
         }
     }
     
+    /**
+     * Get synchronized exit data for frontend
+     */
+    @GetMapping("/sync-data")
+    public ResponseEntity<Map<String, Object>> getExitSyncData() {
+        try {
+            Map<String, Object> syncData = dataSyncService.getExitPageSyncData();
+            return ResponseEntity.ok(syncData);
+        } catch (Exception e) {
+            System.err.println("Error fetching exit sync data: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch exit sync data"));
+        }
+    }
+    
     @GetMapping("/debug/vehicle/{vehicleNumber}")
     public ResponseEntity<String> checkVehicleStatus(@PathVariable String vehicleNumber) {
         try {
@@ -322,7 +348,7 @@ public class ExitController {
         Map<String, Object> syncData = new java.util.HashMap<>();
         
         // Extract relevant fields
-        syncData.put("id", exitDetails.get("id"));
+        syncData.put("id", exitDetails.get("bookingId")); // Fixed: use bookingId instead of id
         syncData.put("bookingCode", exitDetails.get("bookingCode"));
         syncData.put("vehicleNumber", exitDetails.get("vehicleNumber"));
         
@@ -358,10 +384,146 @@ public class ExitController {
         syncData.put("slotNumber", exitDetails.get("slotNumber"));
         syncData.put("entryTime", exitDetails.get("entryTime"));
         syncData.put("exitTime", exitDetails.get("exitTime"));
-        syncData.put("parkingFee", exitDetails.get("parkingFee"));
+        syncData.put("parkingFee", exitDetails.get("totalFee")); // Fixed: use totalFee instead of parkingFee
         syncData.put("duration", exitDetails.get("duration"));
         syncData.put("processedAt", LocalDateTime.now());
         
         return syncData;
+    }
+    
+    /**
+     * Generate UPI payment QR code for a booking
+     */
+    @GetMapping("/generate-upi-qr/{bookingId}")
+    public ResponseEntity<Map<String, Object>> generateUPIQR(@PathVariable Long bookingId) {
+        try {
+            // First calculate fee for the booking
+            Map<String, Object> feeDetails = exitService.calculateFee(bookingId);
+            
+            if (feeDetails.containsKey("error")) {
+                return ResponseEntity.badRequest().body(feeDetails);
+            }
+            
+            // Get booking details for customer name
+            Optional<Booking> bookingOpt = exitService.findBookingById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Booking not found",
+                    "message", "No booking found with ID: " + bookingId
+                ));
+            }
+            Booking booking = bookingOpt.get();
+            
+            // Generate UPI payment QR
+            double amount = (Double) feeDetails.get("totalFee");
+            String bookingCode = (String) feeDetails.get("bookingCode");
+            String customerName = booking.getCustomerName();
+            
+            UPIPaymentService.PaymentQRResponse qrResponse = upiPaymentService.generatePaymentQR(
+                bookingCode, amount, customerName
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("bookingId", bookingId);
+            response.put("bookingCode", qrResponse.getBookingCode());
+            response.put("amount", qrResponse.getAmount());
+            response.put("merchantUpiId", qrResponse.getMerchantUpiId());
+            response.put("merchantName", qrResponse.getMerchantName());
+            response.put("upiUri", qrResponse.getUpiUri());
+            response.put("qrCodeBase64", qrResponse.getQrCodeBase64());
+            response.put("note", qrResponse.getNote());
+            response.put("generatedAt", qrResponse.getGeneratedAt());
+            response.put("message", "UPI QR code generated successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error generating UPI QR for bookingId {}: {}", bookingId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Failed to generate UPI QR code",
+                "message", e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Process payment and complete exit
+     */
+    @PostMapping("/process-payment/{bookingId}")
+    public ResponseEntity<Map<String, Object>> processPayment(@PathVariable Long bookingId, 
+                                                             @RequestBody Map<String, Object> paymentData) {
+        try {
+            String paymentMethod = (String) paymentData.get("paymentMethod");
+            String transactionId = (String) paymentData.get("transactionId");
+            
+            // Validate payment method
+            if (!"UPI".equalsIgnoreCase(paymentMethod) && !"CASH".equalsIgnoreCase(paymentMethod)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid payment method",
+                    "message", "Payment method must be either UPI or CASH"
+                ));
+            }
+            
+            // For UPI payments, transaction ID is required
+            if ("UPI".equalsIgnoreCase(paymentMethod)) {
+                if (!upiPaymentService.validateTransactionId(transactionId)) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Invalid transaction ID",
+                        "message", "UPI payments require a valid transaction ID (last 5 digits only)"
+                    ));
+                }
+            }
+            
+            // Process exit with payment details
+            Map<String, Object> exitDetails = exitService.processExitWithPayment(bookingId, paymentMethod, transactionId);
+            
+            // Try to sync data but don't fail the entire operation if sync fails
+            String syncStatus = "success";
+            String syncError = null;
+            
+            try {
+                Map<String, Object> syncExitData = convertExitDetailsToSyncFormat(exitDetails);
+                dataSyncService.addExitRecord(syncExitData);
+            } catch (Exception syncEx) {
+                System.err.println("Sync operation failed for bookingId " + bookingId + ": " + syncEx.getMessage());
+                syncEx.printStackTrace();
+                syncStatus = "failed";
+                syncError = "Data synchronization failed";
+            }
+            
+            // Return combined response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("bookingId", exitDetails.get("bookingId"));
+            response.put("bookingCode", exitDetails.get("bookingCode"));
+            response.put("vehicleNumber", exitDetails.get("vehicleNumber"));
+            response.put("customerName", exitDetails.get("customerName"));
+            response.put("phoneNumber", exitDetails.get("phoneNumber"));
+            response.put("vehicleType", exitDetails.get("vehicleType"));
+            response.put("slotNumber", exitDetails.get("slotNumber"));
+            response.put("floor", exitDetails.get("floor"));
+            response.put("entryTime", exitDetails.get("entryTime"));
+            response.put("exitTime", exitDetails.get("exitTime"));
+            response.put("duration", exitDetails.get("duration"));
+            response.put("hoursCharged", exitDetails.get("hoursCharged"));
+            response.put("totalFee", exitDetails.get("totalFee"));
+            response.put("paymentMethod", exitDetails.get("paymentMethod"));
+            response.put("transactionId", exitDetails.get("transactionId"));
+            response.put("paymentTime", exitDetails.get("paymentTime"));
+            response.put("syncStatus", syncStatus);
+            response.put("syncError", syncError);
+            response.put("timestamp", LocalDateTime.now());
+            response.put("message", "Payment processed and exit completed successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error processing payment for bookingId {}: {}", bookingId, e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", "Failed to process payment",
+                "message", e.getMessage()
+            ));
+        }
     }
 }

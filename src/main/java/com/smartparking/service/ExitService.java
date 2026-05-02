@@ -2,8 +2,10 @@ package com.smartparking.service;
 
 import com.smartparking.entity.Booking;
 import com.smartparking.entity.ParkingSlot;
+import com.smartparking.enums.SlotStatus;
 import com.smartparking.repository.BookingRepository;
 import com.smartparking.repository.ParkingSlotRepository;
+import com.smartparking.service.UPIPaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,9 @@ public class ExitService {
     
     @Autowired
     private ParkingSlotRepository parkingSlotRepository;
+    
+    @Autowired
+    private UPIPaymentService upiPaymentService;
     
     /**
      * Get all active bookings for exit management
@@ -241,6 +246,25 @@ public class ExitService {
             receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours).append(" hours)\n");
             receipt.append("HOURLY RATE: ₹").append(HOURLY_RATE).append("\n");
             receipt.append("TOTAL AMOUNT: ₹").append(String.format("%.2f", fee)).append("\n");
+            
+            // Add payment details for completed payments
+            log.info("Receipt generation - Payment method: {}, Transaction ID: {}, Payment time: {}", 
+                booking.getPaymentMethod(), booking.getTransactionId(), booking.getPaymentTime());
+            
+            if (booking.getPaymentMethod() != null) {
+                receipt.append("PAYMENT MODE: ").append(booking.getPaymentMethod()).append("\n");
+                
+                if ("UPI".equalsIgnoreCase(booking.getPaymentMethod()) && booking.getTransactionId() != null) {
+                    receipt.append("TRANSACTION ID: ").append(booking.getTransactionId()).append("\n");
+                }
+                
+                if (booking.getPaymentTime() != null) {
+                    receipt.append("PAYMENT TIME: ").append(booking.getPaymentTime().format(FORMATTER)).append("\n");
+                }
+            } else {
+                receipt.append("PAYMENT MODE: NOT RECORDED\n");
+                log.warn("Payment method is null for booking {}", booking.getId());
+            }
         } else {
             // For active bookings that haven't exited yet
             Duration duration = Duration.between(booking.getBookingTime(), LocalDateTime.now());
@@ -414,6 +438,113 @@ public class ExitService {
             } else {
                 return hours + " hour" + (hours == 1 ? "" : "s") + " " + minutes + " minute" + (minutes == 1 ? "" : "s");
             }
+        }
+    }
+    
+    /**
+     * Process exit with payment details
+     */
+    public Map<String, Object> processExitWithPayment(Long bookingId, String paymentMethod, String transactionId) {
+        try {
+            log.debug("Processing exit with payment for booking ID: {}, method: {}, transactionId: {}", 
+                     bookingId, paymentMethod, transactionId);
+            
+            // Find the booking
+            Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return Map.of(
+                    "error", "Booking not found",
+                    "message", "No booking found with ID: " + bookingId
+                );
+            }
+            
+            Booking booking = bookingOpt.get();
+            
+            // Validate payment method and transaction ID
+            if ("UPI".equalsIgnoreCase(paymentMethod)) {
+                if (transactionId == null || transactionId.trim().isEmpty()) {
+                    return Map.of(
+                        "error", "Transaction ID required",
+                        "message", "UPI payments require a transaction ID"
+                    );
+                }
+                if (!upiPaymentService.validateTransactionId(transactionId)) {
+                    return Map.of(
+                        "error", "Invalid transaction ID",
+                        "message", "UPI payments require a valid transaction ID (last 5 digits only)"
+                    );
+                }
+            }
+            
+            // For cash payments, transaction ID can be null or empty
+            if ("CASH".equalsIgnoreCase(paymentMethod) && transactionId != null && !transactionId.trim().isEmpty()) {
+                // Cash payments typically don't have transaction IDs, but if provided, validate format
+                if (!upiPaymentService.validateTransactionId(transactionId)) {
+                    return Map.of(
+                        "error", "Invalid transaction ID",
+                        "message", "Cash payments should not include transaction ID (or provide valid 5 digits)"
+                    );
+                }
+            }
+            
+            // Calculate fee
+            Map<String, Object> feeDetails = calculateFee(bookingId);
+            if (feeDetails.containsKey("error")) {
+                return feeDetails;
+            }
+            
+            // Update booking with payment details
+            booking.setPaymentMethod(paymentMethod);
+            if (transactionId != null && !transactionId.trim().isEmpty()) {
+                booking.setTransactionId(transactionId.trim());
+            }
+            booking.setPaymentTime(LocalDateTime.now());
+            booking.setExitTime(LocalDateTime.now());
+            booking.setParkingFee(((Number) feeDetails.get("totalFee")).intValue());
+            booking.setIsActive(false);
+            
+            // Save the booking
+            Booking savedBooking = bookingRepository.save(booking);
+            
+            // Update parking slot status to AVAILABLE
+            if (savedBooking.getParkingSlot() != null) {
+                ParkingSlot slot = savedBooking.getParkingSlot();
+                slot.setStatus(SlotStatus.AVAILABLE);
+                slot.setLockUntil(null);
+                parkingSlotRepository.save(slot);
+                log.info("Released parking slot {} for booking {}", slot.getSlotId(), bookingId);
+            }
+            
+            // Create response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("bookingId", savedBooking.getId());
+            response.put("bookingCode", savedBooking.getBookingCode());
+            response.put("vehicleNumber", savedBooking.getVehicleNumber());
+            response.put("customerName", savedBooking.getCustomerName());
+            response.put("phoneNumber", savedBooking.getPhoneNumber());
+            response.put("vehicleType", savedBooking.getVehicleType());
+            response.put("slotNumber", savedBooking.getParkingSlot().getSlotNumber());
+            response.put("floor", savedBooking.getParkingSlot().getFloor());
+            response.put("entryTime", savedBooking.getBookingTime().format(FORMATTER));
+            response.put("exitTime", savedBooking.getExitTime().format(FORMATTER));
+            response.put("duration", feeDetails.get("duration"));
+            response.put("hoursCharged", feeDetails.get("hoursCharged"));
+            response.put("totalFee", feeDetails.get("totalFee"));
+            response.put("paymentMethod", savedBooking.getPaymentMethod());
+            response.put("transactionId", savedBooking.getTransactionId());
+            response.put("paymentTime", savedBooking.getPaymentTime().format(FORMATTER));
+            response.put("message", "Exit processed successfully with payment");
+            
+            log.info("Successfully processed exit for booking {} with payment method: {}", bookingId, paymentMethod);
+            return response;
+            
+        } catch (Exception e) {
+            log.error("Error processing exit with payment for booking ID {}: {}", bookingId, e.getMessage(), e);
+            return Map.of(
+                "error", "Failed to process exit with payment",
+                "message", e.getMessage()
+            );
         }
     }
 }

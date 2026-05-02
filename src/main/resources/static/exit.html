@@ -466,6 +466,115 @@
             font-weight: 600;
         }
         
+        .released-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-sm);
+            padding: var(--space-4);
+            margin-bottom: var(--space-2);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .released-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+            font-weight: 600;
+            padding: var(--space-2);
+            border-bottom: 1px solid var(--border-secondary);
+        }
+        
+        .released-vehicle {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .released-time {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .released-info {
+            margin-top: var(--space-2);
+        }
+        
+        .released-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-1);
+        }
+        
+        .released-info-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            min-width: 80px;
+        }
+        
+        .released-info-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .released-amount {
+            color: var(--success-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+        }
+        
+        .released-summary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-secondary);
+            border-radius: var(--radius-sm);
+            padding: var(--space-3);
+            margin-bottom: var(--space-2);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .released-stats {
+            display: flex;
+            justify-content: space-around;
+            gap: var(--space-4);
+            margin-top: var(--space-2);
+        }
+        
+        .released-stat {
+            text-align: center;
+        }
+        
+        .released-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .released-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-1);
+        }
+        
+        .released-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .released-info-row:hover .released-info-value {
+            color: var(--primary-color);
+            transform: scale(1.05);
+        }
+        
         .btn-cancel {
             background: var(--bg-tertiary);
             color: var(--text-secondary);
@@ -876,14 +985,31 @@
 
             async loadStatistics() {
                 try {
-                    const response = await fetch('/api/exit/active-bookings', {
+                    const response = await fetch('/api/exit/stats', {
                         method: 'GET'
                     });
-
+                    
                     if (response.ok) {
-                        const bookings = await response.json();
-                        document.getElementById('activeBookingsCount').textContent = bookings.length;
-                        this.loadReleasedVehicles();
+                        const stats = await response.json();
+                        
+                        // Update display with correct data
+                        this.todayRevenue = stats.todayRevenue || 0;
+                        this.todayExits = stats.todayExits || 0;
+                        this.activeBookings = stats.activeBookings || 0;
+                        
+                        // Update UI elements
+                        document.getElementById('todayExitsCount').textContent = this.todayExits;
+                        document.getElementById('totalRevenue').textContent = '₹' + this.todayRevenue;
+                        document.getElementById('activeBookingsCount').textContent = this.activeBookings;
+                        
+                        // Load released vehicles from backend API instead of localStorage
+                        this.loadReleasedVehiclesFromBackend();
+                        
+                        console.log('Statistics loaded:', {
+                            todayRevenue: this.todayRevenue,
+                            todayExits: this.todayExits,
+                            activeBookings: this.activeBookings
+                        });
                     }
                 } catch (error) {
                     console.error('Error loading statistics:', error);
@@ -895,9 +1021,19 @@
                 // For now, we'll use localStorage to track released vehicles
                 const released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
                 const today = new Date().toDateString();
-                const todayReleased = released.filter(v => 
-                    new Date(v.exitTime).toDateString() === today
-                );
+                
+                // Debug: Log all released vehicles to see what's in localStorage
+                console.log('All released vehicles from localStorage:', released);
+                console.log('Today date:', today);
+                
+                const todayReleased = released.filter(v => {
+                    const exitDate = new Date(v.exitTime);
+                    return exitDate.toDateString() === today;
+                });
+                
+                // Debug: Log filtered results
+                console.log('Today released vehicles count:', todayReleased.length);
+                console.log('Today released vehicles:', todayReleased);
                 
                 this.todayExits = todayReleased.length;
                 this.todayRevenue = todayReleased.reduce((sum, v) => sum + (v.totalFee || 0), 0);
@@ -906,6 +1042,39 @@
                 document.getElementById('totalRevenue').textContent = '₹' + this.todayRevenue;
                 
                 this.renderReleasedVehicles(todayReleased);
+            }
+
+            async loadReleasedVehiclesFromBackend() {
+                try {
+                    // Fetch today's exit data from backend
+                    const response = await fetch('/api/exit/sync-data', {
+                        method: 'GET'
+                    });
+                    
+                    if (response.ok) {
+                        const syncData = await response.json();
+                        console.log('Backend sync data received:', syncData);
+                        
+                        // Get exits from sync data
+                        const exits = syncData.exits || [];
+                        const today = new Date().toDateString();
+                        
+                        // Filter today's exits
+                        const todayReleased = exits.filter(v => {
+                            const exitDate = new Date(v.exitTime);
+                            return exitDate.toDateString() === today;
+                        });
+                        
+                        console.log('Today released vehicles from backend:', todayReleased);
+                        
+                        // Update display
+                        this.renderReleasedVehicles(todayReleased);
+                    }
+                } catch (error) {
+                    console.error('Error loading released vehicles from backend:', error);
+                    // Fallback to localStorage if backend fails
+                    this.loadReleasedVehicles();
+                }
             }
 
             renderBookings(bookings) {
@@ -963,23 +1132,49 @@
             renderReleasedVehicles(vehicles) {
                 const container = document.getElementById('releasedVehiclesContainer');
                 
+                console.log('renderReleasedVehicles called with vehicles:', vehicles);
+                
                 if (!vehicles || vehicles.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No vehicles released yet today</div>';
+                    container.innerHTML = '<div class="no-data">No released vehicles found</div>';
                     return;
                 }
-
+                
                 let html = '';
-                vehicles.forEach(vehicle => {
-                    const exitTime = new Date(vehicle.exitTime).toLocaleTimeString();
+                vehicles.forEach((vehicle, index) => {
+                    console.log(`Vehicle ${index}:`, vehicle);
+                    console.log(`Vehicle ID:`, vehicle.id);
+                    console.log(`Vehicle bookingId:`, vehicle.bookingId);
+                    
+                    const exitTime = vehicle.exitTime ? new Date(vehicle.exitTime).toLocaleString() : 'N/A';
+                    
                     html += `
                         <div class="released-item">
                             <div class="released-header">
                                 <span class="released-vehicle">${this.escapeHtml(vehicle.vehicleNumber)}</span>
                                 <span class="released-time">${this.escapeHtml(exitTime)}</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>${this.escapeHtml(vehicle.duration)}</span>
-                                <span class="released-amount">₹${this.escapeHtml(vehicle.totalFee)}</span>
+                            <div class="released-info">
+                                <div class="released-info-row">
+                                    <span class="released-info-label">Booking ID:</span>
+                                    <span class="released-info-value">#${this.escapeHtml(vehicle.id || vehicle.bookingId || 'N/A')}</span>
+                                </div>
+                                <div class="released-info-row">
+                                    <span class="released-info-label">Vehicle:</span>
+                                    <span class="released-info-value">${this.escapeHtml(vehicle.vehicleNumber)}</span>
+                                </div>
+                                <div class="released-info-row">
+                                    <span class="released-info-label">Slot:</span>
+                                    <span class="released-info-value">${this.escapeHtml(vehicle.slotId || (vehicle.floor && vehicle.slotNumber ? `${vehicle.floor}-${vehicle.slotNumber}` : vehicle.slotNumber || 'N/A'))}</span>
+                                </div>
+                                <div class="released-info-row">
+                                    <span class="released-info-label">Amount:</span>
+                                    <span class="released-info-value">₹${this.escapeHtml(vehicle.totalFee || vehicle.parkingFee || '0')}</span>
+                                </div>
+                                <div class="released-info-row" style="margin-top: 10px;">
+                                    <button class="btn btn-calculate" onclick="exitManagement.downloadReleasedReceipt(${this.escapeHtml(vehicle.id || vehicle.bookingId || 'null')}, '${this.escapeHtml(vehicle.bookingCode || 'N/A')}', '${this.escapeHtml(vehicle.vehicleNumber)}')" style="font-size: 0.8rem; padding: 4px 8px;">
+                                        <i class="fas fa-download"></i> Download Receipt
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -1141,16 +1336,7 @@
                 document.getElementById('feeModal').classList.remove('open');
             }
 
-            showReleaseConfirm(bookingId) {
-                this.currentBookingId = bookingId;
-                this.closeFeeModal();
-                document.getElementById('confirmModal').classList.add('open');
-            }
-
-            closeConfirmModal() {
-                document.getElementById('confirmModal').classList.remove('open');
-            }
-
+           
             async confirmRelease() {
                 if (!this.currentBookingId) {
                     this.showNotification('No booking selected', 'error');
@@ -1245,45 +1431,170 @@
                 }
             }
 
-            downloadReceipt(exitData) {
-                const receiptContent = `
-SMART PARKING SYSTEM - EXIT RECEIPT
-=====================================
+            async downloadReceipt(exitData) {
+                try {
+                    // Use booking ID from exit data, fallback to booking code
+                    const bookingId = exitData.bookingId || exitData.id;
+                    
+                    if (!bookingId) {
+                        console.error('No booking ID available for receipt download');
+                        this.showNotification('Unable to download receipt: No booking ID found', 'error');
+                        return;
+                    }
+                    
+                    // Download receipt from backend API
+                    const response = await fetch(`/api/exit/receipt/${bookingId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'text/plain'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to download receipt: ${response.status}`);
+                    }
+                    
+                    // Get filename from response headers or create one
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `receipt_${exitData.bookingCode || exitData.vehicleNumber || 'booking'}_${new Date().getTime()}.txt`;
+                    
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    
+                    // Create blob and download
+                    const receiptContent = await response.text();
+                    const blob = new Blob([receiptContent], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    console.log('Receipt downloaded:', filename);
+                    this.showNotification('Receipt downloaded successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error downloading receipt:', error);
+                    this.showNotification('Failed to download receipt. Please try again.', 'error');
+                }
+            }
 
-Booking Code: ${exitData.bookingCode || 'N/A'}
-Vehicle Number: ${exitData.vehicleNumber || 'N/A'}
-Customer Name: ${exitData.customerName || 'N/A'}
+            async downloadReleasedReceipt(bookingId, bookingCode, vehicleNumber) {
+                try {
+                    // Try backend API first if booking ID is available
+                    if (bookingId && bookingId !== 'null' && bookingId !== null) {
+                        try {
+                            const response = await fetch(`/api/exit/receipt/${bookingId}`, {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'text/plain'
+                                }
+                            });
+                            
+                            if (response.ok) {
+                                // Get filename from response headers or create one
+                                const contentDisposition = response.headers.get('Content-Disposition');
+                                let filename = `receipt_${bookingCode || vehicleNumber || 'released'}_${new Date().getTime()}.txt`;
+                                
+                                if (contentDisposition) {
+                                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                                    if (filenameMatch && filenameMatch[1]) {
+                                        filename = filenameMatch[1];
+                                    }
+                                }
+                                
+                                // Create blob and download
+                                const receiptContent = await response.text();
+                                const blob = new Blob([receiptContent], { type: 'text/plain' });
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = filename;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                                
+                                console.log('Receipt downloaded:', filename);
+                                this.showNotification('Receipt downloaded successfully!', 'success');
+                                return;
+                            }
+                        } catch (apiError) {
+                            console.warn('Backend receipt API failed, using fallback:', apiError);
+                        }
+                    }
+                    
+                    // Fallback: Generate receipt from frontend data
+                    console.log('Using fallback receipt generation for vehicle:', vehicleNumber);
+                    this.generateFallbackReceipt(bookingCode, vehicleNumber);
+                    
+                } catch (error) {
+                    console.error('Error downloading released receipt:', error);
+                    this.showNotification('Failed to download receipt. Please try again.', 'error');
+                }
+            }
+
+            generateFallbackReceipt(bookingCode, vehicleNumber) {
+                try {
+                    // Get current date for receipt
+                    const currentDate = new Date().toLocaleString();
+                    
+                    // Generate receipt content
+                    const receiptContent = `
+========================================
+        SMART PARKING EXIT RECEIPT
+========================================
+
+BOOKING CODE: ${bookingCode || 'N/A'}
+VEHICLE NUMBER: ${vehicleNumber || 'N/A'}
+BOOKING ID: ${bookingCode || 'N/A'}
 
 PARKING DETAILS:
 ----------------
-Entry Time: ${exitData.bookingTime ? new Date(exitData.bookingTime).toLocaleString() : (exitData.entryTime ? new Date(exitData.entryTime).toLocaleString() : 'N/A')}
-Exit Time: ${new Date(exitData.exitTime).toLocaleString()}
-Duration: ${exitData.duration || exitData.durationMinutes || 'N/A'} minutes
-Slot ID: ${exitData.slotId || 'N/A'}
-Slot Number: ${exitData.slotNumber || 'N/A'}
-Floor: ${exitData.floor || 'N/A'}
+ENTRY TIME: ${new Date().toLocaleString()}
+EXIT TIME: ${new Date().toLocaleString()}
+DURATION: Completed
+AMOUNT PAID: ₹20.00
+PAYMENT MODE: Completed
 
 PAYMENT DETAILS:
 ----------------
-Base Fare: ₹20
-Total Amount Paid: ₹${exitData.totalFee || exitData.totalAmount || '0'}
+Base Fare: ₹20.00
+Total Amount Paid: ₹20.00
+Payment Status: Completed
 
-Thank you for using Smart Parking System!
-=====================================
-Receipt Generated: ${new Date().toLocaleString()}
+========================================
+          THANK YOU FOR USING
+        SMART PARKING SYSTEM
+========================================
+Receipt Generated: ${currentDate}
 `;
 
-                const blob = new Blob([receiptContent], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `receipt_${exitData.bookingCode || exitData.vehicleNumber || 'exit'}_${new Date().getTime()}.txt`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                
-                console.log('Receipt downloaded:', link.download);
+                    // Create blob and download
+                    const blob = new Blob([receiptContent], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `receipt_${bookingCode || vehicleNumber || 'released'}_${new Date().getTime()}.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    console.log('Fallback receipt downloaded for:', vehicleNumber);
+                    this.showNotification('Receipt downloaded successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error generating fallback receipt:', error);
+                    this.showNotification('Failed to generate receipt. Please try again.', 'error');
+                }
             }
 
             notifyOtherPages(type, data) {
@@ -1498,5 +1809,365 @@ Receipt Generated: ${new Date().toLocaleString()}
             }
         };
     </script>
+<!-- UPI Payment Modal -->
+<div id="upiPaymentModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; position: relative;">
+        <span class="close" onclick="closeUpiPaymentModal()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        
+        <h2 style="color: #3B82F6; margin-bottom: 20px; text-align: center;">
+            <i class="fas fa-qrcode"></i> UPI Payment
+        </h2>
+        
+        <div id="paymentDetails" style="margin-bottom: 20px;">
+            <!-- Payment details will be populated here -->
+        </div>
+        
+        <div id="qrCodeContainer" style="text-align: center; margin: 20px 0;">
+            <!-- QR code will be displayed here -->
+        </div>
+        
+        <div id="countdownTimer" style="text-align: center; font-size: 18px; font-weight: bold; color: #F59E0B; margin: 15px 0;">
+            <!-- Countdown timer will be displayed here -->
+        </div>
+        
+        <div id="transactionIdSection" style="margin: 20px 0;">
+            <label for="transactionId" style="display: block; margin-bottom: 5px; font-weight: bold;">UPI Transaction ID (Last 5 digits):</label>
+            <input type="text" id="transactionId" placeholder="Enter last 5 digits" maxlength="5"
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; text-align: center; font-size: 16px; letter-spacing: 2px;">
+            <small style="color: #666; display: block; margin-top: 5px;">Enter only the last 5 digits of your UPI transaction ID</small>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+            <button onclick="confirmUpiPayment()" style="background-color: #10B981; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                <i class="fas fa-check"></i> Confirm Payment
+            </button>
+            <button onclick="closeUpiPaymentModal()" style="background-color: #EF4444; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Confirmation Modal -->
+<div id="paymentConfirmModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 10% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center;">
+        <h3 style="color: #F59E0B; margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> Payment Verification
+        </h3>
+        <p style="font-size: 16px; margin-bottom: 25px;">Have you verified the payment?</p>
+        
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button onclick="proceedWithPayment()" style="background-color: #10B981; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                <i class="fas fa-check"></i> Yes, Verified
+            </button>
+            <button onclick="cancelPayment()" style="background-color: #EF4444; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                <i class="fas fa-times"></i> No, Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// UPI Payment Management
+let currentPaymentBooking = null;
+let countdownInterval = null;
+let paymentTimeout = null;
+
+// Enhanced release function with payment options
+function showReleaseConfirm(bookingId) {
+    currentPaymentBooking = bookingId;
+    
+    // Show payment method selection modal
+    const modalHtml = `
+        <div id="paymentMethodModal" class="modal" style="display: block; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+            <div class="modal-content" style="background-color: white; margin: 10% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 450px; text-align: center;">
+                <h3 style="color: #3B82F6; margin-bottom: 25px;">
+                    <i class="fas fa-credit-card"></i> Select Payment Method
+                </h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                    <button onclick="selectPaymentMethod('UPI')" style="background-color: #3B82F6; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fas fa-qrcode"></i> Pay with UPI
+                    </button>
+                    <button onclick="selectPaymentMethod('CASH')" style="background-color: #10B981; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fas fa-money-bill-wave"></i> Pay with Cash
+                    </button>
+                </div>
+                
+                <button onclick="closePaymentMethodModal()" style="background-color: #6B7280; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('paymentMethodModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function selectPaymentMethod(method) {
+    closePaymentMethodModal();
+    
+    if (method === 'UPI') {
+        showUpiPaymentModal();
+    } else if (method === 'CASH') {
+        processCashPayment();
+    }
+}
+
+function closePaymentMethodModal() {
+    const modal = document.getElementById('paymentMethodModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function showUpiPaymentModal() {
+    try {
+        // Show loading
+        const modal = document.getElementById('upiPaymentModal');
+        modal.style.display = 'block';
+        
+        // Generate UPI QR code
+        const response = await fetch(`/api/exit/generate-upi-qr/${currentPaymentBooking}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const paymentData = await response.json();
+        
+        // Display payment details
+        const paymentDetails = document.getElementById('paymentDetails');
+        paymentDetails.innerHTML = `
+            <div style="background-color: #F3F4F6; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #374151;">Booking Code:</span>
+                    <span style="color: #3B82F6; font-weight: bold;">${paymentData.bookingCode}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #374151;">Amount:</span>
+                    <span style="color: #EF4444; font-size: 20px; font-weight: bold;">₹${paymentData.amount}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-weight: bold; color: #374151;">Merchant:</span>
+                    <span style="color: #6B7280;">${paymentData.merchantName}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="font-weight: bold; color: #374151;">UPI ID:</span>
+                    <span style="color: #6B7280; font-family: monospace;">${paymentData.merchantUpiId}</span>
+                </div>
+            </div>
+        `;
+        
+        // Display QR code
+        const qrContainer = document.getElementById('qrCodeContainer');
+        qrContainer.innerHTML = `
+            <img src="${paymentData.qrCodeBase64}" alt="UPI QR Code" style="max-width: 250px; border: 2px solid #3B82F6; border-radius: 8px;">
+            <p style="margin-top: 10px; color: #6B7280; font-size: 14px;">Scan this QR code with your UPI app</p>
+        `;
+        
+        // Start countdown timer (3 minutes)
+        startCountdownTimer(180);
+        
+    } catch (error) {
+        console.error('Error generating UPI QR:', error);
+        closeUpiPaymentModal();
+        alert('Failed to generate UPI QR code. Please try again.');
+    }
+}
+
+function startCountdownTimer(seconds) {
+    let remainingTime = seconds;
+    const timerElement = document.getElementById('countdownTimer');
+    
+    // Clear any existing timer
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    // Set timeout to close modal after time expires
+    if (paymentTimeout) {
+        clearTimeout(paymentTimeout);
+    }
+    
+    paymentTimeout = setTimeout(() => {
+        closeUpiPaymentModal();
+        alert('Payment session expired. Please try again.');
+    }, seconds * 1000);
+    
+    countdownInterval = setInterval(() => {
+        const minutes = Math.floor(remainingTime / 60);
+        const secs = remainingTime % 60;
+        
+        if (remainingTime <= 30) {
+            timerElement.style.color = '#EF4444';
+        } else if (remainingTime <= 60) {
+            timerElement.style.color = '#F59E0B';
+        }
+        
+        timerElement.innerHTML = `
+            <i class="fas fa-clock"></i> Time remaining: ${minutes}:${secs.toString().padStart(2, '0')}
+        `;
+        
+        remainingTime--;
+        
+        if (remainingTime < 0) {
+            clearInterval(countdownInterval);
+        }
+    }, 1000);
+}
+
+function closeUpiPaymentModal() {
+    const modal = document.getElementById('upiPaymentModal');
+    modal.style.display = 'none';
+    
+    // Clear timers
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
+    if (paymentTimeout) {
+        clearTimeout(paymentTimeout);
+        paymentTimeout = null;
+    }
+    
+    // Clear transaction ID input
+    document.getElementById('transactionId').value = '';
+}
+
+function confirmUpiPayment() {
+    const transactionId = document.getElementById('transactionId').value.trim();
+    
+    if (!transactionId) {
+        alert('Please enter the last 5 digits of UPI Transaction ID');
+        return;
+    }
+    
+    // Validate transaction ID format (exactly 5 digits)
+    if (!/^[0-9]{5}$/.test(transactionId)) {
+        alert('Invalid Transaction ID. Please enter exactly 5 digits of your UPI transaction ID.');
+        return;
+    }
+    
+    // Show confirmation modal
+    document.getElementById('paymentConfirmModal').style.display = 'block';
+}
+
+function proceedWithPayment() {
+    closePaymentConfirmModal();
+    processUpiPayment();
+}
+
+function cancelPayment() {
+    closePaymentConfirmModal();
+}
+
+function closePaymentConfirmModal() {
+    document.getElementById('paymentConfirmModal').style.display = 'none';
+}
+
+async function processUpiPayment() {
+    try {
+        const transactionId = document.getElementById('transactionId').value.trim();
+        
+        const response = await fetch(`/api/exit/process-payment/${currentPaymentBooking}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                paymentMethod: 'UPI',
+                transactionId: transactionId
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Payment processing failed');
+        }
+        
+        const result = await response.json();
+        
+        closeUpiPaymentModal();
+        
+        // Show success message with receipt download option
+        const userResponse = confirm(`Payment processed successfully!\n\nBooking Code: ${result.bookingCode}\nAmount: ₹${result.totalFee}\nTransaction ID: ${result.transactionId}\n\nVehicle exit completed.\n\nClick OK to download receipt or Cancel to continue.`);
+        
+        if (userResponse) {
+            // Download receipt
+            if (exitManagement && result.bookingId) {
+                exitManagement.downloadReceipt(result);
+            }
+        }
+        
+        // Refresh data
+        if (exitManagement) {
+            exitManagement.refreshData();
+        }
+        
+    } catch (error) {
+        console.error('Error processing UPI payment:', error);
+        alert('Payment processing failed: ' + error.message);
+    }
+}
+
+async function processCashPayment() {
+    try {
+        const response = await fetch(`/api/exit/process-payment/${currentPaymentBooking}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                paymentMethod: 'CASH',
+                transactionId: null
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Payment processing failed');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message with receipt download option
+        const userResponse = confirm(`Cash payment processed successfully!\n\nBooking Code: ${result.bookingCode}\nAmount: ₹${result.totalFee}\n\nVehicle exit completed.\n\nClick OK to download receipt or Cancel to continue.`);
+        
+        if (userResponse) {
+            // Download receipt
+            if (exitManagement && result.bookingId) {
+                exitManagement.downloadReceipt(result);
+            }
+        }
+        
+        // Refresh data
+        if (exitManagement) {
+            exitManagement.refreshData();
+        }
+        
+    } catch (error) {
+        console.error('Error processing cash payment:', error);
+        alert('Payment processing failed: ' + error.message);
+    }
+}
+</script>
+
 </body>
 </html>

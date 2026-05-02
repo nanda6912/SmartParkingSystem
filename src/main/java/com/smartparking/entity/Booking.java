@@ -64,6 +64,16 @@ public class Booking {
     @Column(name = "is_active")
     private Boolean isActive = true;
     
+    // Payment-related fields
+    @Column(name = "payment_method")
+    private String paymentMethod;
+    
+    @Column(name = "transaction_id")
+    private String transactionId;
+    
+    @Column(name = "payment_time")
+    private LocalDateTime paymentTime;
+    
     // Temporarily disabled version to fix exit processing issues
     // @Version
     // private Long version;
@@ -158,5 +168,30 @@ public class Booking {
     
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+    
+    // Payment-related getters and setters
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+    
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+    
+    public String getTransactionId() {
+        return transactionId;
+    }
+    
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
+    }
+    
+    public LocalDateTime getPaymentTime() {
+        return paymentTime;
+    }
+    
+    public void setPaymentTime(LocalDateTime paymentTime) {
+        this.paymentTime = paymentTime;
     }
 }
