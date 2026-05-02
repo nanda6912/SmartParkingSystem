@@ -394,6 +394,105 @@ The system maintains both formats internally:
 
 This provides the best of both worlds: user-friendly display and efficient database operations.
 
+## 🗄️ Database Schema & ER Diagram
+
+### **📊 ER Diagram**
+
+```
+┌─────────────────────┐          ┌─────────────────────┐
+│    PARKING_SLOTS    │          │       BOOKINGS      │
+├─────────────────────┤          ├─────────────────────┤
+│ id (PK, Auto)       │◄─────────│ id (PK, Auto)       │
+│ slot_number         │          │ booking_code (UK)   │
+│ floor               │          │ parking_slot_id (FK)│
+│ slot_id (UNIQUE)    │          │ vehicle_number      │
+│ status              │          │ customer_name       │
+│ lock_until          │          │ phone_number        │
+│ version             │          │ vehicle_type        │
+└─────────────────────┘          │ booking_time        │
+                                 │ exit_time           │
+                                 │ parking_fee         │
+                                 │ is_active           │
+                                 └─────────────────────┘
+
+Relationship: One-to-Many (1 Parking Slot ↔ Many Bookings)
+```
+
+### **📋 Table Definitions**
+
+#### **parking_slots**
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| **id** | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
+| **slot_number** | INTEGER | NOT NULL, (1-300) | Sequential slot number |
+| **floor** | INTEGER | NOT NULL, (1-2) | Floor level |
+| **slot_id** | VARCHAR | NOT NULL, UNIQUE | Human-readable ID (AG01, AF01) |
+| **status** | VARCHAR | NOT NULL | AVAILABLE/LOCKED/OCCUPIED |
+| **lock_until** | TIMESTAMP | NULLABLE | Lock expiration time |
+| **version** | BIGINT | NULL | Optimistic locking |
+
+#### **bookings**
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| **id** | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
+| **booking_code** | VARCHAR | NOT NULL, UNIQUE (5 chars) | Booking reference |
+| **parking_slot_id** | BIGINT | NOT NULL, FOREIGN KEY | Linked parking slot |
+| **vehicle_number** | VARCHAR | NOT NULL, FIXED | Vehicle registration |
+| **customer_name** | VARCHAR | NOT NULL, (max 20) | Customer name |
+| **phone_number** | VARCHAR | NOT NULL, (10 digits) | Contact number |
+| **vehicle_type** | VARCHAR | NOT NULL | CAR/BIKE/SUV/VAN |
+| **booking_time** | TIMESTAMP | NOT NULL | Entry timestamp |
+| **exit_time** | TIMESTAMP | NULLABLE | Exit timestamp |
+| **parking_fee** | INTEGER | NULLABLE | Calculated fee |
+| **is_active** | BOOLEAN | DEFAULT TRUE | Active status |
+
+### **🔗 Relationships & Constraints**
+
+#### **Primary Keys**
+- `parking_slots.id` - Auto-generated unique identifier
+- `bookings.id` - Auto-generated unique identifier
+
+#### **Foreign Keys**
+- `bookings.parking_slot_id` → `parking_slots.id`
+- **Cardinality:** One slot can have many bookings (historical)
+- **Integrity:** ON DELETE RESTRICT
+
+#### **Unique Constraints**
+- `parking_slots.slot_id` - Human-readable slot identifier
+- `bookings.booking_code` - Unique booking reference
+- `bookings(vehicle_number, is_active)` - Prevent duplicate active bookings
+
+#### **Enums**
+- **SlotStatus:** AVAILABLE, LOCKED, OCCUPIED
+- **VehicleType:** CAR, BIKE, SUV, VAN
+
+### **📈 Data Flow & Business Logic**
+
+#### **Slot Lifecycle**
+1. **AVAILABLE** → **LOCKED** (5-minute timer)
+2. **LOCKED** → **OCCUPIED** (on booking)
+3. **OCCUPIED** → **AVAILABLE** (on exit)
+
+#### **Booking Process**
+1. Lock slot → Create booking → Update slot status
+2. Exit processing → Calculate fee → Update exit_time
+3. Archive booking → Free slot for reuse
+
+#### **Data Integrity**
+- **Optimistic Locking:** Version field prevents concurrent updates
+- **Unique Constraints:** Prevent duplicate active bookings
+- **Foreign Keys:** Maintain referential integrity
+
+### **🎯 Key Features**
+
+- **600 Slots Total:** 300 slots per floor (2 floors)
+- **Human-Readable IDs:** AG01-AG20 (Ground), AF01-AF20 (First)
+- **Real-time Status:** Live slot availability tracking
+- **Historical Data:** Complete booking history preserved
+- **Performance Optimized:** Indexed queries and caching
+
 ## License
 
 This project is licensed under the MIT License.
