@@ -1,8 +1,8 @@
+# =============================================================================
 # Smart Parking System - Docker Compose Configuration
 # =============================================================================
 # Production-ready setup with PostgreSQL and Spring Boot application
 # =============================================================================
-
 
 services:
   # PostgreSQL Database
