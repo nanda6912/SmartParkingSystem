@@ -1,0 +1,116 @@
+# =============================================================================
+# Smart Parking System - Docker Ignore File
+# =============================================================================
+# Excludes files and directories from Docker build context
+# Optimizes build performance and reduces image size
+# =============================================================================
+
+# Maven build artifacts
+target/
+!target/*.jar
+build/
+out/
+
+# Git related
+.git/
+.gitignore
+.gitattributes
+
+# IDE related
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+logs/
+*.log
+temp/
+tmp/
+*.tmp
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (keep .env.example but exclude actual .env)
+.env
+.env.local
+.env.*.local
+
+# Docker related
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+README.md
+FEATURE_SUMMARY.md
+docs/
+
+# Test files
+src/test/
+**/*Test.java
+**/*Tests.java
+
+# Configuration files that shouldn't be in image
+application-local.properties
+application-test.properties
+
+# SSL certificates and keys
+*.p12
+*.pem
+*.key
+*.crt
+keystore.*
+
+# Scripts and tools
+scripts/
+tools/
+*.sh
+*.bat
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Cache and runtime data
+.cache/
+*.cache
+runtime/
+*.pid
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Database files
+*.db
+*.sqlite
+*.h2.db
+
+# Profiling and monitoring
+*.prof
+*.trace
+jfr/
+
+# Spring Boot specific
+spring-boot-*.log
+application-*.log

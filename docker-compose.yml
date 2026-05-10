@@ -1,0 +1,127 @@
+# Smart Parking System - Docker Compose Configuration
+# =============================================================================
+# Production-ready setup with PostgreSQL and Spring Boot application
+# =============================================================================
+
+
+services:
+  # PostgreSQL Database
+  parking-db:
+    image: postgres:16-alpine
+    container_name: smart-parking-db
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      POSTGRES_DB: ${DB_NAME:-smart_parking_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    
+    # Volume mounts for data persistence
+    volumes:
+      - smart-parking-postgres-data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Port mapping (host:container)
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USERNAME:-postgres}", "-d", "${DB_NAME:-smart_parking_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    # Network configuration
+    networks:
+      - parking-network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Spring Boot Application
+  parking-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-parking-backend
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: prod
+      
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://parking-db:5432/${DB_NAME:-smart_parking_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      
+      # Server Configuration
+      SERVER_PORT: 8081
+      SSL_ENABLED: false
+      
+      # Actuator Configuration
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: always
+      
+      # JVM Options
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1024m"
+      
+      # Timezone
+      TZ: Asia/Kolkata
+    
+    # Port mapping (host:container)
+    ports:
+      - "${SERVER_PORT:-8081}:8081"
+    
+    # Volume mounts for logs
+    volumes:
+      - ./logs:/app/logs
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Dependency on database health
+    depends_on:
+      parking-db:
+        condition: service_healthy
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    # Network configuration
+    networks:
+      - parking-network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+# Network configuration
+networks:
+  parking-network:
+    driver: bridge
+
+# Volume configuration
+volumes:
+  smart-parking-postgres-data:
+    driver: local

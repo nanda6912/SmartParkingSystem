@@ -16,10 +16,15 @@
 # =============================================================================
 server.port=${SERVER_PORT:8081}
 server.ssl.enabled=${SSL_ENABLED:false}
+
+# SSL Configuration (optional - set SSL_ENABLED=true to enable)
 server.ssl.key-store=${SSL_KEYSTORE_PATH:classpath:keystore.p12}
 server.ssl.key-store-password=${SSL_KEYSTORE_PASSWORD:changeit}
 server.ssl.key-store-type=PKCS12
 server.ssl.key-alias=${SSL_KEY_ALIAS:smartparking}
+
+# HTTP to HTTPS redirect (optional - requires additional configuration)
+# server.http.port=8080
 
 # =============================================================================
 # DATABASE CONFIGURATION (PostgreSQL)
@@ -40,9 +45,9 @@ spring.datasource.hikari.validation-timeout=${DB_VALIDATION_TIMEOUT:5000}
 spring.datasource.hikari.connection-test-query=SELECT 1
 
 # =============================================================================
-# JPA / HIBERNATE - VALIDATION MODE (No DDL Changes)
+# JPA / HIBERNATE - UPDATE MODE (Docker Environment)
 # =============================================================================
-spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.properties.hibernate.format_sql=false
@@ -66,8 +71,14 @@ logging.level.org.springframework.security=INFO
 logging.level.org.hibernate.SQL=OFF
 logging.level.org.hibernate.type.descriptor.sql=OFF
 
-# Logback configuration file reference
-logging.config=classpath:logback-spring.xml
+# Disable Thymeleaf template checking (static HTML frontend)
+spring.thymeleaf.check-template-location=false
+
+# Disable Open Session in View warnings
+spring.jpa.open-in-view=false
+
+# Logback configuration - Using Spring Boot defaults
+# logging.config=classpath:logback-spring.xml
 
 # =============================================================================
 # SECURITY - API Key (MUST be provided via environment variable)
@@ -82,15 +93,17 @@ server.servlet.session.cookie.same-site=strict
 # =============================================================================
 # CORS - Production (Restrictive)
 # =============================================================================
-app.cors.allowed-origins=${CORS_ALLOWED_ORIGINS:https://localhost:8443}
+app.cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:8082}
 
 # =============================================================================
 # ACTUATOR - Limited Exposure
 # =============================================================================
 management.endpoints.web.exposure.include=health,info,metrics
 management.endpoints.web.exposure.exclude=env,beans,threaddump,heapdump,configprops,loggers
+management.endpoints.web.base-path=/actuator
 management.endpoint.health.show-details=always
 management.endpoint.health.show-components=always
+management.endpoint.health.enabled=true
 management.endpoint.info.enabled=true
 management.endpoint.metrics.enabled=true
 
@@ -98,6 +111,15 @@ management.endpoint.metrics.enabled=true
 management.health.db.enabled=true
 management.health.diskspace.enabled=true
 management.health.ping.enabled=true
+
+# Disable problematic health indicators that can cause startup failures
+management.health.redis.enabled=false
+management.health.elasticsearch.enabled=false
+management.health.mongo.enabled=false
+management.health.cassandra.enabled=false
+management.health.ldap.enabled=false
+management.health.mail.enabled=false
+management.health.rabbit.enabled=false
 
 # =============================================================================
 # FILE UPLOAD LIMITS
@@ -144,6 +166,12 @@ springdoc.api-docs.enabled=false
 # =============================================================================
 spring.devtools.restart.enabled=false
 spring.devtools.livereload.enabled=false
+
+# =============================================================================
+# UPI PAYMENT CONFIGURATION
+# =============================================================================
+parking.upi.merchant-id=${UPI_MERCHANT_ID:nandakumar27@ptyes}
+parking.upi.merchant-name=${UPI_MERCHANT_NAME:Smart Parking System}
 
 # =============================================================================
 # JACKSON - Secure Defaults
