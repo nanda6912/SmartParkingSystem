@@ -1,0 +1,89 @@
+
+services:
+  # PostgreSQL Database Service
+  parking-db:
+    image: postgres:16-alpine
+    container_name: smart-parking-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./logs:/var/log/postgresql
+    networks:
+      - parking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Spring Boot Backend Service
+  parking-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-parking-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: ${SERVER_PORT:-8081}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      PARKING_UPI_MERCHANT_ID: ${PARKING_UPI_MERCHANT_ID}
+      PARKING_UPI_MERCHANT_NAME: ${PARKING_UPI_MERCHANT_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      RATE_LIMIT_BOOKINGS: ${RATE_LIMIT_BOOKINGS:-30}
+      RATE_LIMIT_LOCKS: ${RATE_LIMIT_LOCKS:-50}
+      RATE_LIMIT_GENERAL: ${RATE_LIMIT_GENERAL:-300}
+      RATE_LIMIT_RECEIPT: ${RATE_LIMIT_RECEIPT:-50}
+      RATE_LIMIT_VIEW: ${RATE_LIMIT_VIEW:-200}
+      JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx2g -XX:+UseContainerSupport -XX:MaxRAMPercentage=75}
+    ports:
+      - "${SERVER_PORT:-8081}:8081"
+    volumes:
+      - ./logs:/app/logs
+      - ./temp:/app/temp
+    networks:
+      - parking-network
+    depends_on:
+      parking-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Docker Networks
+networks:
+  parking-network:
+    driver: bridge
+    name: smart-parking-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Docker Volumes
+volumes:
+  postgres_data:
+    driver: local
+    name: smart-parking-postgres-data
