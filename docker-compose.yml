@@ -1,79 +1,135 @@
+# =============================================================================
+# Smart Parking System - Docker Compose Configuration
+# =============================================================================
+# Multi-container deployment with PostgreSQL and Spring Boot backend
+# Optimized for WSL2 and Docker Desktop compatibility
+# =============================================================================
+
 
 services:
+  # ---------------------
   # PostgreSQL Database Service
+  # ---------------------
   parking-db:
     image: postgres:16-alpine
     container_name: smart-parking-db
     restart: unless-stopped
+    
+    # Environment variables for PostgreSQL
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-smart_parking_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    
+    # Port mapping (host:container)
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
+    
+    # Persistent volume for data
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./logs:/var/log/postgresql
-    networks:
-      - parking-network
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    
+    # Health check
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-smart_parking_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    
+    # Network configuration
+    networks:
+      - parking-network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
+  # ---------------------
   # Spring Boot Backend Service
+  # ---------------------
   parking-backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: smart-parking-backend
     restart: unless-stopped
+    
+    # Environment variables for Spring Boot
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILE:-prod}
+      
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://parking-db:5432/${DB_NAME:-smart_parking_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      
+      # Server Configuration
       SERVER_PORT: ${SERVER_PORT:-8081}
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      PARKING_UPI_MERCHANT_ID: ${PARKING_UPI_MERCHANT_ID}
-      PARKING_UPI_MERCHANT_NAME: ${PARKING_UPI_MERCHANT_NAME}
-      JWT_SECRET: ${JWT_SECRET}
-      RATE_LIMIT_BOOKINGS: ${RATE_LIMIT_BOOKINGS:-30}
-      RATE_LIMIT_LOCKS: ${RATE_LIMIT_LOCKS:-50}
-      RATE_LIMIT_GENERAL: ${RATE_LIMIT_GENERAL:-300}
-      RATE_LIMIT_RECEIPT: ${RATE_LIMIT_RECEIPT:-50}
-      RATE_LIMIT_VIEW: ${RATE_LIMIT_VIEW:-200}
-      JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx2g -XX:+UseContainerSupport -XX:MaxRAMPercentage=75}
+      
+      # UPI Payment Configuration
+      PARKING_UPI_MERCHANT_ID: ${UPI_MERCHANT_ID}
+      PARKING_UPI_MERCHANT_NAME: ${UPI_MERCHANT_NAME}
+      
+      # Actuator Configuration
+      MANAGEMENT_SERVER_PORT: ${ACTUATOR_PORT:-8082}
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: when_authorized
+      
+      # JVM Options
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1024m"
+      
+      # Timezone
+      TZ: Asia/Kolkata
+    
+    # Port mapping (host:container)
     ports:
       - "${SERVER_PORT:-8081}:8081"
+    
+    # Volume mounts for logs
     volumes:
       - ./logs:/app/logs
-      - ./temp:/app/temp
-    networks:
-      - parking-network
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Dependency on database health
     depends_on:
       parking-db:
         condition: service_healthy
+    
+    # Health check
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    
+    # Network configuration
+    networks:
+      - parking-network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 512M
+    
+    # Graceful shutdown configuration
+    stop_grace_period: 30s
 
-# Docker Networks
+# ---------------------
+# Network Configuration
+# ---------------------
 networks:
   parking-network:
     driver: bridge
@@ -82,8 +138,11 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 
-# Docker Volumes
+# ---------------------
+# Volume Configuration
+# ---------------------
 volumes:
   postgres_data:
     driver: local
     name: smart-parking-postgres-data
+

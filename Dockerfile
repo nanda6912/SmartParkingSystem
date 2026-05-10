@@ -1,14 +1,22 @@
-# Multi-stage Dockerfile for Smart Parking System
-# Build stage: Maven + JDK 21
+# =============================================================================
+# Smart Parking System - Multi-stage Dockerfile
+# =============================================================================
+# Build Stage: Maven compilation and packaging
+# Runtime Stage: Lightweight JRE with optimized JVM settings
+# =============================================================================
+
+# ---------------------
+# BUILD STAGE
+# ---------------------
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 
 # Set working directory
 WORKDIR /app
 
-# Copy pom.xml first to leverage Docker layer caching
+# Copy Maven configuration files first for better caching
 COPY pom.xml .
 
-# Download dependencies
+# Download dependencies (cached if pom.xml doesn't change)
 RUN mvn dependency:go-offline -B
 
 # Copy source code
@@ -17,48 +25,56 @@ COPY src ./src
 # Build the application
 RUN mvn clean package -DskipTests -B
 
-# Runtime stage: JRE 21
-FROM eclipse-temurin:21-jre-alpine
+# ---------------------
+# RUNTIME STAGE
+# ---------------------
+FROM eclipse-temurin:21-jre
 
-# Install curl for health checks
-RUN apk add --no-cache curl tzdata
+# Set labels for metadata
+LABEL maintainer="Smart Parking System Team"
+LABEL version="1.0.0"
+LABEL description="Smart Parking Slot Reservation System"
 
-# Set timezone to Asia/Kolkata
-RUN ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
-
-# Create application user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Create application user (non-root for security)
+RUN groupadd -r parking && useradd -r -g parking parking
 
 # Set working directory
 WORKDIR /app
 
-# Copy built JAR from build stage
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && chown -R parking:parking /app/logs
+
+# Copy the built JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Create logs directory
-RUN mkdir -p /app/logs && \
-    chown -R appuser:appgroup /app
+# Set timezone to Asia/Kolkata
+ENV TZ=Asia/Kolkata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Switch to non-root user
-USER appuser
+# Set JVM container optimization flags
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1024m"
 
-# Expose application port
+# Set encoding
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+
+# Expose application ports
 EXPOSE 8081
 
-# Set JVM optimizations for container environment
-ENV JAVA_OPTS="-Xms512m -Xmx2g \
-               -XX:+UseContainerSupport \
-               -XX:MaxRAMPercentage=75 \
-               -XX:+UseG1GC \
-               -XX:+UseStringDeduplication \
-               -Dfile.encoding=UTF-8 \
-               -Duser.timezone=Asia/Kolkata \
-               -Djava.security.egd=file:/dev/./urandom"
+# Change ownership to non-root user
+RUN chown -R parking:parking /app
+
+# Switch to non-root user
+USER parking
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8081/actuator/health || exit 1
+  CMD curl -f http://localhost:8081/actuator/health || exit 1
 
 # Start the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
