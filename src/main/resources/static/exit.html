@@ -3636,6 +3636,20 @@ async function showUpiPaymentModal() {
 
     try {
 
+        // Validate currentPaymentBooking
+
+        if (!currentPaymentBooking) {
+
+            console.error('No booking ID available for UPI payment');
+
+            alert('Error: No booking selected for payment. Please try again.');
+
+            return;
+
+        }
+
+        console.log('Generating UPI QR for booking:', currentPaymentBooking);
+
         // Show loading
 
         const modal = document.getElementById('upiPaymentModal');
@@ -3664,7 +3678,11 @@ async function showUpiPaymentModal() {
 
         if (!response.ok) {
 
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+
+            console.error('Backend error response:', errorText);
+
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
 
         }
 
