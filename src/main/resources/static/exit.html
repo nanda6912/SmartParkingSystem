@@ -1170,10 +1170,8 @@
                                     <span class="released-info-label">Amount:</span>
                                     <span class="released-info-value">₹${this.escapeHtml(vehicle.totalFee || vehicle.parkingFee || '0')}</span>
                                 </div>
-                                <div class="released-info-row" style="margin-top: 10px;">
-                                    <button class="btn btn-calculate" onclick="exitManagement.downloadReleasedReceipt(${this.escapeHtml(vehicle.id || vehicle.bookingId || 'null')}, '${this.escapeHtml(vehicle.bookingCode || 'N/A')}', '${this.escapeHtml(vehicle.vehicleNumber)}')" style="font-size: 0.8rem; padding: 4px 8px;">
-                                        <i class="fas fa-download"></i> Download Receipt
-                                    </button>
+                                <div class="released-info-row" style="margin-top: 10px; color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">
+                                    <i class="fas fa-info-circle"></i> Receipt was generated during vehicle exit
                                 </div>
                             </div>
                         </div>
@@ -1930,6 +1928,15 @@ function closePaymentMethodModal() {
 
 async function showUpiPaymentModal() {
     try {
+        // Validate currentPaymentBooking
+        if (!currentPaymentBooking) {
+            console.error('No booking ID available for UPI payment');
+            alert('Error: No booking selected for payment. Please try again.');
+            return;
+        }
+        
+        console.log('Generating UPI QR for booking:', currentPaymentBooking);
+        
         // Show loading
         const modal = document.getElementById('upiPaymentModal');
         modal.style.display = 'block';
@@ -1944,7 +1951,9 @@ async function showUpiPaymentModal() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Backend error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
         
         const paymentData = await response.json();
