@@ -1,2182 +1,4120 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
     <meta http-equiv="Pragma" content="no-cache">
+
     <meta http-equiv="Expires" content="0">
+
     <title>Vehicle Exit Management - Smart Parking System</title>
+
     <link rel="stylesheet" href="/styles/design-system.css">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+
         /* Color Variables for Visibility */
+
         :root {
+
             --primary-color: #3B82F6;
+
             --primary-hover: #2563EB;
+
             --success-color: #10B981;
+
             --success-hover: #059669;
+
             --warning-color: #F59E0B;
+
             --warning-hover: #D97706;
+
             --info-color: #06B6D4;
+
             --info-hover: #0891B2;
+
             --error-color: #EF4444;
+
             --error-hover: #DC2626;
+
         }
+
         
+
         /* Exit Page Specific Styles */
+
         .exit-container {
+
             display: flex;
+
             min-height: 100vh;
+
             background: var(--bg-primary);
+
         }
+
         
+
         .main-content {
+
             flex: 1;
+
             padding: var(--space-6);
+
             overflow-y: auto;
+
         }
+
         
+
         .page-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: var(--space-6);
+
             padding-bottom: var(--space-4);
+
             border-bottom: 2px solid var(--border-primary);
+
         }
+
         
+
         .page-title {
+
             font-size: var(--font-size-3xl);
+
             font-weight: 700;
+
             color: var(--text-primary);
+
             margin: 0;
+
         }
+
         
+
         .page-subtitle {
+
             font-size: var(--font-size-md);
+
             color: var(--text-secondary);
+
             margin: var(--space-2) 0 0 0;
+
         }
+
         
+
         .stats-grid {
+
             display: grid;
+
             grid-template-columns: repeat(3, 1fr);
+
             gap: var(--space-4);
+
             margin-bottom: var(--space-6);
+
         }
+
         
+
         .stat-card {
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-md);
+
             padding: var(--space-4);
+
             text-align: center;
+
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+
         }
+
         
+
         .stat-card:hover {
+
             transform: translateY(-2px);
+
             box-shadow: var(--shadow-lg);
+
         }
+
         
+
         .stat-value {
+
             font-size: var(--font-size-4xl);
+
             font-weight: 700;
+
             color: var(--primary-color);
+
             margin-bottom: var(--space-2);
+
         }
+
         
+
         .stat-label {
+
             font-size: var(--font-size-sm);
+
             color: var(--text-secondary);
+
             font-weight: 500;
+
         }
+
         
+
         .content-grid {
+
             display: grid;
+
             grid-template-columns: 2fr 1fr;
+
             gap: var(--space-6);
+
         }
+
         
+
         .section-card {
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-md);
+
             padding: var(--space-6);
+
         }
+
         
+
         .section-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: var(--space-4);
+
             padding-bottom: var(--space-3);
+
             border-bottom: 1px solid var(--border-primary);
+
         }
+
         
+
         .section-title {
+
             font-size: var(--font-size-xl);
+
             font-weight: 600;
+
             color: var(--text-primary);
+
             margin: 0;
+
             display: flex;
+
             align-items: center;
+
             gap: var(--space-3);
+
         }
+
         
+
         .btn-refresh {
+
             background: var(--primary-color);
+
             color: white;
+
             border: none;
+
             padding: var(--space-2) var(--space-4);
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-size: var(--font-size-sm);
+
             font-weight: 500;
+
             transition: all 0.2s ease;
+
         }
+
         
+
         .btn-refresh:hover {
+
             background: var(--primary-hover);
+
             transform: scale(1.05);
+
         }
+
         
+
         .booking-card {
+
             display: flex;
+
             align-items: center;
+
             height: 48px;
+
             padding: 0 var(--space-3);
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-primary);
+
             border-radius: var(--radius-sm);
+
             margin-bottom: var(--space-2);
+
             transition: border-color var(--transition-fast);
+
         }
+
         
+
         .booking-card:hover {
+
             border-color: var(--accent-primary);
+
         }
+
         
+
         .booking-info-row {
+
             display: flex;
+
             align-items: center;
+
             flex: 1;
+
             gap: var(--space-4);
+
             overflow-x: auto;
+
         }
+
         
+
         .booking-cell {
+
             display: flex;
+
             align-items: center;
+
             gap: var(--space-2);
+
             font-size: var(--font-size-sm);
+
             white-space: nowrap;
+
         }
+
         
+
         .booking-cell-label {
+
             font-size: var(--font-size-xs);
+
             color: var(--text-tertiary);
+
             text-transform: uppercase;
+
             letter-spacing: var(--letter-spacing-wide);
+
         }
+
         
+
         .booking-cell-value {
+
             font-weight: 500;
+
             color: var(--text-primary);
+
         }
+
         
+
         .booking-vehicle {
+
             font-weight: 600;
+
             font-size: var(--font-size-base);
+
             color: var(--text-primary);
+
             min-width: 100px;
+
         }
+
         
+
         .booking-badge {
+
             padding: 2px 6px;
+
             border-radius: var(--radius-sm);
+
             font-size: 10px;
+
             font-weight: 600;
+
             text-transform: uppercase;
+
             letter-spacing: 0.05em;
+
         }
+
         
+
         .booking-actions-compact {
+
             display: flex;
+
             gap: var(--space-2);
+
             margin-left: var(--space-3);
+
         }
+
         
+
         .btn-sm {
+
             padding: 4px 8px;
+
             font-size: var(--font-size-xs);
+
             font-weight: 500;
+
             border-radius: var(--radius-sm);
+
             border: 1px solid var(--border-secondary);
+
             background: var(--bg-tertiary);
+
             color: var(--text-secondary);
+
             cursor: pointer;
+
             transition: all var(--transition-fast);
+
             display: inline-flex;
+
             align-items: center;
+
             gap: var(--space-1);
+
         }
+
         
+
         .btn-sm:hover {
+
             background: var(--bg-primary);
+
             border-color: var(--accent-primary);
+
             color: var(--text-primary);
+
         }
+
         
+
         .btn-sm.btn-release {
+
             background: #ff6b35;
+
             border-color: #ff6b35;
+
             color: white;
+
         }
+
         
+
         .btn-sm.btn-release:hover {
+
             background: #e55a2b;
+
             border-color: #e55a2b;
+
         }
+
         
+
         .btn {
+
             padding: var(--space-2) var(--space-3);
+
             border: none;
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-size: var(--font-size-xs);
+
             font-weight: 600;
+
             transition: all 0.2s ease;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
             gap: var(--space-1);
+
             white-space: nowrap;
+
             min-width: 90px;
+
         }
+
         
+
         .booking-card:hover {
+
             border-color: var(--primary-color);
+
             box-shadow: var(--shadow-md);
+
         }
+
         
+
         .booking-header {
+
             display: flex;
+
             flex-direction: column;
+
             gap: var(--space-1);
+
             min-width: 120px;
+
         }
+
         
+
         .vehicle-number {
+
             font-size: var(--font-size-md);
+
             font-weight: 700;
+
             color: var(--text-primary);
+
         }
+
         
+
         .booking-code {
+
             background: var(--primary-color);
+
             color: #ffffff;
+
             padding: 2px 8px;
+
             border-radius: var(--radius-sm);
+
             font-size: 11px;
+
             font-weight: 600;
+
             display: inline-block;
+
             width: fit-content;
+
         }
+
         
+
         .booking-details {
+
             display: none;
+
         }
+
         
+
         .detail-item {
+
             display: none;
+
         }
+
         
+
         .detail-label {
+
             font-size: var(--font-size-xs);
+
             color: var(--text-tertiary);
+
             margin-bottom: var(--space-1);
+
         }
+
         
+
         .detail-value {
+
             font-size: var(--font-size-sm);
+
             font-weight: 600;
+
             color: var(--text-secondary);
+
         }
+
         
+
         .booking-actions {
+
             display: flex !important;
+
             flex-direction: row !important;
+
             gap: var(--space-2);
+
             min-width: 200px;
+
         }
+
         
+
         .btn {
+
             padding: var(--space-2) var(--space-3);
+
             border: none;
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-size: var(--font-size-xs);
+
             font-weight: 600;
+
             transition: all 0.2s ease;
+
             display: flex;
+
             align-items: center;
+
             justify-content: center;
+
             gap: var(--space-1);
+
             white-space: nowrap;
+
             min-width: 90px;
+
         }
+
         
+
         .btn-calculate {
+
             background: var(--info-color);
+
             color: #ffffff;
+
         }
+
         
+
         .btn-calculate:hover {
+
             background: var(--info-hover);
+
         }
+
         
+
         .btn-release {
+
             background: var(--success-color);
+
             color: #ffffff;
+
         }
+
         
+
         .btn-release:hover {
+
             background: var(--success-hover);
+
         }
+
             
+
         .revenue-subtitle {
+
             font-size: var(--font-size-sm);
+
             opacity: 0.8;
+
         }
+
         
+
         .released-section {
+
             max-height: 400px;
+
             overflow-y: auto;
+
         }
+
         
+
         .released-item {
+
             background: var(--bg-tertiary);
+
             border: 1px solid var(--border-secondary);
+
             border-radius: var(--radius-sm);
+
             padding: 12px;
+
             margin-bottom: var(--space-2);
+
             font-size: 12px;
+
         }
+
         
+
         .released-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: 4px;
+
         }
+
         
+
         .released-vehicle {
+
             font-weight: 600;
+
             color: var(--text-primary);
+
             font-size: 13px;
+
         }
+
         
+
         .released-time {
+
             font-size: 12px;
+
             color: var(--text-tertiary);
+
         }
+
         
+
         .released-amount {
+
             font-weight: 700;
+
             color: var(--success-color);
+
         }
+
         
+
         .modal {
+
             display: none;
+
             position: fixed;
+
             top: 0;
+
             left: 0;
+
             width: 100%;
+
             height: 100%;
+
             background: rgba(0, 0, 0, 0.5);
+
             z-index: 1000;
+
             justify-content: center;
+
             align-items: center;
+
         }
+
         
+
         .modal.open {
+
             display: flex;
+
         }
+
         
+
         .modal-content {
+
             background: var(--bg-secondary);
+
             border-radius: var(--radius-md);
+
             padding: var(--space-6);
+
             max-width: 500px;
+
             width: 90%;
+
             max-height: 90vh;
+
             overflow-y: auto;
+
             box-shadow: var(--shadow-xl);
+
         }
+
         
+
         .modal-header {
+
             margin-bottom: var(--space-4);
+
             padding-bottom: var(--space-3);
+
             border-bottom: 1px solid var(--border-primary);
+
         }
+
         
+
         .modal-title {
+
             font-size: var(--font-size-xl);
+
             font-weight: 700;
+
             color: var(--text-primary);
+
             margin: 0;
+
         }
+
         
+
         .fee-details {
+
             background: var(--bg-tertiary);
+
             border-radius: var(--radius-sm);
+
             padding: var(--space-4);
+
             margin-bottom: var(--space-4);
+
         }
+
         
+
         .fee-row {
+
             display: flex;
+
             justify-content: space-between;
+
             padding: var(--space-3) 0;
+
             border-bottom: 1px solid var(--border-secondary);
+
         }
+
         
+
         .fee-row:last-child {
+
             border-bottom: none;
+
             font-size: var(--font-size-lg);
+
             font-weight: 700;
+
             color: var(--primary-color);
+
         }
+
         
+
         .modal-actions {
+
             display: flex;
+
             gap: var(--space-3);
+
         }
+
         
+
         .btn-confirm {
+
             background: var(--success-color);
+
             color: #ffffff;
+
             flex: 1;
+
             padding: var(--space-3);
+
             border: none;
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-weight: 600;
+
         }
+
         
+
         .released-item {
+
             background: var(--bg-secondary);
+
             border: 1px solid var(--border-secondary);
+
             border-radius: var(--radius-sm);
+
             padding: var(--space-4);
+
             margin-bottom: var(--space-2);
+
             transition: all 0.3s ease;
+
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
         }
+
         
+
         .released-header {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: var(--space-2);
+
             font-weight: 600;
+
             padding: var(--space-2);
+
             border-bottom: 1px solid var(--border-secondary);
+
         }
+
         
+
         .released-vehicle {
+
             color: var(--text-primary);
+
             font-weight: 600;
+
             font-size: 1.1rem;
+
         }
+
         
+
         .released-time {
+
             color: var(--text-secondary);
+
             font-size: 0.9rem;
+
         }
+
         
+
         .released-info {
+
             margin-top: var(--space-2);
+
         }
+
         
+
         .released-info-row {
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
             margin-bottom: var(--space-1);
+
         }
+
         
+
         .released-info-label {
+
             color: var(--text-secondary);
+
             font-size: 0.85rem;
+
             min-width: 80px;
+
         }
+
         
+
         .released-info-value {
+
             color: var(--text-primary);
+
             font-weight: 600;
+
             font-size: 0.9rem;
+
         }
+
         
+
         .released-amount {
+
             color: var(--success-color);
+
             font-weight: 700;
+
             font-size: 1.1rem;
+
             background: rgba(16, 185, 129, 0.1);
+
             padding: 4px 8px;
+
             border-radius: var(--radius-sm);
+
             border: 1px solid rgba(16, 185, 129, 0.2);
+
             box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+
         }
+
         
+
         .released-summary {
+
             background: var(--bg-tertiary);
+
             border: 1px solid var(--border-secondary);
+
             border-radius: var(--radius-sm);
+
             padding: var(--space-3);
+
             margin-bottom: var(--space-2);
+
             text-align: center;
+
             color: var(--text-secondary);
+
             font-size: 0.9rem;
+
         }
+
         
+
         .released-stats {
+
             display: flex;
+
             justify-content: space-around;
+
             gap: var(--space-4);
+
             margin-top: var(--space-2);
+
         }
+
         
+
         .released-stat {
+
             text-align: center;
+
         }
+
         
+
         .released-stat-value {
+
             font-size: 1.5rem;
+
             font-weight: 700;
+
             color: var(--text-primary);
+
         }
+
         
+
         .released-stat-label {
+
             font-size: 0.8rem;
+
             color: var(--text-secondary);
+
             margin-bottom: var(--space-1);
+
         }
+
         
+
         .released-item:hover {
+
             transform: translateY(-2px);
+
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
         }
+
         
+
         .released-info-row:hover .released-info-value {
+
             color: var(--primary-color);
+
             transform: scale(1.05);
+
         }
+
         
+
         .btn-cancel {
+
             background: var(--bg-tertiary);
+
             color: var(--text-secondary);
+
             flex: 1;
+
             padding: var(--space-3);
+
             border: 1px solid var(--border-secondary);
+
             border-radius: var(--radius-sm);
+
             cursor: pointer;
+
             font-weight: 600;
+
         }
+
         
+
         .notification {
+
             position: fixed;
+
             top: var(--space-4);
+
             right: var(--space-4);
+
             background: var(--success-color);
+
             color: #ffffff;
+
             padding: var(--space-4) var(--space-6);
+
             border-radius: var(--radius-md);
+
             box-shadow: var(--shadow-lg);
+
             z-index: 1001;
+
             transform: translateX(400px);
+
             transition: transform 0.3s ease;
+
         }
+
         
+
         .notification.show {
+
             transform: translateX(0);
+
         }
+
         
+
         .notification.error {
+
             background: var(--error-color);
+
         }
+
         
+
         .notification.info {
+
             background: var(--info-color);
+
         }
+
         
+
         .empty-state {
+
             text-align: center;
+
             padding: var(--space-8);
+
             color: var(--text-tertiary);
+
         }
+
         
+
         .empty-state i {
+
             font-size: var(--font-size-6xl);
+
             margin-bottom: var(--space-4);
+
             opacity: 0.5;
+
         }
+
         
+
         .progress-bar {
+
             display: none;
+
             position: fixed;
+
             top: 0;
+
             left: 0;
+
             width: 100%;
+
             height: 3px;
+
             background: var(--primary-color);
+
             z-index: 1002;
+
         }
+
         
+
         .progress-fill {
+
             height: 100%;
+
             background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+
             width: 0%;
+
             transition: width 0.3s ease;
+
         }
+
         
+
         .skeleton {
+
             background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+
             background-size: 200% 100%;
+
             animation: skeleton-loading 1.5s infinite;
+
             border-radius: var(--radius-sm);
+
             height: 20px;
+
             margin-bottom: var(--space-2);
+
         }
+
         
+
         @keyframes skeleton-loading {
+
             0% { background-position: 200% 0; }
+
             100% { background-position: -200% 0; }
+
         }
+
         
+
         .confirmation-modal .modal-content {
+
             text-align: center;
+
         }
+
         
+
         .confirmation-icon {
+
             font-size: var(--font-size-6xl);
+
             color: var(--warning-color);
+
             margin-bottom: var(--space-4);
+
         }
+
         
+
         .confirmation-text {
+
             font-size: var(--font-size-lg);
+
             color: var(--text-secondary);
+
             margin-bottom: var(--space-6);
+
         }
+
         
+
         /* Force horizontal layout */
+
         #activeBookingsContainer .booking-card {
+
             display: flex !important;
+
             flex-direction: row !important;
+
             align-items: center !important;
+
             gap: 15px !important;
+
             padding: 15px !important;
+
             margin-bottom: 10px !important;
+
         }
+
         
+
         #activeBookingsContainer .booking-header {
+
             min-width: 120px !important;
+
         }
+
         
+
         #activeBookingsContainer .booking-details-horizontal {
+
             display: flex !important;
+
             flex-direction: row !important;
+
             gap: 20px !important;
+
             flex: 1 !important;
+
         }
+
         
+
         #activeBookingsContainer .detail-item-horizontal {
+
             text-align: center !important;
+
             min-width: 70px !important;
+
         }
+
         
+
         #activeBookingsContainer .booking-actions {
+
             display: flex !important;
+
             flex-direction: row !important;
+
             gap: 10px !important;
+
             min-width: 180px !important;
+
         }
+
         
+
         #activeBookingsContainer .btn {
+
             display: inline-flex !important;
+
             visibility: visible !important;
+
             opacity: 1 !important;
+
             min-width: 85px !important;
+
             padding: 8px 12px !important;
+
             font-size: 12px !important;
+
         }
+
     </style>
+
 </head>
+
 <body>
+
     <div class="exit-container">
+
         <main class="main-content">
+
             <!-- Page Header -->
+
             <div class="page-header">
+
                 <div>
+
                     <h1 class="page-title">Vehicle Exit Management</h1>
+
                     <p class="page-subtitle">Process vehicle exits and calculate parking fees</p>
+
                 </div>
+
                 <div style="display: flex; gap: var(--space-3); align-items: center;">
+
                     <button class="btn-refresh" onclick="viewBookingStatus()">
+
                         <i class="fas fa-eye"></i> View Booking Status
+
                     </button>
+
                     <button class="btn-refresh" onclick="refreshData()">
+
                         <i class="fas fa-sync-alt"></i> Refresh
+
                     </button>
+
                 </div>
+
             </div>
+
             
+
             <!-- Statistics Grid -->
+
             <div class="stats-grid">
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="todayExitsCount">0</div>
+
                     <div class="stat-label">Today's Exits</div>
+
                 </div>
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="activeBookingsCount">0</div>
+
                     <div class="stat-label">Active Bookings</div>
+
                 </div>
+
                 <div class="stat-card">
+
                     <div class="stat-value" id="totalRevenue">₹0</div>
+
                     <div class="stat-label">Today's Revenue</div>
+
                 </div>
+
             </div>
+
             
+
             <!-- Main Content Grid -->
+
             <div class="content-grid">
+
                 <!-- Left Side: Search & Active Bookings -->
+
                 <div>
+
                     <!-- Search Section -->
+
                     <div class="section-card" style="margin-bottom: var(--space-4);">
+
                         <div class="section-header">
+
                             <h2 class="section-title">
+
                                 <i class="fas fa-search"></i>
+
                                 Search Vehicle
+
                             </h2>
+
                         </div>
+
                         <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-3);">
+
                             <input type="text" id="searchInput" placeholder="Enter Booking ID or Vehicle Number..." 
+
                                 style="flex: 1; padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-sm); font-size: var(--font-size-sm);">
+
                             <button onclick="searchVehicle()" class="btn-refresh" style="padding: var(--space-3) var(--space-4);">
+
                                 <i class="fas fa-search"></i> Search
+
                             </button>
+
                         </div>
+
                         <div id="searchResults" style="display: none;">
+
                             <!-- Search results will appear here -->
+
                         </div>
+
                     </div>
+
                     
+
                     <!-- Active Bookings Section -->
+
                     <div class="section-card">
+
                         <div class="section-header">
+
                             <h2 class="section-title">
+
                                 <i class="fas fa-car"></i>
+
                                 Active Bookings
+
                             </h2>
+
                             <span id="lastUpdated"></span>
+
                         </div>
+
                         <div id="activeBookingsContainer">
+
                             <!-- Active bookings will be loaded here -->
+
                         </div>
+
                     </div>
+
                 </div>
+
                 
+
                 <!-- Right Side Panel -->
+
                 <div>
+
                     <!-- Released Vehicles Section -->
+
                     <div class="section-card">
+
                         <div class="section-header">
+
                             <h2 class="section-title">
+
                                 <i class="fas fa-check-circle"></i>
+
                                 Released Vehicles
+
                             </h2>
+
                         </div>
+
                         <div class="released-section" id="releasedVehiclesContainer">
+
                             <!-- Released vehicles will be loaded here -->
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+
         </main>
+
     </div>
+
     
+
     <!-- Fee Calculation Modal -->
+
     <div class="modal" id="feeModal">
+
         <div class="modal-content">
+
             <div class="modal-header">
+
                 <h3 class="modal-title">Fee Calculation</h3>
+
             </div>
+
             <div id="feeModalBody">
+
                 <!-- Fee details will be loaded here -->
+
             </div>
+
         </div>
+
     </div>
+
     
+
     <!-- Confirmation Modal -->
+
     <div class="modal confirmation-modal" id="confirmModal">
+
         <div class="modal-content">
+
             <div class="confirmation-icon">
+
                 <i class="fas fa-exclamation-triangle"></i>
+
             </div>
+
             <h3 class="modal-title">Confirm Vehicle Release</h3>
+
             <p class="confirmation-text" id="confirmText">
+
                 Are you sure you want to release this vehicle?
+
             </p>
+
             <div class="modal-actions">
+
                 <button class="btn-confirm" onclick="confirmRelease()">
+
                     <i class="fas fa-check"></i> Yes, Release
+
                 </button>
+
                 <button class="btn-cancel" onclick="closeConfirmModal()">
+
                     <i class="fas fa-times"></i> Cancel
+
                 </button>
+
             </div>
+
         </div>
+
     </div>
+
     
+
     <!-- Notification -->
+
     <div class="notification" id="notification"></div>
+
     
+
     <!-- Progress Bar -->
+
     <div class="progress-bar" id="progressBar">
+
         <div class="progress-fill" id="progressBarFill"></div>
+
     </div>
+
     
+
     <script>
+
         // Authentication removed - Direct access allowed
+
         
+
         class ExitManagement {
+
             constructor() {
+
                 this.currentBookingId = null;
+
                 this.currentBookingDetails = null;
+
                 this.bookingPollInterval = null;
+
                 this.autoRefreshInterval = null;
+
                 this.onStorageChanged = null;
+
                 this.todayRevenue = 0;
+
                 this.todayExits = 0;
+
             }
+
+
 
             init() {
+
                 this.loadActiveBookings();
+
                 this.loadStatistics();
+
                 this.setupBookingUpdates();
+
                 
+
                 // Auto-refresh every 30 seconds
+
                 this.autoRefreshInterval = setInterval(() => {
+
                     this.loadActiveBookings();
+
                     this.loadStatistics();
+
                 }, 30000);
+
             }
+
             
+
             setupBookingUpdates() {
+
                 // Listen for booking updates from other pages
+
                 try {
+
                     const channel = new BroadcastChannel('parking_updates');
+
                     channel.onmessage = (event) => {
+
                         const message = event.data;
+
                         console.log('Received booking update:', message);
+
                         
+
                         if (message.type === 'new_booking' || message.type === 'booking_update') {
+
                             console.log('New booking detected, refreshing...');
+
                             this.loadActiveBookings();
+
                             this.loadStatistics();
+
                             
+
                             if (message.type === 'new_booking' && message.data) {
+
                                 this.showNotification(
+
                                     `New booking: ${message.data.bookingCode || 'Vehicle ' + message.data.vehicleNumber}`, 
+
                                     'info'
+
                                 );
+
                             }
+
                         }
+
                     };
+
                     console.log('Booking updates listener initialized');
+
                 } catch (error) {
+
                     console.log('BroadcastChannel not supported, using localStorage polling');
+
                     
+
                     this.onStorageChanged = (event) => {
+
                         if (event.key === 'newBooking' || event.key === 'bookingUpdate') {
+
                             console.log('New booking detected via localStorage, refreshing...');
+
                             this.loadActiveBookings();
+
                             this.loadStatistics();
+
                         }
+
                     };
+
                     window.addEventListener('storage', this.onStorageChanged);
+
                     
+
                     // Poll localStorage as additional fallback
+
                     this.bookingPollInterval = setInterval(() => {
+
                         const lastBooking = localStorage.getItem('newBooking');
+
                         if (lastBooking) {
+
                             try {
+
                                 const bookingData = JSON.parse(lastBooking);
+
                                 const now = Date.now();
+
                                 if (now - bookingData.timestamp < 5000) {
+
                                     console.log('Recent booking detected via localStorage polling');
+
                                     this.loadActiveBookings();
+
                                     this.loadStatistics();
+
                                     localStorage.removeItem('newBooking');
+
                                 }
+
                             } catch (error) {
+
                                 console.warn('Malformed JSON in localStorage newBooking:', error);
+
                                 localStorage.removeItem('newBooking');
+
                             }
+
                         }
+
                     }, 2000);
+
                 }
+
             }
+
+
 
             cleanup() {
+
                 if (this.autoRefreshInterval) {
+
                     clearInterval(this.autoRefreshInterval);
+
                     this.autoRefreshInterval = null;
+
                 }
+
                 if (this.bookingPollInterval) {
+
                     clearInterval(this.bookingPollInterval);
+
                     this.bookingPollInterval = null;
+
                 }
+
                 if (this.onStorageChanged) {
+
                     window.removeEventListener('storage', this.onStorageChanged);
+
                     this.onStorageChanged = null;
+
                 }
+
             }
+
+
 
             async loadActiveBookings() {
+
                 console.log('=== loadActiveBookings called ===');
+
                 
+
                 try {
+
                     this.showSkeletonLoader();
+
                     this.showProgressBar();
 
+
+
                     const response = await fetch('/api/exit/active-bookings', {
+
                         method: 'GET',
+
                         headers: {
+
                             'Accept': 'application/json',
+
                             'Content-Type': 'application/json'
+
                         }
+
                     });
 
+
+
                     if (!response.ok) {
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
                     }
 
+
+
                     const bookings = await response.json();
+
                     console.log('Bookings received:', bookings);
+
                     
+
                     this.renderBookings(bookings);
+
                     document.getElementById('activeBookingsCount').textContent = bookings.length;
+
                     
+
                     const now = new Date();
+
                     document.getElementById('lastUpdated').textContent = 
+
                         `Last updated: ${now.toLocaleTimeString()}`;
 
+
+
                 } catch (error) {
+
                     console.error('Error in loadActiveBookings:', error);
+
                     this.showNotification('Error loading bookings: ' + error.message, 'error');
+
                 } finally {
+
                     this.hideProgressBar();
+
                 }
+
             }
+
+
 
             async loadStatistics() {
+
                 try {
+
                     const response = await fetch('/api/exit/stats', {
+
                         method: 'GET'
+
                     });
+
                     
+
                     if (response.ok) {
+
                         const stats = await response.json();
+
                         
+
                         // Update display with correct data
+
                         this.todayRevenue = stats.todayRevenue || 0;
+
                         this.todayExits = stats.todayExits || 0;
+
                         this.activeBookings = stats.activeBookings || 0;
+
                         
+
                         // Update UI elements
+
                         document.getElementById('todayExitsCount').textContent = this.todayExits;
+
                         document.getElementById('totalRevenue').textContent = '₹' + this.todayRevenue;
+
                         document.getElementById('activeBookingsCount').textContent = this.activeBookings;
+
                         
+
                         // Load released vehicles from backend API instead of localStorage
+
                         this.loadReleasedVehiclesFromBackend();
+
                         
+
                         console.log('Statistics loaded:', {
+
                             todayRevenue: this.todayRevenue,
+
                             todayExits: this.todayExits,
+
                             activeBookings: this.activeBookings
+
                         });
+
                     }
+
                 } catch (error) {
+
                     console.error('Error loading statistics:', error);
+
                 }
+
             }
+
+
 
             async loadReleasedVehicles() {
+
                 // This would typically come from an API endpoint
+
                 // For now, we'll use localStorage to track released vehicles
+
                 const released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+
                 const today = new Date().toDateString();
+
                 
+
                 // Debug: Log all released vehicles to see what's in localStorage
+
                 console.log('All released vehicles from localStorage:', released);
+
                 console.log('Today date:', today);
+
                 
+
                 const todayReleased = released.filter(v => {
+
                     const exitDate = new Date(v.exitTime);
+
                     return exitDate.toDateString() === today;
+
                 });
+
                 
+
                 // Debug: Log filtered results
+
                 console.log('Today released vehicles count:', todayReleased.length);
+
                 console.log('Today released vehicles:', todayReleased);
+
                 
+
                 this.todayExits = todayReleased.length;
+
                 this.todayRevenue = todayReleased.reduce((sum, v) => sum + (v.totalFee || 0), 0);
+
                 
+
                 document.getElementById('todayExitsCount').textContent = this.todayExits;
+
                 document.getElementById('totalRevenue').textContent = '₹' + this.todayRevenue;
+
                 
+
                 this.renderReleasedVehicles(todayReleased);
+
             }
+
+
 
             async loadReleasedVehiclesFromBackend() {
+
                 try {
+
                     // Fetch today's exit data from backend
+
                     const response = await fetch('/api/exit/sync-data', {
+
                         method: 'GET'
+
                     });
+
                     
+
                     if (response.ok) {
+
                         const syncData = await response.json();
+
                         console.log('Backend sync data received:', syncData);
+
                         
+
                         // Get exits from sync data
+
                         const exits = syncData.exits || [];
+
                         const today = new Date().toDateString();
+
                         
+
                         // Filter today's exits
+
                         const todayReleased = exits.filter(v => {
+
                             const exitDate = new Date(v.exitTime);
+
                             return exitDate.toDateString() === today;
+
                         });
+
                         
+
                         console.log('Today released vehicles from backend:', todayReleased);
+
                         
+
                         // Update display
+
                         this.renderReleasedVehicles(todayReleased);
+
                     }
+
                 } catch (error) {
+
                     console.error('Error loading released vehicles from backend:', error);
+
                     // Fallback to localStorage if backend fails
+
                     this.loadReleasedVehicles();
+
                 }
+
             }
+
+
 
             renderBookings(bookings) {
+
                 const container = document.getElementById('activeBookingsContainer');
+
                 
+
                 if (!bookings || bookings.length === 0) {
+
                     container.innerHTML = `
+
                         <div class="empty-state">
+
                             <i class="fas fa-parking"></i>
+
                             <p>No active bookings found</p>
+
                         </div>
+
                     `;
+
                     return;
+
                 }
 
+
+
                 let html = '';
+
                 bookings.forEach(booking => {
+
                     html += `
+
                         <div class="booking-card">
+
                             <span class="booking-vehicle">${this.escapeHtml(booking.vehicleNumber)}</span>
+
                             <div class="booking-info-row">
+
                                 <div class="booking-cell">
+
                                     <span class="booking-cell-label">ID</span>
+
                                     <span class="booking-cell-value">#${this.escapeHtml(booking.bookingId)}</span>
+
                                 </div>
+
                                 <div class="booking-cell">
+
                                     <span class="booking-cell-label">Customer</span>
+
                                     <span class="booking-cell-value">${this.escapeHtml(booking.customerName)}</span>
+
                                 </div>
+
                                 <div class="booking-cell">
+
                                     <span class="booking-cell-label">Entry</span>
+
                                     <span class="booking-cell-value">${this.escapeHtml(new Date(booking.bookingTime).toLocaleDateString())}</span>
+
                                 </div>
+
                                 <div class="booking-cell">
+
                                     <span class="booking-cell-label">Slot</span>
+
                                     <span class="booking-cell-value">${this.escapeHtml(booking.slotId || `${booking.floor}-${booking.slotNumber}`)}</span>
+
                                 </div>
+
                                 <div class="booking-cell">
+
                                     <span class="booking-cell-label">Duration</span>
+
                                     <span class="booking-cell-value">${this.escapeHtml(booking.durationMinutes)}m</span>
+
                                 </div>
+
                             </div>
+
                             <div class="booking-actions-compact">
+
                                 <button class="btn-sm btn-release" onclick="showReleaseConfirm(${booking.bookingId})">
+
                                     <i class="fas fa-sign-out-alt"></i> Release
+
                                 </button>
+
                             </div>
+
                         </div>
+
                     `;
+
                 });
 
+
+
                 container.innerHTML = html;
+
             }
+
+
 
             renderReleasedVehicles(vehicles) {
+
                 const container = document.getElementById('releasedVehiclesContainer');
+
                 
+
                 console.log('renderReleasedVehicles called with vehicles:', vehicles);
+
                 
+
                 if (!vehicles || vehicles.length === 0) {
+
                     container.innerHTML = '<div class="no-data">No released vehicles found</div>';
+
                     return;
+
                 }
+
                 
+
                 let html = '';
+
                 vehicles.forEach((vehicle, index) => {
+
                     console.log(`Vehicle ${index}:`, vehicle);
+
                     console.log(`Vehicle ID:`, vehicle.id);
+
                     console.log(`Vehicle bookingId:`, vehicle.bookingId);
+
                     
+
                     const exitTime = vehicle.exitTime ? new Date(vehicle.exitTime).toLocaleString() : 'N/A';
+
                     
+
                     html += `
+
                         <div class="released-item">
+
                             <div class="released-header">
+
                                 <span class="released-vehicle">${this.escapeHtml(vehicle.vehicleNumber)}</span>
+
                                 <span class="released-time">${this.escapeHtml(exitTime)}</span>
+
                             </div>
+
                             <div class="released-info">
+
                                 <div class="released-info-row">
+
                                     <span class="released-info-label">Booking ID:</span>
+
                                     <span class="released-info-value">#${this.escapeHtml(vehicle.id || vehicle.bookingId || 'N/A')}</span>
+
                                 </div>
+
                                 <div class="released-info-row">
+
                                     <span class="released-info-label">Vehicle:</span>
+
                                     <span class="released-info-value">${this.escapeHtml(vehicle.vehicleNumber)}</span>
+
                                 </div>
+
                                 <div class="released-info-row">
+
                                     <span class="released-info-label">Slot:</span>
+
                                     <span class="released-info-value">${this.escapeHtml(vehicle.slotId || (vehicle.floor && vehicle.slotNumber ? `${vehicle.floor}-${vehicle.slotNumber}` : vehicle.slotNumber || 'N/A'))}</span>
+
                                 </div>
+
                                 <div class="released-info-row">
+
                                     <span class="released-info-label">Amount:</span>
+
                                     <span class="released-info-value">₹${this.escapeHtml(vehicle.totalFee || vehicle.parkingFee || '0')}</span>
+
                                 </div>
+
                                 <div class="released-info-row" style="margin-top: 10px; color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">
+
                                     <i class="fas fa-info-circle"></i> Receipt was generated during vehicle exit
+
                                 </div>
+
                             </div>
+
                         </div>
+
                     `;
+
                 });
+
+
 
                 container.innerHTML = html;
+
             }
+
+
 
             showSkeletonLoader() {
+
                 const container = document.getElementById('activeBookingsContainer');
+
                 container.innerHTML = `
+
                     <div class="booking-card skeleton-row">
+
                         <div class="skeleton" style="width: 80px; height: 16px;"></div>
+
                         <div class="skeleton" style="flex: 1; height: 16px;"></div>
+
                         <div class="skeleton" style="width: 60px; height: 28px;"></div>
+
                     </div>
+
                     <div class="booking-card skeleton-row">
+
                         <div class="skeleton" style="width: 80px; height: 16px;"></div>
+
                         <div class="skeleton" style="flex: 1; height: 16px;"></div>
+
                         <div class="skeleton" style="width: 60px; height: 28px;"></div>
+
                     </div>
+
                     <div class="booking-card skeleton-row">
+
                         <div class="skeleton" style="width: 80px; height: 16px;"></div>
+
                         <div class="skeleton" style="flex: 1; height: 16px;"></div>
+
                         <div class="skeleton" style="width: 60px; height: 28px;"></div>
+
                     </div>
+
                 `;
+
             }
+
+
 
             showProgressBar() {
+
                 // Line loader at top of screen
+
                 let lineLoader = document.getElementById('lineLoader');
+
                 if (!lineLoader) {
+
                     lineLoader = document.createElement('div');
+
                     lineLoader.id = 'lineLoader';
+
                     lineLoader.className = 'line-loader';
+
                     document.body.appendChild(lineLoader);
+
                 }
+
                 lineLoader.classList.add('active');
+
             }
+
+
 
             hideProgressBar() {
+
                 const lineLoader = document.getElementById('lineLoader');
+
                 if (lineLoader) {
+
                     lineLoader.classList.remove('active');
+
                 }
+
             }
+
+
 
             setButtonLoading(button, loading) {
+
                 if (loading) {
+
                     button.disabled = true;
+
                     button.dataset.originalText = button.innerHTML;
+
                     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
                 } else {
+
                     button.disabled = false;
+
                     button.innerHTML = button.dataset.originalText || button.innerHTML;
+
                 }
+
             }
+
+
 
             showNotification(message, type = 'success') {
+
                 const notification = document.getElementById('notification');
+
                 notification.textContent = message;
+
                 notification.className = `notification ${type}`;
+
                 notification.classList.add('show');
 
+
+
                 setTimeout(() => {
+
                     notification.classList.remove('show');
+
                 }, 5000);
+
             }
+
+
 
             escapeHtml(text) {
+
                 if (text === null || text === undefined) return '';
+
                 const div = document.createElement('div');
+
                 div.textContent = String(text);
+
                 return div.innerHTML;
+
             }
+
+
 
             async calculateFee(bookingId) {
+
                 try {
+
                     this.currentBookingId = bookingId;
+
                     this.showProgressBar();
+
                     
+
                     const response = await fetch(`/api/exit/calculate-fee/${bookingId}`, {
+
                         method: 'GET',
+
                         headers: {
+
                             'Accept': 'application/json',
+
                             'Content-Type': 'application/json'
+
                         }
+
                     });
 
+
+
                     if (!response.ok) {
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
                     }
+
+
 
                     const feeDetails = await response.json();
+
                     this.currentBookingDetails = feeDetails;
+
                     this.showFeeModal(feeDetails);
+
                     
+
                 } catch (error) {
+
                     console.error('Error calculating fee:', error);
+
                     this.showNotification('Error calculating fee: ' + error.message, 'error');
+
                 } finally {
+
                     this.hideProgressBar();
+
                 }
+
             }
+
+
 
             showFeeModal(feeDetails) {
+
                 const modal = document.getElementById('feeModal');
+
                 const modalBody = document.getElementById('feeModalBody');
+
                 
+
                 const entryTime = new Date(feeDetails.entryTime).toLocaleString();
+
                 const exitTime = new Date().toLocaleString();
+
                 
+
                 modalBody.innerHTML = `
+
                     <div class="fee-details">
+
                         <div class="fee-row">
+
                             <span>Vehicle Number:</span>
+
                             <span>${this.escapeHtml(feeDetails.vehicleNumber)}</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Customer Name:</span>
+
                             <span>${this.escapeHtml(feeDetails.customerName)}</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Entry Time:</span>
+
                             <span>${this.escapeHtml(entryTime)}</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Exit Time:</span>
+
                             <span>${this.escapeHtml(exitTime)}</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Duration:</span>
+
                             <span>${this.escapeHtml(feeDetails.durationMinutes)} minutes</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Base Fare:</span>
+
                             <span>₹20</span>
+
                         </div>
+
                         <div class="fee-row">
+
                             <span>Total Amount:</span>
+
                             <span class="total-amount">₹${this.escapeHtml(feeDetails.totalFee || feeDetails.totalAmount)}</span>
+
                         </div>
+
                     </div>
+
                     <div class="modal-actions">
+
                         <button class="btn-confirm" onclick="showReleaseConfirm(${feeDetails.bookingId})">
+
                             <i class="fas fa-check"></i> Proceed to Release
+
                         </button>
+
                         <button class="btn-cancel" onclick="closeFeeModal()">
+
                             <i class="fas fa-times"></i> Cancel
+
                         </button>
+
                     </div>
+
                 `;
+
                 
+
                 modal.classList.add('open');
+
             }
+
+
 
             closeFeeModal() {
+
                 document.getElementById('feeModal').classList.remove('open');
+
             }
+
+
 
            
+
             async confirmRelease() {
+
                 if (!this.currentBookingId) {
+
                     this.showNotification('No booking selected', 'error');
+
                     return;
+
                 }
+
                 
+
                 this.closeConfirmModal();
+
                 
+
                 try {
+
                     this.showProgressBar();
+
                     
+
                     // First fetch the full booking details
+
                     const bookingResponse = await fetch('/api/exit/active-bookings', {
+
                         method: 'GET'
-                    });
-                    
-                    let bookingDetails = {};
-                    if (bookingResponse.ok) {
-                        const bookings = await bookingResponse.json();
-                        const booking = bookings.find(b => b.bookingId === this.currentBookingId);
-                        if (booking) {
-                            bookingDetails = booking;
-                        }
-                    }
-                    
-                    const response = await fetch(`/api/exit/process/${this.currentBookingId}`, {
-                        method: 'POST'
+
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                    
+
+                    let bookingDetails = {};
+
+                    if (bookingResponse.ok) {
+
+                        const bookings = await bookingResponse.json();
+
+                        const booking = bookings.find(b => b.bookingId === this.currentBookingId);
+
+                        if (booking) {
+
+                            bookingDetails = booking;
+
+                        }
+
                     }
+
+                    
+
+                    const response = await fetch(`/api/exit/process/${this.currentBookingId}`, {
+
+                        method: 'POST'
+
+                    });
+
+
+
+                    if (!response.ok) {
+
+                        throw new Error(`HTTP error! status: ${response.status}`);
+
+                    }
+
+
 
                     const result = await response.json();
+
                     
+
                     // Merge booking details with result
+
                     const releasedData = {
+
                         ...bookingDetails,
+
                         ...this.currentBookingDetails,
+
                         exitTime: new Date().toISOString(),
+
                         totalFee: result.totalFee || this.currentBookingDetails?.totalFee || 0,
+
                         totalAmount: result.totalFee || this.currentBookingDetails?.totalFee || 0
+
                     };
+
                     
+
                     // Limit localStorage to prevent unbounded growth
+
                     const MAX_RELEASED = 100;
+
                     let released = [];
+
                     try {
+
                         released = JSON.parse(localStorage.getItem('releasedVehicles') || '[]');
+
                     } catch (e) {
+
                         released = [];
+
                     }
+
                     released.unshift(releasedData);
+
                     // Trim to max size
+
                     if (released.length > MAX_RELEASED) {
+
                         released = released.slice(0, MAX_RELEASED);
+
                     }
+
                     try {
+
                         localStorage.setItem('releasedVehicles', JSON.stringify(released));
+
                     } catch (e) {
+
                         // Handle quota exceeded - remove oldest entries
+
                         if (e.name === 'QuotaExceededError') {
+
                             released.pop();
+
                             try {
+
                                 localStorage.setItem('releasedVehicles', JSON.stringify(released));
+
                             } catch (e2) {
+
                                 // If still failing, clear the key
+
                                 localStorage.removeItem('releasedVehicles');
+
                             }
+
                         }
+
                     }
+
                     
+
                     // Download receipt
+
                     this.downloadReceipt(releasedData);
+
                     
+
                     this.showNotification('Vehicle released successfully! Receipt downloaded.', 'success');
+
                     
+
                     // Refresh data
+
                     this.loadActiveBookings();
+
                     this.loadStatistics();
+
                     
+
                     // Notify other pages
+
                     this.notifyOtherPages('vehicle_exit', releasedData);
+
                     
+
                 } catch (error) {
+
                     console.error('Error processing exit:', error);
+
                     this.showNotification('Error processing exit: ' + error.message, 'error');
+
                 } finally {
+
                     this.hideProgressBar();
+
                     this.currentBookingId = null;
+
                     this.currentBookingDetails = null;
+
                 }
+
             }
+
+
 
             async downloadReceipt(exitData) {
+
                 try {
+
                     // Use booking ID from exit data, fallback to booking code
+
                     const bookingId = exitData.bookingId || exitData.id;
+
                     
+
                     if (!bookingId) {
+
                         console.error('No booking ID available for receipt download');
+
                         this.showNotification('Unable to download receipt: No booking ID found', 'error');
+
                         return;
+
                     }
+
                     
+
                     // Download receipt from backend API
+
                     const response = await fetch(`/api/exit/receipt/${bookingId}`, {
+
                         method: 'GET',
+
                         headers: {
+
                             'Accept': 'text/plain'
+
                         }
+
                     });
+
                     
+
                     if (!response.ok) {
+
                         throw new Error(`Failed to download receipt: ${response.status}`);
+
                     }
+
                     
+
                     // Get filename from response headers or create one
+
                     const contentDisposition = response.headers.get('Content-Disposition');
+
                     let filename = `receipt_${exitData.bookingCode || exitData.vehicleNumber || 'booking'}_${new Date().getTime()}.txt`;
+
                     
+
                     if (contentDisposition) {
+
                         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+
                         if (filenameMatch && filenameMatch[1]) {
+
                             filename = filenameMatch[1];
+
                         }
+
                     }
+
                     
+
                     // Create blob and download
+
                     const receiptContent = await response.text();
+
                     const blob = new Blob([receiptContent], { type: 'text/plain' });
+
                     const url = window.URL.createObjectURL(blob);
+
                     const link = document.createElement('a');
+
                     link.href = url;
+
                     link.download = filename;
+
                     document.body.appendChild(link);
+
                     link.click();
+
                     document.body.removeChild(link);
+
                     window.URL.revokeObjectURL(url);
+
                     
+
                     console.log('Receipt downloaded:', filename);
+
                     this.showNotification('Receipt downloaded successfully!', 'success');
+
                     
+
                 } catch (error) {
+
                     console.error('Error downloading receipt:', error);
+
                     this.showNotification('Failed to download receipt. Please try again.', 'error');
+
                 }
+
             }
 
-            async downloadReleasedReceipt(bookingId, bookingCode, vehicleNumber) {
-                try {
-                    // Try backend API first if booking ID is available
-                    if (bookingId && bookingId !== 'null' && bookingId !== null) {
-                        try {
-                            const response = await fetch(`/api/exit/receipt/${bookingId}`, {
-                                method: 'GET',
-                                headers: {
-                                    'Accept': 'text/plain'
-                                }
-                            });
-                            
-                            if (response.ok) {
-                                // Get filename from response headers or create one
-                                const contentDisposition = response.headers.get('Content-Disposition');
-                                let filename = `receipt_${bookingCode || vehicleNumber || 'released'}_${new Date().getTime()}.txt`;
-                                
-                                if (contentDisposition) {
-                                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                                    if (filenameMatch && filenameMatch[1]) {
-                                        filename = filenameMatch[1];
-                                    }
-                                }
-                                
-                                // Create blob and download
-                                const receiptContent = await response.text();
-                                const blob = new Blob([receiptContent], { type: 'text/plain' });
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = filename;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                                
-                                console.log('Receipt downloaded:', filename);
-                                this.showNotification('Receipt downloaded successfully!', 'success');
-                                return;
-                            }
-                        } catch (apiError) {
-                            console.warn('Backend receipt API failed, using fallback:', apiError);
-                        }
-                    }
-                    
-                    // Fallback: Generate receipt from frontend data
-                    console.log('Using fallback receipt generation for vehicle:', vehicleNumber);
-                    this.generateFallbackReceipt(bookingCode, vehicleNumber);
-                    
-                } catch (error) {
-                    console.error('Error downloading released receipt:', error);
-                    this.showNotification('Failed to download receipt. Please try again.', 'error');
-                }
-            }
 
-            generateFallbackReceipt(bookingCode, vehicleNumber) {
-                try {
-                    // Get current date for receipt
-                    const currentDate = new Date().toLocaleString();
-                    
-                    // Generate receipt content
-                    const receiptContent = `
-========================================
-        SMART PARKING EXIT RECEIPT
-========================================
-
-BOOKING CODE: ${bookingCode || 'N/A'}
-VEHICLE NUMBER: ${vehicleNumber || 'N/A'}
-BOOKING ID: ${bookingCode || 'N/A'}
-
-PARKING DETAILS:
-----------------
-ENTRY TIME: ${new Date().toLocaleString()}
-EXIT TIME: ${new Date().toLocaleString()}
-DURATION: Completed
-AMOUNT PAID: ₹20.00
-PAYMENT MODE: Completed
-
-PAYMENT DETAILS:
-----------------
-Base Fare: ₹20.00
-Total Amount Paid: ₹20.00
-Payment Status: Completed
-
-========================================
-          THANK YOU FOR USING
-        SMART PARKING SYSTEM
-========================================
-Receipt Generated: ${currentDate}
-`;
-
-                    // Create blob and download
-                    const blob = new Blob([receiptContent], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `receipt_${bookingCode || vehicleNumber || 'released'}_${new Date().getTime()}.txt`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                    
-                    console.log('Fallback receipt downloaded for:', vehicleNumber);
-                    this.showNotification('Receipt downloaded successfully!', 'success');
-                    
-                } catch (error) {
-                    console.error('Error generating fallback receipt:', error);
-                    this.showNotification('Failed to generate receipt. Please try again.', 'error');
-                }
-            }
 
             notifyOtherPages(type, data) {
+
                 try {
+
                     const channel = new BroadcastChannel('parking_updates');
+
                     channel.postMessage({
+
                         type: type,
+
                         timestamp: Date.now(),
+
                         data: data
+
                     });
+
                     channel.close();
+
                 } catch (error) {
+
                     console.log('BroadcastChannel not supported');
+
                 }
+
                 
+
                 localStorage.setItem('exitUpdate', JSON.stringify({
+
                     type: type,
+
                     timestamp: Date.now(),
+
                     data: data
+
                 }));
+
             }
+
+
 
             refreshData() {
+
                 this.loadActiveBookings();
+
                 this.loadStatistics();
+
                 this.showNotification('Data refreshed', 'success');
+
             }
+
+
 
             async searchVehicle(searchTerm) {
+
                 if (!searchTerm || searchTerm.trim() === '') {
+
                     this.showNotification('Please enter a booking ID or vehicle number', 'error');
+
                     return;
+
                 }
+
                 
+
                 searchTerm = searchTerm.trim().toUpperCase();
+
                 
+
                 try {
+
                     this.showProgressBar();
+
                     
+
                     // First load all active bookings
+
                     const response = await fetch('/api/exit/active-bookings', {
+
                         method: 'GET',
+
                         headers: {
+
                             'Accept': 'application/json',
+
                             'Content-Type': 'application/json'
+
                         }
+
                     });
 
+
+
                     if (!response.ok) {
+
                         throw new Error(`HTTP error! status: ${response.status}`);
+
                     }
+
+
 
                     const bookings = await response.json();
+
                     
+
                     // Search by booking ID or vehicle number
+
                     const results = bookings.filter(booking => 
+
                         booking.bookingId?.toString() === searchTerm || 
+
                         (booking.vehicleNumber || '').toUpperCase().includes(searchTerm) ||
+
                         (booking.bookingCode || '').toUpperCase() === searchTerm
+
                     );
+
                     
+
                     this.displaySearchResults(results, searchTerm);
+
                     
+
                 } catch (error) {
+
                     console.error('Error searching vehicle:', error);
+
                     this.showNotification('Error searching: ' + error.message, 'error');
+
                 } finally {
+
                     this.hideProgressBar();
+
                 }
+
             }
+
+
 
             displaySearchResults(results, searchTerm) {
+
                 const resultsContainer = document.getElementById('searchResults');
+
                 
+
                 if (results.length === 0) {
+
                     resultsContainer.innerHTML = `
+
                         <div style="padding: var(--space-4); background: var(--bg-tertiary); border-radius: var(--radius-sm); text-align: center; color: var(--text-secondary);">
+
                             <i class="fas fa-search" style="font-size: 24px; margin-bottom: var(--space-2); opacity: 0.5;"></i>
+
                             <p>No results found for "${this.escapeHtml(searchTerm)}"</p>
+
                         </div>
+
                     `;
+
                     resultsContainer.style.display = 'block';
+
                     return;
+
                 }
+
                 
+
                 let html = `<div style="margin-bottom: var(--space-2); font-weight: 600; color: var(--text-secondary);">
+
                     <i class="fas fa-check-circle" style="color: var(--success-color);"></i> 
+
                     ${results.length} result(s) found
+
                 </div>`;
+
                 
+
                 results.forEach(booking => {
+
                     const entryTime = new Date(booking.bookingTime).toLocaleString();
+
                     html += `
+
                         <div class="booking-card" style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 15px !important; padding: 15px !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; background: var(--info-color)15 !important; border: 2px solid var(--info-color) !important;">
+
                             <div class="booking-header" style="min-width: 120px !important; flex-shrink: 0 !important;">
+
                                 <div class="vehicle-number">${this.escapeHtml(booking.vehicleNumber)}</div>
+
                                 <div class="booking-code">${this.escapeHtml(booking.bookingCode)}</div>
+
                             </div>
+
                             
+
                             <div class="booking-details-horizontal" style="display: flex !important; flex-direction: row !important; gap: 20px !important; flex: 1 !important; align-items: center !important;">
+
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+
                                     <span class="detail-label">Booking ID</span>
+
                                     <span class="detail-value"><span class="booking-id-badge">#${this.escapeHtml(booking.bookingId)}</span></span>
+
                                 </div>
+
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+
                                     <span class="detail-label">Customer</span>
+
                                     <span class="detail-value">${this.escapeHtml(booking.customerName)}</span>
+
                                 </div>
+
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+
                                     <span class="detail-label">Entry</span>
+
                                     <span class="detail-value">${this.escapeHtml(entryTime)}</span>
+
                                 </div>
+
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+
                                     <span class="detail-label">Slot</span>
+
                                     <span class="detail-value">${this.escapeHtml(booking.slotId || `F${booking.floor}-S${booking.slotNumber}`)}</span>
+
                                 </div>
+
                                 <div class="detail-item-horizontal" style="text-align: center !important; min-width: 70px !important;">
+
                                     <span class="detail-label">Duration</span>
+
                                     <span class="detail-value">${this.escapeHtml(booking.durationMinutes)}m</span>
+
                                 </div>
+
                             </div>
+
                             
+
                             <div class="booking-actions" style="display: flex !important; flex-direction: row !important; gap: 10px !important; min-width: 100px !important; flex-shrink: 0 !important;">
+
                                 <button class="btn btn-release" onclick="showReleaseConfirm(${booking.bookingId})" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important; min-width: 90px !important; padding: 8px 12px !important; font-size: 12px !important; background: #ff6b35 !important; color: white !important; border: none !important; border-radius: 4px !important; cursor: pointer !important;">
+
                                     <i class="fas fa-sign-out-alt"></i> Release
+
                                 </button>
+
                             </div>
+
                         </div>
+
                     `;
+
                 });
+
                 
+
                 resultsContainer.innerHTML = html;
+
                 resultsContainer.style.display = 'block';
+
             }
+
         }
+
+
 
         // Initialize ExitManagement
+
         let exitManagement;
+
         
+
         document.addEventListener('DOMContentLoaded', function() {
+
             console.log('DOM loaded, initializing ExitManagement...');
+
             exitManagement = new ExitManagement();
+
             exitManagement.init();
+
             console.log('ExitManagement initialized');
+
         });
+
         
+
         // Cleanup when page is unloaded
+
         window.addEventListener('beforeunload', function() {
+
             if (exitManagement) {
+
                 exitManagement.cleanup();
+
             }
+
         });
+
         
+
         // Global functions for onclick handlers
+
         function refreshData() {
+
             location.reload();
+
         }
+
         
+
         function logout() {
+
             // Authentication removed - just refresh the page
+
             location.reload();
+
         }
+
         
+
         function viewBookingStatus() {
+
             // Open index.html in view mode in a new tab
+
             window.open('/index.html?viewMode=true', '_blank');
+
         }
+
         
+
         function searchVehicle() {
+
             const searchInput = document.getElementById('searchInput');
+
             if (exitManagement && searchInput) {
+
                 exitManagement.searchVehicle(searchInput.value);
+
             }
+
         }
+
         
+
         // Allow Enter key to trigger search
+
         document.addEventListener('DOMContentLoaded', function() {
+
             const searchInput = document.getElementById('searchInput');
+
             if (searchInput) {
+
                 searchInput.addEventListener('keypress', function(e) {
+
                     if (e.key === 'Enter') {
+
                         searchVehicle();
+
                     }
+
                 });
+
             }
+
         });
+
         
+
         function calculateFee(bookingId) {
+
             if (exitManagement) exitManagement.calculateFee(bookingId);
+
         }
+
         
+
         function showReleaseConfirm(bookingId) {
+
             if (exitManagement) exitManagement.showReleaseConfirm(bookingId);
+
         }
+
         
+
         function confirmRelease() {
+
             if (exitManagement) exitManagement.confirmRelease();
+
         }
+
         
+
         function closeFeeModal() {
+
             if (exitManagement) exitManagement.closeFeeModal();
+
         }
+
         
+
         function closeConfirmModal() {
+
             if (exitManagement) exitManagement.closeConfirmModal();
+
         }
+
         
+
         // Close modals when clicking outside
+
         window.onclick = function(event) {
+
             if (event.target.classList.contains('modal')) {
+
                 event.target.classList.remove('open');
+
             }
+
         };
+
     </script>
+
 <!-- UPI Payment Modal -->
+
 <div id="upiPaymentModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+
     <div class="modal-content" style="background-color: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; position: relative;">
+
         <span class="close" onclick="closeUpiPaymentModal()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+
         
+
         <h2 style="color: #3B82F6; margin-bottom: 20px; text-align: center;">
+
             <i class="fas fa-qrcode"></i> UPI Payment
+
         </h2>
+
         
+
         <div id="paymentDetails" style="margin-bottom: 20px;">
+
             <!-- Payment details will be populated here -->
+
         </div>
+
         
+
         <div id="qrCodeContainer" style="text-align: center; margin: 20px 0;">
+
             <!-- QR code will be displayed here -->
+
         </div>
+
         
+
         <div id="countdownTimer" style="text-align: center; font-size: 18px; font-weight: bold; color: #F59E0B; margin: 15px 0;">
+
             <!-- Countdown timer will be displayed here -->
+
         </div>
+
         
+
         <div id="transactionIdSection" style="margin: 20px 0;">
+
             <label for="transactionId" style="display: block; margin-bottom: 5px; font-weight: bold;">UPI Transaction ID (Last 5 digits):</label>
+
             <input type="text" id="transactionId" placeholder="Enter last 5 digits" maxlength="5"
+
                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; text-align: center; font-size: 16px; letter-spacing: 2px;">
+
             <small style="color: #666; display: block; margin-top: 5px;">Enter only the last 5 digits of your UPI transaction ID</small>
+
         </div>
+
         
+
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+
             <button onclick="confirmUpiPayment()" style="background-color: #10B981; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+
                 <i class="fas fa-check"></i> Confirm Payment
+
             </button>
+
             <button onclick="closeUpiPaymentModal()" style="background-color: #EF4444; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+
                 <i class="fas fa-times"></i> Cancel
+
             </button>
+
         </div>
+
     </div>
+
 </div>
+
+
 
 <!-- Payment Confirmation Modal -->
+
 <div id="paymentConfirmModal" class="modal" style="display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+
     <div class="modal-content" style="background-color: white; margin: 10% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center;">
+
         <h3 style="color: #F59E0B; margin-bottom: 20px;">
+
             <i class="fas fa-exclamation-triangle"></i> Payment Verification
+
         </h3>
+
         <p style="font-size: 16px; margin-bottom: 25px;">Have you verified the payment?</p>
+
         
+
         <div style="display: flex; gap: 15px; justify-content: center;">
+
             <button onclick="proceedWithPayment()" style="background-color: #10B981; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+
                 <i class="fas fa-check"></i> Yes, Verified
+
             </button>
+
             <button onclick="cancelPayment()" style="background-color: #EF4444; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+
                 <i class="fas fa-times"></i> No, Cancel
+
             </button>
+
         </div>
+
     </div>
+
 </div>
 
+
+
 <script>
+
 // UPI Payment Management
+
 let currentPaymentBooking = null;
+
 let countdownInterval = null;
+
 let paymentTimeout = null;
 
+
+
 // Enhanced release function with payment options
+
 function showReleaseConfirm(bookingId) {
+
     currentPaymentBooking = bookingId;
+
     
+
     // Show payment method selection modal
+
     const modalHtml = `
+
         <div id="paymentMethodModal" class="modal" style="display: block; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+
             <div class="modal-content" style="background-color: white; margin: 10% auto; padding: 30px; border-radius: 8px; width: 90%; max-width: 450px; text-align: center;">
+
                 <h3 style="color: #3B82F6; margin-bottom: 25px;">
+
                     <i class="fas fa-credit-card"></i> Select Payment Method
+
                 </h3>
+
                 
+
                 <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+
                     <button onclick="selectPaymentMethod('UPI')" style="background-color: #3B82F6; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+
                         <i class="fas fa-qrcode"></i> Pay with UPI
+
                     </button>
+
                     <button onclick="selectPaymentMethod('CASH')" style="background-color: #10B981; color: white; padding: 15px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+
                         <i class="fas fa-money-bill-wave"></i> Pay with Cash
+
                     </button>
+
                 </div>
+
                 
+
                 <button onclick="closePaymentMethodModal()" style="background-color: #6B7280; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+
                     Cancel
+
                 </button>
+
             </div>
+
         </div>
+
     `;
+
     
+
     // Remove existing modal if any
+
     const existingModal = document.getElementById('paymentMethodModal');
+
     if (existingModal) {
+
         existingModal.remove();
+
     }
+
     
+
     // Add new modal
+
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
 }
+
+
 
 function selectPaymentMethod(method) {
+
     closePaymentMethodModal();
+
     
+
     if (method === 'UPI') {
+
         showUpiPaymentModal();
+
     } else if (method === 'CASH') {
+
         processCashPayment();
+
     }
+
 }
+
+
 
 function closePaymentMethodModal() {
+
     const modal = document.getElementById('paymentMethodModal');
+
     if (modal) {
+
         modal.remove();
+
     }
+
 }
+
+
 
 async function showUpiPaymentModal() {
+
     try {
-        // Validate currentPaymentBooking
-        if (!currentPaymentBooking) {
-            console.error('No booking ID available for UPI payment');
-            alert('Error: No booking selected for payment. Please try again.');
-            return;
-        }
-        
-        console.log('Generating UPI QR for booking:', currentPaymentBooking);
-        
+
         // Show loading
+
         const modal = document.getElementById('upiPaymentModal');
+
         modal.style.display = 'block';
+
         
+
         // Generate UPI QR code
+
         const response = await fetch(`/api/exit/generate-upi-qr/${currentPaymentBooking}`, {
+
             method: 'GET',
+
             headers: {
+
                 'Accept': 'application/json',
+
                 'Content-Type': 'application/json'
+
             }
+
         });
+
         
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Backend error response:', errorText);
-            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+
+            throw new Error(`HTTP error! status: ${response.status}`);
+
         }
+
         
+
         const paymentData = await response.json();
+
         
+
         // Display payment details
+
         const paymentDetails = document.getElementById('paymentDetails');
+
         paymentDetails.innerHTML = `
+
             <div style="background-color: #F3F4F6; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+
                     <span style="font-weight: bold; color: #374151;">Booking Code:</span>
+
                     <span style="color: #3B82F6; font-weight: bold;">${paymentData.bookingCode}</span>
+
                 </div>
+
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+
                     <span style="font-weight: bold; color: #374151;">Amount:</span>
+
                     <span style="color: #EF4444; font-size: 20px; font-weight: bold;">₹${paymentData.amount}</span>
+
                 </div>
+
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+
                     <span style="font-weight: bold; color: #374151;">Merchant:</span>
+
                     <span style="color: #6B7280;">${paymentData.merchantName}</span>
+
                 </div>
+
                 <div style="display: flex; justify-content: space-between;">
+
                     <span style="font-weight: bold; color: #374151;">UPI ID:</span>
+
                     <span style="color: #6B7280; font-family: monospace;">${paymentData.merchantUpiId}</span>
+
                 </div>
+
             </div>
+
         `;
+
         
+
         // Display QR code
+
         const qrContainer = document.getElementById('qrCodeContainer');
+
         qrContainer.innerHTML = `
+
             <img src="${paymentData.qrCodeBase64}" alt="UPI QR Code" style="max-width: 250px; border: 2px solid #3B82F6; border-radius: 8px;">
+
             <p style="margin-top: 10px; color: #6B7280; font-size: 14px;">Scan this QR code with your UPI app</p>
+
         `;
+
         
+
         // Start countdown timer (3 minutes)
+
         startCountdownTimer(180);
+
         
+
     } catch (error) {
+
         console.error('Error generating UPI QR:', error);
+
         closeUpiPaymentModal();
+
         alert('Failed to generate UPI QR code. Please try again.');
+
     }
+
 }
+
+
 
 function startCountdownTimer(seconds) {
+
     let remainingTime = seconds;
+
     const timerElement = document.getElementById('countdownTimer');
+
     
+
     // Clear any existing timer
+
     if (countdownInterval) {
+
         clearInterval(countdownInterval);
+
     }
+
     
+
     // Set timeout to close modal after time expires
+
     if (paymentTimeout) {
+
         clearTimeout(paymentTimeout);
+
     }
+
     
+
     paymentTimeout = setTimeout(() => {
+
         closeUpiPaymentModal();
+
         alert('Payment session expired. Please try again.');
+
     }, seconds * 1000);
+
     
+
     countdownInterval = setInterval(() => {
+
         const minutes = Math.floor(remainingTime / 60);
+
         const secs = remainingTime % 60;
+
         
+
         if (remainingTime <= 30) {
+
             timerElement.style.color = '#EF4444';
+
         } else if (remainingTime <= 60) {
+
             timerElement.style.color = '#F59E0B';
+
         }
+
         
+
         timerElement.innerHTML = `
+
             <i class="fas fa-clock"></i> Time remaining: ${minutes}:${secs.toString().padStart(2, '0')}
+
         `;
+
         
+
         remainingTime--;
+
         
+
         if (remainingTime < 0) {
+
             clearInterval(countdownInterval);
+
         }
+
     }, 1000);
+
 }
+
+
 
 function closeUpiPaymentModal() {
+
     const modal = document.getElementById('upiPaymentModal');
+
     modal.style.display = 'none';
+
     
+
     // Clear timers
+
     if (countdownInterval) {
+
         clearInterval(countdownInterval);
+
         countdownInterval = null;
+
     }
+
     
+
     if (paymentTimeout) {
+
         clearTimeout(paymentTimeout);
+
         paymentTimeout = null;
+
     }
+
     
+
     // Clear transaction ID input
+
     document.getElementById('transactionId').value = '';
+
 }
+
+
 
 function confirmUpiPayment() {
+
     const transactionId = document.getElementById('transactionId').value.trim();
+
     
+
     if (!transactionId) {
+
         alert('Please enter the last 5 digits of UPI Transaction ID');
+
         return;
+
     }
+
     
+
     // Validate transaction ID format (exactly 5 digits)
+
     if (!/^[0-9]{5}$/.test(transactionId)) {
+
         alert('Invalid Transaction ID. Please enter exactly 5 digits of your UPI transaction ID.');
+
         return;
+
     }
+
     
+
     // Show confirmation modal
+
     document.getElementById('paymentConfirmModal').style.display = 'block';
+
 }
+
+
 
 function proceedWithPayment() {
+
     closePaymentConfirmModal();
+
     processUpiPayment();
+
 }
+
+
 
 function cancelPayment() {
+
     closePaymentConfirmModal();
+
 }
+
+
 
 function closePaymentConfirmModal() {
+
     document.getElementById('paymentConfirmModal').style.display = 'none';
+
 }
+
+
 
 async function processUpiPayment() {
+
     try {
+
         const transactionId = document.getElementById('transactionId').value.trim();
+
         
+
         const response = await fetch(`/api/exit/process-payment/${currentPaymentBooking}`, {
+
             method: 'POST',
+
             headers: {
+
                 'Accept': 'application/json',
+
                 'Content-Type': 'application/json'
+
             },
+
             body: JSON.stringify({
+
                 paymentMethod: 'UPI',
+
                 transactionId: transactionId
+
             })
+
         });
+
         
+
         if (!response.ok) {
+
             const errorData = await response.json();
+
             throw new Error(errorData.message || 'Payment processing failed');
+
         }
+
         
+
         const result = await response.json();
+
         
+
         closeUpiPaymentModal();
+
         
+
         // Show success message with receipt download option
+
         const userResponse = confirm(`Payment processed successfully!\n\nBooking Code: ${result.bookingCode}\nAmount: ₹${result.totalFee}\nTransaction ID: ${result.transactionId}\n\nVehicle exit completed.\n\nClick OK to download receipt or Cancel to continue.`);
+
         
+
         if (userResponse) {
+
             // Download receipt
+
             if (exitManagement && result.bookingId) {
+
                 exitManagement.downloadReceipt(result);
+
             }
+
         }
+
         
+
         // Refresh data
+
         if (exitManagement) {
+
             exitManagement.refreshData();
+
         }
+
         
+
     } catch (error) {
+
         console.error('Error processing UPI payment:', error);
+
         alert('Payment processing failed: ' + error.message);
+
     }
+
 }
+
+
 
 async function processCashPayment() {
+
     try {
+
         const response = await fetch(`/api/exit/process-payment/${currentPaymentBooking}`, {
+
             method: 'POST',
+
             headers: {
+
                 'Accept': 'application/json',
+
                 'Content-Type': 'application/json'
+
             },
+
             body: JSON.stringify({
+
                 paymentMethod: 'CASH',
+
                 transactionId: null
+
             })
+
         });
+
         
+
         if (!response.ok) {
+
             const errorData = await response.json();
+
             throw new Error(errorData.message || 'Payment processing failed');
+
         }
+
         
+
         const result = await response.json();
+
         
+
         // Show success message with receipt download option
+
         const userResponse = confirm(`Cash payment processed successfully!\n\nBooking Code: ${result.bookingCode}\nAmount: ₹${result.totalFee}\n\nVehicle exit completed.\n\nClick OK to download receipt or Cancel to continue.`);
+
         
+
         if (userResponse) {
+
             // Download receipt
+
             if (exitManagement && result.bookingId) {
+
                 exitManagement.downloadReceipt(result);
+
             }
+
         }
+
         
+
         // Refresh data
+
         if (exitManagement) {
+
             exitManagement.refreshData();
+
         }
+
         
+
     } catch (error) {
+
         console.error('Error processing cash payment:', error);
+
         alert('Payment processing failed: ' + error.message);
+
     }
+
 }
+
 </script>
 
+
+
 </body>
+
 </html>
+
