@@ -1,5 +1,10 @@
 # Smart Parking Management System
 
+[![Continuous Integration](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/ci.yml)
+[![Docker Validation](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/docker.yml/badge.svg)](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/docker.yml)
+[![Security Scan](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/security-scan.yml/badge.svg)](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/security-scan.yml)
+[![Deployed to Render](https://img.shields.io/badge/Deployed%20to-Render-46E3B7?style=flat&logo=render)](https://render.com)
+
 A comprehensive parking management system built with Java 21, Spring Boot, PostgreSQL, and modern web technologies.
 
 ## 🚀 Features
@@ -128,6 +133,31 @@ CREATE DATABASE smart_parking_db;
 
 -- The application will auto-create tables on startup
 ```
+## 🛠️ CI/CD Pipeline
+
+The project implements a complete enterprise-grade CI/CD pipeline using **GitHub Actions**.
+
+### Pipeline Workflows
+1. **Continuous Integration (`ci.yml`)**: Builds the app, runs Maven validation, executes tests, and performs static analysis (JaCoCo, SpotBugs, PMD, Checkstyle).
+2. **Docker Validation (`docker.yml`)**: Validates the Docker Compose stack, verifies PostgreSQL connectivity, and checks the Spring Boot Actuator health endpoint.
+3. **Security Scan (`security-scan.yml`)**: Performs dependency vulnerability scanning, secret detection, and Docker image scanning.
+4. **Render Deployment (`render-deploy.yml`)**: Automatically deploys the application to Render upon successful validation on the `main` branch.
+
+### Deployment Instructions (Render)
+1. Ensure your Render account is linked to your GitHub repository.
+2. Set up a **Web Service** on Render selecting the Docker runtime.
+3. Add the following **Environment Variables** in Render:
+   - `DB_URL`: Your PostgreSQL connection string
+   - `DB_USERNAME`: Database username
+   - `DB_PASSWORD`: Database password
+   - `JWT_SECRET`: Secret for token generation
+   - `UPI_ID`: Your UPI ID for payments
+   - `UPI_NAME`: Your name for UPI payments
+4. Add **GitHub Secrets**:
+   - `RENDER_API_KEY`: Your Render API Key
+   - `RENDER_SERVICE_ID`: The Service ID for your Render web service
+   - `DB_USERNAME`, `DB_PASSWORD`, `UPI_ID`, `UPI_NAME`, `JWT_SECRET`: Matching your app config.
+
 ## Installation & Setup
 
 ### Prerequisites

@@ -1,0 +1,69 @@
+name: Docker Validation
+
+on:
+  push:
+    branches:
+      - main
+      - pipeline-build
+  pull_request:
+    branches:
+      - main
+      - pipeline-build
+
+jobs:
+  docker-validation:
+    name: Docker Stack Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file for Docker
+        run: |
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "UPI_ID=${{ secrets.UPI_ID }}" >> .env
+          echo "UPI_NAME=${{ secrets.UPI_NAME }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "SPRING_PROFILES_ACTIVE=prod" >> .env
+
+      - name: Build and Start Containers
+        run: docker-compose up --build -d
+
+      - name: Wait for PostgreSQL Readiness
+        run: |
+          echo "Waiting for PostgreSQL..."
+          timeout 60s bash -c "until docker exec smart-parking-db pg_isready ; do sleep 2 ; done"
+
+      - name: Wait for Spring Boot Startup
+        run: |
+          echo "Waiting for Spring Boot backend..."
+          # Wait up to 90 seconds for the health endpoint to return UP
+          timeout 90s bash -c 'until curl -s http://localhost:8081/actuator/health | grep "UP"; do sleep 5; done'
+
+      - name: Verify Actuator Health
+        run: |
+          response=$(curl -s http://localhost:8081/actuator/health)
+          echo "Health check response: $response"
+          if [[ "$response" != *'"status":"UP"'* ]]; then
+            echo "Health check failed!"
+            docker logs smart-parking-backend
+            exit 1
+          fi
+
+      - name: Verify Container Health
+        run: docker ps -a
+
+      - name: Docker Logs on Failure
+        if: failure()
+        run: |
+          docker logs smart-parking-backend
+          docker logs smart-parking-db
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v

@@ -1,0 +1,48 @@
+name: Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - pipeline-build
+  pull_request:
+    branches:
+      - main
+      - pipeline-build
+
+jobs:
+  security-scan:
+    name: Dependency and Container Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Secret Detection (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: OWASP Dependency Check
+        run: mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7
+
+      - name: Build Docker Image for Scan
+        run: docker build -t smart-parking-backend:latest .
+
+      - name: Docker Image Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'smart-parking-backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Security Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: target/dependency-check-report.html

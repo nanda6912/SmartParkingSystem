@@ -1,0 +1,65 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - pipeline-build
+  pull_request:
+    branches:
+      - main
+      - pipeline-build
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn clean verify -DskipTests=false
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-reports
+          path: target/surefire-reports/
+
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: target/site/jacoco/
+
+      - name: Upload Static Analysis Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-reports
+          path: |
+            target/checkstyle-result.xml
+            target/pmd.xml
+            target/spotbugsXml.xml
+
+      - name: Upload Compiled JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-parking-app
+          path: target/*.jar
+
+      - name: Check Coverage Threshold
+        run: |
+          echo "Verifying coverage threshold..."
+          # The jacoco:check goal in pom.xml handles this, so 'mvn verify' already fails if below 80%
