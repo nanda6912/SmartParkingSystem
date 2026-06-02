@@ -9,188 +9,213 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bookings", 
-       uniqueConstraints = @UniqueConstraint(
-           name = "uk_active_vehicle",
-           columnNames = {"vehicle_number", "is_active"}
-       ))
+@Table(name = "bookings")
 public class Booking {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @NotBlank(message = "Booking code is required")
     @Column(name = "booking_code", nullable = true, unique = true, updatable = false, length = 5)
     private String bookingCode;
-    
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parking_slot_id", nullable = false)
     private ParkingSlot parkingSlot;
-    
+
     @NotBlank(message = "Vehicle number is required")
-    @Pattern(regexp = "^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$", 
-             message = "Vehicle number must be in format: XX00XX0000 (uppercase)")
+    @Pattern(regexp = "^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$", message = "Vehicle number must be in format: XX00XX0000 (uppercase)")
     @Column(name = "vehicle_number", nullable = false, updatable = false)
     private String vehicleNumber;
-    
+
     @NotBlank(message = "Name is required")
     @Size(max = 20, message = "Name must be maximum 20 characters")
     @Pattern(regexp = "^[A-Za-z\\s]+$", message = "Name must contain only alphabets")
     @Column(nullable = false)
     private String customerName;
-    
+
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     @Column(nullable = false)
     private String phoneNumber;
-    
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private VehicleType vehicleType;
-    
+    private com.smartparking.enums.VehicleType vehicleType;
+
     @NotNull
     @Column(name = "booking_time", nullable = false)
     private LocalDateTime bookingTime;
-    
+
     @Column(name = "exit_time")
     private LocalDateTime exitTime;
-    
+
     @Column(name = "parking_fee")
     private Integer parkingFee;
-    
+
+    @Column(name = "duration_minutes")
+    private Long durationMinutes;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private com.smartparking.enums.BookingStatus status = com.smartparking.enums.BookingStatus.ACTIVE;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
-    
+
     // Payment-related fields
     @Column(name = "payment_method")
     private String paymentMethod;
-    
+
     @Column(name = "transaction_id")
     private String transactionId;
-    
+
     @Column(name = "payment_time")
     private LocalDateTime paymentTime;
-    
+
     // Temporarily disabled version to fix exit processing issues
     // @Version
     // private Long version;
-    
+
     public Booking() {
         this.bookingTime = LocalDateTime.now();
     }
-    
+
     public Long getId() {
         return id;
     }
-    
+
     public void setId(Long id) {
         this.id = id;
     }
-    
+
     public String getBookingCode() {
         return bookingCode;
     }
-    
+
     public void setBookingCode(String bookingCode) {
         this.bookingCode = bookingCode;
     }
-    
+
     public ParkingSlot getParkingSlot() {
         return parkingSlot;
     }
-    
+
     public void setParkingSlot(ParkingSlot parkingSlot) {
         this.parkingSlot = parkingSlot;
     }
-    
+
     public String getVehicleNumber() {
         return vehicleNumber;
     }
-    
+
     public void setVehicleNumber(String vehicleNumber) {
         this.vehicleNumber = vehicleNumber;
     }
-    
+
     public String getCustomerName() {
         return customerName;
     }
-    
+
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
     }
-    
+
     public String getPhoneNumber() {
         return phoneNumber;
     }
-    
+
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-    
+
     public VehicleType getVehicleType() {
         return vehicleType;
     }
-    
+
     public void setVehicleType(VehicleType vehicleType) {
         this.vehicleType = vehicleType;
     }
-    
+
     public LocalDateTime getBookingTime() {
         return bookingTime;
     }
-    
+
     public void setBookingTime(LocalDateTime bookingTime) {
         this.bookingTime = bookingTime;
     }
-    
+
     public LocalDateTime getExitTime() {
         return exitTime;
     }
-    
+
     public void setExitTime(LocalDateTime exitTime) {
         this.exitTime = exitTime;
     }
-    
+
     public Integer getParkingFee() {
         return parkingFee;
     }
-    
+
     public void setParkingFee(Integer parkingFee) {
         this.parkingFee = parkingFee;
     }
-    
+
+    public Long getDurationMinutes() {
+        return durationMinutes;
+    }
+
+    public void setDurationMinutes(Long durationMinutes) {
+        this.durationMinutes = durationMinutes;
+    }
+
+    public com.smartparking.enums.BookingStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(com.smartparking.enums.BookingStatus status) {
+        this.status = status;
+        this.isActive = (status == com.smartparking.enums.BookingStatus.ACTIVE);
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
-    
+
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+        if (isActive && this.status != com.smartparking.enums.BookingStatus.ACTIVE) {
+            this.status = com.smartparking.enums.BookingStatus.ACTIVE;
+        } else if (!isActive && this.status == com.smartparking.enums.BookingStatus.ACTIVE) {
+            this.status = com.smartparking.enums.BookingStatus.COMPLETED;
+        }
     }
-    
+
     // Payment-related getters and setters
     public String getPaymentMethod() {
         return paymentMethod;
     }
-    
+
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
-    
+
     public String getTransactionId() {
         return transactionId;
     }
-    
+
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
-    
+
     public LocalDateTime getPaymentTime() {
         return paymentTime;
     }
-    
+
     public void setPaymentTime(LocalDateTime paymentTime) {
         this.paymentTime = paymentTime;
     }

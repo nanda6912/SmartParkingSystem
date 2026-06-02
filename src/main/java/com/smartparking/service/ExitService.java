@@ -24,38 +24,38 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class ExitService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ExitService.class);
     private static final double HOURLY_RATE = 20.0;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
+
     @Autowired
     private BookingRepository bookingRepository;
-    
+
     @Autowired
     private ParkingSlotRepository parkingSlotRepository;
-    
+
     @Autowired
     private UPIPaymentService upiPaymentService;
-    
+
     /**
      * Get all active bookings for exit management
      */
     public List<Map<String, Object>> getActiveBookingsForExit() {
         try {
             List<Booking> activeBookings = bookingRepository.findActiveBookingsWithoutExit();
-            
+
             return activeBookings.stream()
                     .sorted(Comparator.comparing(Booking::getBookingTime))
                     .map(this::convertToExitDTO)
                     .collect(Collectors.toList());
-                    
+
         } catch (Exception e) {
             log.error("Error getting active bookings for exit: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
-    
+
     /**
      * Calculate parking fee for a booking
      */
@@ -63,27 +63,28 @@ public class ExitService {
         try {
             Booking booking = findBookingById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found"));
-            
+
             if (booking.getExitTime() != null) {
                 throw new RuntimeException("Vehicle has already exited");
             }
-            
+
             LocalDateTime now = LocalDateTime.now();
             Duration duration = Duration.between(booking.getBookingTime(), now);
-            
+
             // Calculate hours (round up to next hour)
             long totalMinutes = duration.toMinutes();
             long hours = (totalMinutes + 59) / 60; // Round up to next hour
             double fee = hours * HOURLY_RATE;
-            
+
             Map<String, Object> feeDetails = new HashMap<>();
             feeDetails.put("bookingId", booking.getId());
-            
+
             // Handle null/empty booking codes for backward compatibility
-            String displayBookingCode = (booking.getBookingCode() != null && !booking.getBookingCode().isEmpty()) ? 
-                booking.getBookingCode() : "ID-" + booking.getId();
+            String displayBookingCode = (booking.getBookingCode() != null && !booking.getBookingCode().isEmpty())
+                    ? booking.getBookingCode()
+                    : "ID-" + booking.getId();
             feeDetails.put("bookingCode", displayBookingCode);
-            
+
             feeDetails.put("vehicleNumber", booking.getVehicleNumber());
             feeDetails.put("customerName", booking.getCustomerName());
             feeDetails.put("entryTime", booking.getBookingTime().format(FORMATTER));
@@ -93,7 +94,7 @@ public class ExitService {
             feeDetails.put("hoursCharged", hours);
             feeDetails.put("hourlyRate", HOURLY_RATE);
             feeDetails.put("totalFee", fee);
-            
+
             // Add null safety check for parking slot
             ParkingSlot slot = booking.getParkingSlot();
             if (slot != null) {
@@ -106,15 +107,15 @@ public class ExitService {
                 feeDetails.put("floor", 0);
                 log.warn("Booking {} has no associated parking slot", bookingId);
             }
-            
+
             return feeDetails;
-            
+
         } catch (Exception e) {
             log.error("Error calculating fee for booking {}: {}", bookingId, e.getMessage(), e);
             throw new RuntimeException("Failed to calculate fee: " + e.getMessage());
         }
     }
-    
+
     /**
      * Process vehicle exit and update booking
      */
@@ -122,59 +123,61 @@ public class ExitService {
         try {
             Booking booking = findBookingById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found"));
-            
+
             if (booking.getExitTime() != null) {
                 throw new RuntimeException("Vehicle has already exited");
             }
-            
+
             // Check if booking is still active
             if (booking.getIsActive() == false) {
                 throw new RuntimeException("Booking is already processed");
             }
-            
+
             LocalDateTime now = LocalDateTime.now();
             Duration duration = Duration.between(booking.getBookingTime(), now);
-            
+
             // Calculate hours (round up to next hour)
             long totalMinutes = duration.toMinutes();
             long hours = (totalMinutes + 59) / 60; // Round up to next hour
             double fee = hours * HOURLY_RATE;
-            
+
             // Update booking
             booking.setExitTime(now);
             booking.setParkingFee((int) Math.round(fee));
             booking.setIsActive(false);
-            
+
             // Add null safety check for parking slot
             ParkingSlot slot = booking.getParkingSlot();
             if (slot == null) {
                 log.warn("Booking {} has no associated parking slot in processExit", bookingId);
                 throw new RuntimeException("Booking has no associated parking slot");
             }
-            
+
             try {
                 // Save booking first
                 Booking savedBooking = bookingRepository.save(booking);
-                
+
                 // Update slot status only after booking is successfully saved
                 slot.setStatus(com.smartparking.enums.SlotStatus.AVAILABLE);
                 slot.setLockUntil(null);
                 parkingSlotRepository.save(slot);
-                
+
                 // Prepare response
                 Map<String, Object> exitDetails = new HashMap<>();
                 exitDetails.put("success", true);
                 exitDetails.put("message", "Vehicle exit processed successfully");
                 exitDetails.put("bookingId", savedBooking.getId());
-                
+
                 // Handle null/empty booking codes for backward compatibility
-                String displayBookingCode = (savedBooking.getBookingCode() != null && !savedBooking.getBookingCode().isEmpty()) ? 
-                    savedBooking.getBookingCode() : "ID-" + savedBooking.getId();
+                String displayBookingCode = (savedBooking.getBookingCode() != null
+                        && !savedBooking.getBookingCode().isEmpty()) ? savedBooking.getBookingCode()
+                                : "ID-" + savedBooking.getId();
                 exitDetails.put("bookingCode", displayBookingCode);
                 exitDetails.put("vehicleNumber", savedBooking.getVehicleNumber());
                 exitDetails.put("customerName", savedBooking.getCustomerName());
                 exitDetails.put("phoneNumber", savedBooking.getPhoneNumber());
-                exitDetails.put("vehicleType", savedBooking.getVehicleType() != null ? savedBooking.getVehicleType().toString() : "UNKNOWN");
+                exitDetails.put("vehicleType",
+                        savedBooking.getVehicleType() != null ? savedBooking.getVehicleType().toString() : "UNKNOWN");
                 exitDetails.put("entryTime", savedBooking.getBookingTime().format(FORMATTER));
                 exitDetails.put("exitTime", savedBooking.getExitTime().format(FORMATTER));
                 exitDetails.put("totalMinutes", totalMinutes);
@@ -186,23 +189,23 @@ public class ExitService {
                 exitDetails.put("slotNumber", slot.getSlotNumber());
                 exitDetails.put("floor", slot.getFloor());
                 exitDetails.put("slotReleased", true);
-                
-                log.info("Vehicle exit processed: Booking ID {}, Vehicle {}, Fee {}", 
+
+                log.info("Vehicle exit processed: Booking ID {}, Vehicle {}, Fee {}",
                         bookingId, savedBooking.getVehicleNumber(), fee);
-                
+
                 return exitDetails;
-                
+
             } catch (Exception e) {
                 log.error("Error saving booking during exit processing: {}", e.getMessage(), e);
                 throw new RuntimeException("Failed to process exit: " + e.getMessage());
             }
-            
+
         } catch (Exception e) {
             log.error("Error processing exit for booking {}: {}", bookingId, e.getMessage(), e);
             throw new RuntimeException("Failed to process exit: " + e.getMessage());
         }
     }
-    
+
     /**
      * Generate exit receipt content
      */
@@ -211,7 +214,7 @@ public class ExitService {
         receipt.append("========================================\n");
         receipt.append("        SMART PARKING EXIT RECEIPT     \n");
         receipt.append("========================================\n\n");
-        
+
         // Use booking code if available, otherwise use ID with prefix
         String bookingIdentifier;
         if (booking.getBookingCode() != null && !booking.getBookingCode().isEmpty()) {
@@ -219,13 +222,13 @@ public class ExitService {
         } else {
             bookingIdentifier = "ID-" + booking.getId();
         }
-        
+
         receipt.append("BOOKING CODE: ").append(bookingIdentifier).append("\n");
         receipt.append("VEHICLE NUMBER: ").append(booking.getVehicleNumber()).append("\n");
         receipt.append("CUSTOMER NAME: ").append(booking.getCustomerName()).append("\n");
         receipt.append("PHONE NUMBER: ").append(booking.getPhoneNumber()).append("\n");
         receipt.append("VEHICLE TYPE: ").append(booking.getVehicleType()).append("\n");
-        
+
         // Add null safety check for parking slot
         ParkingSlot receiptSlot = booking.getParkingSlot();
         if (receiptSlot != null) {
@@ -235,29 +238,32 @@ public class ExitService {
             log.warn("Booking {} has no associated parking slot in generateExitReceipt", booking.getId());
         }
         receipt.append("ENTRY TIME: ").append(booking.getBookingTime().format(FORMATTER)).append("\n");
-        receipt.append("EXIT TIME: ").append(booking.getExitTime() != null ? booking.getExitTime().format(FORMATTER) : "Still Parked").append("\n");
-        
+        receipt.append("EXIT TIME: ")
+                .append(booking.getExitTime() != null ? booking.getExitTime().format(FORMATTER) : "Still Parked")
+                .append("\n");
+
         if (booking.getExitTime() != null) {
             Duration duration = Duration.between(booking.getBookingTime(), booking.getExitTime());
             long totalMinutes = duration.toMinutes();
             long hours = (totalMinutes + 59) / 60; // Round up
             double fee = booking.getParkingFee() != null ? booking.getParkingFee() : 0.0;
-            
-            receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours).append(" hours)\n");
+
+            receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours)
+                    .append(" hours)\n");
             receipt.append("HOURLY RATE: ₹").append(HOURLY_RATE).append("\n");
             receipt.append("TOTAL AMOUNT: ₹").append(String.format("%.2f", fee)).append("\n");
-            
+
             // Add payment details for completed payments
-            log.info("Receipt generation - Payment method: {}, Transaction ID: {}, Payment time: {}", 
-                booking.getPaymentMethod(), booking.getTransactionId(), booking.getPaymentTime());
-            
+            log.info("Receipt generation - Payment method: {}, Transaction ID: {}, Payment time: {}",
+                    booking.getPaymentMethod(), booking.getTransactionId(), booking.getPaymentTime());
+
             if (booking.getPaymentMethod() != null) {
                 receipt.append("PAYMENT MODE: ").append(booking.getPaymentMethod()).append("\n");
-                
+
                 if ("UPI".equalsIgnoreCase(booking.getPaymentMethod()) && booking.getTransactionId() != null) {
                     receipt.append("TRANSACTION ID: ").append(booking.getTransactionId()).append("\n");
                 }
-                
+
                 if (booking.getPaymentTime() != null) {
                     receipt.append("PAYMENT TIME: ").append(booking.getPaymentTime().format(FORMATTER)).append("\n");
                 }
@@ -271,73 +277,83 @@ public class ExitService {
             long totalMinutes = duration.toMinutes();
             long hours = (totalMinutes + 59) / 60; // Round up
             double currentFee = hours * HOURLY_RATE;
-            
-            receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours).append(" hours) [Ongoing]\n");
+
+            receipt.append("PARKING DURATION: ").append(totalMinutes).append(" minutes (").append(hours)
+                    .append(" hours) [Ongoing]\n");
             receipt.append("HOURLY RATE: ₹").append(HOURLY_RATE).append("\n");
             receipt.append("CURRENT FEE: ₹").append(String.format("%.2f", currentFee)).append(" [Still Running]\n");
         }
-        
+
         receipt.append("\n========================================\n");
         receipt.append("          THANK YOU FOR USING           \n");
         receipt.append("        SMART PARKING SYSTEM            \n");
         receipt.append("========================================\n");
-        
+
         return receipt.toString();
     }
-    
+
     /**
      * Get exit statistics
      */
     public Map<String, Object> getExitStatistics() {
         try {
             Map<String, Object> stats = new HashMap<>();
-            
+
             // Today's exits
             LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
             List<Booking> todayExits = bookingRepository.findExitedBookingsFromDate(today);
-            
+
             double todayRevenue = todayExits.stream()
                     .mapToDouble(b -> b.getParkingFee() != null ? b.getParkingFee() : 0.0)
                     .sum();
-            
+
             // Total active bookings
             long activeBookings = bookingRepository.findActiveBookingsWithoutExit().size();
-            
+
             stats.put("todayExits", todayExits.size());
             stats.put("todayRevenue", todayRevenue);
             stats.put("activeBookings", activeBookings);
             stats.put("hourlyRate", HOURLY_RATE);
             stats.put("timestamp", LocalDateTime.now().format(FORMATTER));
-            
+
             return stats;
-            
+
         } catch (Exception e) {
             log.error("Error getting exit statistics: {}", e.getMessage(), e);
             return Map.of("error", "Failed to get statistics");
         }
     }
-    
+
     /**
      * Find active booking by vehicle number
      */
     public Optional<Booking> findActiveBookingByVehicleNumber(String vehicleNumber) {
         return bookingRepository.findByVehicleNumberAndIsActiveTrue(vehicleNumber);
     }
-    
+
     /**
      * Get all bookings for debugging
      */
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
-    
+
     /**
      * Find booking by ID
      */
     public Optional<Booking> findBookingById(Long bookingId) {
-        return bookingRepository.findById(bookingId);
+        log.info("Searching for booking by ID: {}", bookingId);
+        Optional<Booking> booking = bookingRepository.findById(bookingId);
+        if (booking.isPresent()) {
+            Booking b = booking.get();
+            log.info("Booking found: ID={}, Vehicle={}, Active={}, Status={}",
+                    b.getId(), b.getVehicleNumber(), b.getIsActive(), b.getStatus());
+        } else {
+            log.warn("No booking found with ID: {}", bookingId);
+        }
+        return booking;
     }
-    
+
     /**
      * Clean up old bookings with invalid booking codes (1-2 digit codes)
      * This method removes bookings that don't have 5-character alphanumeric codes
@@ -349,15 +365,16 @@ public class ExitService {
             List<Booking> toRemove = new ArrayList<>();
             int removedCount = 0;
             List<String> releasedSlots = new ArrayList<>();
-            
+
             for (Booking booking : allBookings) {
                 String code = booking.getBookingCode();
-                // Remove bookings with null, empty, or numeric-only codes less than 5 characters
-                if (code == null || code.isEmpty() || 
-                    (code.matches("\\d+") && code.length() < 5)) {
-                    
+                // Remove bookings with null, empty, or numeric-only codes less than 5
+                // characters
+                if (code == null || code.isEmpty() ||
+                        (code.matches("\\d+") && code.length() < 5)) {
+
                     toRemove.add(booking);
-                    
+
                     // Release the parking slot
                     ParkingSlot slot = booking.getParkingSlot();
                     if (slot != null) {
@@ -366,39 +383,40 @@ public class ExitService {
                         parkingSlotRepository.save(slot);
                         releasedSlots.add("F" + slot.getFloor() + "-S" + slot.getSlotNumber());
                     }
-                    
+
                     removedCount++;
                 }
             }
-            
+
             // Delete the problematic bookings
             for (Booking booking : toRemove) {
                 bookingRepository.delete(booking);
             }
-            
+
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
             result.put("removedCount", removedCount);
             result.put("releasedSlots", releasedSlots);
             result.put("message", "Cleaned up " + removedCount + " old bookings with invalid codes");
-            
-            log.info("Cleanup completed: Removed {} bookings, released slots: {}", 
+
+            log.info("Cleanup completed: Removed {} bookings, released slots: {}",
                     removedCount, releasedSlots);
-            
+
             return result;
-            
+
         } catch (Exception e) {
             log.error("Error during cleanup: {}", e.getMessage(), e);
             return Map.of("success", false, "error", "Cleanup failed: " + e.getMessage());
         }
     }
+
     private Map<String, Object> convertToExitDTO(Booking booking) {
         Map<String, Object> dto = new HashMap<>();
-        
+
         // Use booking code if available, otherwise ID
-        String bookingIdentifier = booking.getBookingCode() != null ? 
-            booking.getBookingCode() : String.valueOf(booking.getId());
-        
+        String bookingIdentifier = booking.getBookingCode() != null ? booking.getBookingCode()
+                : String.valueOf(booking.getId());
+
         // Add null safety check for parking slot
         ParkingSlot slot = booking.getParkingSlot();
         if (slot != null) {
@@ -411,7 +429,7 @@ public class ExitService {
             dto.put("floor", 0);
             log.warn("Booking {} has no associated parking slot in convertToExitDTO", booking.getId());
         }
-        
+
         dto.put("bookingId", booking.getId());
         dto.put("bookingCode", bookingIdentifier);
         dto.put("vehicleNumber", booking.getVehicleNumber());
@@ -420,10 +438,10 @@ public class ExitService {
         dto.put("vehicleType", booking.getVehicleType());
         dto.put("bookingTime", booking.getBookingTime().format(FORMATTER));
         dto.put("durationMinutes", Duration.between(booking.getBookingTime(), LocalDateTime.now()).toMinutes());
-        
+
         return dto;
     }
-    
+
     /**
      * Format duration in minutes to human-readable format
      */
@@ -436,63 +454,61 @@ public class ExitService {
             if (minutes == 0) {
                 return hours + " hour" + (hours == 1 ? "" : "s");
             } else {
-                return hours + " hour" + (hours == 1 ? "" : "s") + " " + minutes + " minute" + (minutes == 1 ? "" : "s");
+                return hours + " hour" + (hours == 1 ? "" : "s") + " " + minutes + " minute"
+                        + (minutes == 1 ? "" : "s");
             }
         }
     }
-    
+
     /**
      * Process exit with payment details
      */
     public Map<String, Object> processExitWithPayment(Long bookingId, String paymentMethod, String transactionId) {
         try {
-            log.debug("Processing exit with payment for booking ID: {}, method: {}, transactionId: {}", 
-                     bookingId, paymentMethod, transactionId);
-            
+            log.info("Processing exit with payment for booking ID: {}, method: {}, transactionId: {}",
+                    bookingId, paymentMethod, transactionId);
+
             // Find the booking
-            Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+            Optional<Booking> bookingOpt = findBookingById(bookingId);
             if (bookingOpt.isEmpty()) {
                 return Map.of(
-                    "error", "Booking not found",
-                    "message", "No booking found with ID: " + bookingId
-                );
+                        "error", "Booking not found",
+                        "message", "No booking found with ID: " + bookingId);
             }
-            
+
             Booking booking = bookingOpt.get();
-            
+
             // Validate payment method and transaction ID
             if ("UPI".equalsIgnoreCase(paymentMethod)) {
                 if (transactionId == null || transactionId.trim().isEmpty()) {
                     return Map.of(
-                        "error", "Transaction ID required",
-                        "message", "UPI payments require a transaction ID"
-                    );
+                            "error", "Transaction ID required",
+                            "message", "UPI payments require a transaction ID");
                 }
                 if (!upiPaymentService.validateTransactionId(transactionId)) {
                     return Map.of(
-                        "error", "Invalid transaction ID",
-                        "message", "UPI payments require a valid transaction ID (last 5 digits only)"
-                    );
+                            "error", "Invalid transaction ID",
+                            "message", "UPI payments require a valid transaction ID (last 5 digits only)");
                 }
             }
-            
+
             // For cash payments, transaction ID can be null or empty
             if ("CASH".equalsIgnoreCase(paymentMethod) && transactionId != null && !transactionId.trim().isEmpty()) {
-                // Cash payments typically don't have transaction IDs, but if provided, validate format
+                // Cash payments typically don't have transaction IDs, but if provided, validate
+                // format
                 if (!upiPaymentService.validateTransactionId(transactionId)) {
                     return Map.of(
-                        "error", "Invalid transaction ID",
-                        "message", "Cash payments should not include transaction ID (or provide valid 5 digits)"
-                    );
+                            "error", "Invalid transaction ID",
+                            "message", "Cash payments should not include transaction ID (or provide valid 5 digits)");
                 }
             }
-            
+
             // Calculate fee
             Map<String, Object> feeDetails = calculateFee(bookingId);
             if (feeDetails.containsKey("error")) {
                 return feeDetails;
             }
-            
+
             // Update booking with payment details
             booking.setPaymentMethod(paymentMethod);
             if (transactionId != null && !transactionId.trim().isEmpty()) {
@@ -502,10 +518,10 @@ public class ExitService {
             booking.setExitTime(LocalDateTime.now());
             booking.setParkingFee(((Number) feeDetails.get("totalFee")).intValue());
             booking.setIsActive(false);
-            
+
             // Save the booking
             Booking savedBooking = bookingRepository.save(booking);
-            
+
             // Update parking slot status to AVAILABLE
             if (savedBooking.getParkingSlot() != null) {
                 ParkingSlot slot = savedBooking.getParkingSlot();
@@ -514,7 +530,7 @@ public class ExitService {
                 parkingSlotRepository.save(slot);
                 log.info("Released parking slot {} for booking {}", slot.getSlotId(), bookingId);
             }
-            
+
             // Create response
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -535,16 +551,15 @@ public class ExitService {
             response.put("transactionId", savedBooking.getTransactionId());
             response.put("paymentTime", savedBooking.getPaymentTime().format(FORMATTER));
             response.put("message", "Exit processed successfully with payment");
-            
+
             log.info("Successfully processed exit for booking {} with payment method: {}", bookingId, paymentMethod);
             return response;
-            
+
         } catch (Exception e) {
             log.error("Error processing exit with payment for booking ID {}: {}", bookingId, e.getMessage(), e);
             return Map.of(
-                "error", "Failed to process exit with payment",
-                "message", e.getMessage()
-            );
+                    "error", "Failed to process exit with payment",
+                    "message", e.getMessage());
         }
     }
 }
