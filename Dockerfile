@@ -55,7 +55,7 @@ ENV TZ=Asia/Kolkata
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set JVM container optimization flags
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1024m"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms128m -Xmx512m"
 
 # Set encoding
 ENV LANG=en_US.UTF-8
@@ -63,7 +63,7 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
 # Expose application ports
-EXPOSE 8081
+EXPOSE 10000
 
 # Change ownership to non-root user
 RUN chown -R parking:parking /app
@@ -72,8 +72,8 @@ RUN chown -R parking:parking /app
 USER parking
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8081/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
+  CMD curl --fail http://localhost:${SERVER_PORT:-10000}/actuator/health || exit 1
 
 # Start the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
