@@ -1208,3 +1208,80 @@ p {
         padding: var(--space-2);
     }
 }
+
+/* ===== ADDITIONAL MOBILE & NAVIGATION SYSTEM STYLES ===== */
+.mobile-header {
+    display: none;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 60px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    align-items: center;
+    padding: 0 var(--space-4);
+    z-index: 999;
+    box-shadow: var(--shadow-sm);
+}
+
+.mobile-menu-btn {
+    background: transparent;
+    border: none;
+    font-size: var(--font-size-2xl);
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.mobile-menu-btn:hover {
+    background: var(--bg-tertiary);
+}
+
+.mobile-logo {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-left: var(--space-2);
+}
+
+.mobile-close-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    font-size: var(--font-size-2xl);
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.mobile-close-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.sidebar-nav-item.logout-item {
+    display: none; /* Hidden by default, only shown on exit page */
+    margin-top: var(--space-8);
+}
+
+@media (max-width: 1024px) {
+    .mobile-header {
+        display: flex;
+    }
+    
+    .mobile-close-btn {
+        display: block;
+    }
+    
+    .main-content {
+        padding-top: var(--space-4);
+    }
+}
+

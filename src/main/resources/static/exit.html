@@ -4,6 +4,24 @@
 
 <head>
 
+    <style id="anti-auth-flash">
+        body { display: none !important; }
+    </style>
+    <script>
+        fetch("/api/auth/me")
+            .then(res => {
+                if (!res.ok) {
+                    window.location.replace("/login.html");
+                } else {
+                    const style = document.getElementById("anti-auth-flash");
+                    if (style) style.remove();
+                }
+            })
+            .catch(() => {
+                window.location.replace("/login.html");
+            });
+    </script>
+
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,13 +81,9 @@
 
 
 
-        .main-content {
+        .sidebar-nav-item.logout-item {
 
-            flex: 1;
-
-            padding: var(--space-6);
-
-            overflow-y: auto;
+            display: block !important;
 
         }
 
@@ -1436,7 +1450,38 @@
 
 <body>
 
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div class="mobile-logo">🅿 Smart Parking System</div>
+    </header>
+
     <div class="exit-container">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header flex justify-between items-center">
+                <h2 class="sidebar-logo">🅿 Smart Parking</h2>
+                <button class="mobile-close-btn" id="mobileCloseBtn">&times;</button>
+            </div>
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="/index.html" class="sidebar-nav-link" id="nav-dashboard">🏠 Dashboard</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/ground-floor.html" class="sidebar-nav-link" id="nav-ground">🚗 Ground Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/floor1.html" class="sidebar-nav-link" id="nav-floor1">🏢 First Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/login.html" class="sidebar-nav-link active" id="nav-exit">🚪 Exit Management</a>
+                </li>
+                <li class="sidebar-nav-item logout-item" id="logout-nav-item">
+                    <a href="javascript:logout()" class="sidebar-nav-link" id="logoutBtn" style="color: #EF4444;">🔓 Logout</a>
+                </li>
+            </ul>
+        </aside>
 
         <main class="main-content">
 
@@ -3286,6 +3331,31 @@
 
             console.log('ExitManagement initialized');
 
+            // Mobile menu toggling
+            const sidebar = document.querySelector(".sidebar");
+            const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+            const mobileCloseBtn = document.getElementById("mobileCloseBtn");
+            
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener("click", () => {
+                    sidebar.classList.add("open");
+                });
+            }
+            
+            if (mobileCloseBtn && sidebar) {
+                mobileCloseBtn.addEventListener("click", () => {
+                    sidebar.classList.remove("open");
+                });
+            }
+            
+            document.addEventListener("click", (e) => {
+                if (window.innerWidth <= 1024 && sidebar && sidebar.classList.contains("open")) {
+                    if (!sidebar.contains(e.target) && e.target !== mobileMenuBtn) {
+                        sidebar.classList.remove("open");
+                    }
+                }
+            });
+
         });
 
 
@@ -3315,11 +3385,12 @@
 
 
         function logout() {
-
-            // Authentication removed - just refresh the page
-
-            location.reload();
-
+            fetch("/api/auth/logout", {
+                method: "POST"
+            })
+            .finally(() => {
+                window.location.replace("/index.html");
+            });
         }
 
 

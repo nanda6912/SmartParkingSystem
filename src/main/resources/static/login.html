@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exit Management Login - Smart Parking System</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/styles/design-system.css">
+    <style>
+        .login-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 120px);
+            padding: var(--space-4);
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-8);
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: var(--space-6);
+        }
+        
+        .login-logo h2 {
+            font-size: var(--font-size-2xl);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+        
+        .login-logo p {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+            margin: 0;
+        }
+        
+        .error-message {
+            background-color: #FEF2F2;
+            border: 1px solid #FCA5A5;
+            color: #991B1B;
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--space-4);
+            display: none;
+        }
+        
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            margin-top: var(--space-6);
+        }
+        
+        .form-actions .btn {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <div class="mobile-logo">🅿 Smart Parking System</div>
+    </header>
+
+    <div class="main-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header flex justify-between items-center">
+                <h2 class="sidebar-logo">🅿 Smart Parking</h2>
+                <button class="mobile-close-btn" id="mobileCloseBtn">&times;</button>
+            </div>
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="/index.html" class="sidebar-nav-link" id="nav-dashboard">🏠 Dashboard</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/ground-floor.html" class="sidebar-nav-link" id="nav-ground">🚗 Ground Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/floor1.html" class="sidebar-nav-link" id="nav-floor1">🏢 First Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/login.html" class="sidebar-nav-link active" id="nav-exit">🚪 Exit Management</a>
+                </li>
+                <li class="sidebar-nav-item logout-item" id="logout-nav-item">
+                    <a href="#" class="sidebar-nav-link" id="logoutBtn" style="color: #EF4444;">🔓 Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="login-wrapper">
+                <div class="login-card">
+                    <div class="login-logo">
+                        <h2>🚪 Exit Management</h2>
+                        <p>Please log in to continue</p>
+                    </div>
+                    
+                    <div id="loginError" class="error-message"></div>
+                    
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label class="form-label" for="username">Username</label>
+                            <input type="text" id="username" class="form-input" placeholder="Enter username" required autocomplete="username">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="password">Password</label>
+                            <input type="password" id="password" class="form-input" placeholder="Enter password" required autocomplete="current-password">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                            <a href="/index.html" class="btn btn-secondary" style="text-align: center;">Back to Dashboard</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Check if already authenticated via backend API
+        fetch("/api/auth/me")
+            .then(res => {
+                if (res.ok) {
+                    window.location.replace("/exit.html");
+                }
+            })
+            .catch(err => console.error("Error checking auth status:", err));
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Sidebar Mobile Toggle
+            const sidebar = document.querySelector(".sidebar");
+            const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+            const mobileCloseBtn = document.getElementById("mobileCloseBtn");
+            
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener("click", () => {
+                    sidebar.classList.add("open");
+                });
+            }
+            
+            if (mobileCloseBtn && sidebar) {
+                mobileCloseBtn.addEventListener("click", () => {
+                    sidebar.classList.remove("open");
+                });
+            }
+            
+            document.addEventListener("click", (e) => {
+                if (window.innerWidth <= 1024 && sidebar && sidebar.classList.contains("open")) {
+                    if (!sidebar.contains(e.target) && e.target !== mobileMenuBtn) {
+                        sidebar.classList.remove("open");
+                    }
+                }
+            });
+
+            // Login Logic
+            const loginForm = document.getElementById("loginForm");
+            const loginError = document.getElementById("loginError");
+
+            loginForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+                
+                const usernameInput = document.getElementById("username");
+                const passwordInput = document.getElementById("password");
+                
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                
+                // Clear any previous error
+                loginError.style.display = "none";
+                loginError.textContent = "";
+                usernameInput.style.borderColor = "";
+                passwordInput.style.borderColor = "";
+                
+                fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(async response => {
+                    if (response.ok) {
+                        window.location.replace("/exit.html");
+                    } else {
+                        let errMsg = "Invalid username or password.";
+                        try {
+                            const data = await response.json();
+                            if (data && data.message) {
+                                errMsg = data.message;
+                            }
+                        } catch (e) {}
+                        loginError.textContent = errMsg;
+                        loginError.style.display = "block";
+                        usernameInput.style.borderColor = "#DC2626";
+                        passwordInput.style.borderColor = "#DC2626";
+                    }
+                })
+                .catch(err => {
+                    loginError.textContent = "An error occurred while connecting to the server.";
+                    loginError.style.display = "block";
+                });
+            });
+        });
+    </script>
+</body>
+</html>
