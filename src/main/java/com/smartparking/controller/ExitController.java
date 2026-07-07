@@ -257,20 +257,18 @@ public class ExitController {
     public ResponseEntity<Map<String, Object>> getTodayStats() {
         try {
             LocalDate today = LocalDate.now();
+            LocalDateTime startOfToday = today.atStartOfDay();
 
-            // Get all bookings
-            List<Booking> allBookings = exitService.getAllBookings();
+            // Fetch today's exits using optimized query
+            List<Booking> todayExitsList = bookingRepository.findExitedBookingsFromDate(startOfToday);
 
-            // Filter today's exits
-            List<Booking> todayExits = allBookings.stream()
-                    .filter(booking -> booking.getExitTime() != null)
-                    .filter(booking -> booking.getExitTime().toLocalDate().equals(today))
+            // Filter double check (in case timezones/boundaries)
+            List<Booking> todayExits = todayExitsList.stream()
+                    .filter(booking -> booking.getExitTime() != null && booking.getExitTime().toLocalDate().equals(today))
                     .collect(Collectors.toList());
 
-            // Get active bookings
-            List<Booking> activeBookings = allBookings.stream()
-                    .filter(booking -> booking.getIsActive() != null && booking.getIsActive())
-                    .collect(Collectors.toList());
+            // Fetch active count directly from database
+            long activeBookingsCount = bookingRepository.countByIsActiveTrue();
 
             // Calculate total revenue for today
             double todayRevenue = todayExits.stream()
@@ -281,7 +279,7 @@ public class ExitController {
             Map<String, Object> stats = new java.util.HashMap<>();
             stats.put("todayExits", todayExits.size());
             stats.put("todayRevenue", todayRevenue);
-            stats.put("activeBookings", activeBookings.size());
+            stats.put("activeBookings", activeBookingsCount);
             stats.put("hourlyRate", 20.0); // Default hourly rate
 
             return ResponseEntity.ok(stats);

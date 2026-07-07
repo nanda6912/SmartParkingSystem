@@ -2,6 +2,7 @@ package com.smartparking.repository;
 
 import com.smartparking.entity.Booking;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -23,13 +24,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByIsActiveFalse();
 
-    @Query("SELECT b FROM Booking b WHERE b.isActive = true AND b.exitTime IS NULL")
+    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.parkingSlot WHERE b.isActive = true AND b.exitTime IS NULL")
     List<Booking> findActiveBookingsWithoutExit();
 
     @Query("SELECT b FROM Booking b WHERE b.isActive = true AND b.parkingSlot.floor = :floor")
     List<Booking> findActiveBookingsByFloor(@Param("floor") Integer floor);
 
-    @Query("SELECT b FROM Booking b WHERE b.vehicleNumber = :vehicleNumber AND b.isActive = true AND b.exitTime IS NULL")
+    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.parkingSlot WHERE b.vehicleNumber = :vehicleNumber AND b.isActive = true AND b.exitTime IS NULL")
     Optional<Booking> findActiveBookingByVehicleNumber(@Param("vehicleNumber") String vehicleNumber);
 
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.bookingTime BETWEEN :startTime AND :endTime AND b.isActive = false")
@@ -42,13 +43,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.bookingTime >= :date ORDER BY b.bookingTime DESC")
     List<Booking> findBookingsFromDate(@Param("date") LocalDateTime date);
 
-    @Query("SELECT b FROM Booking b WHERE b.bookingTime >= :date AND b.exitTime IS NOT NULL")
+    @Query("SELECT b FROM Booking b LEFT JOIN FETCH b.parkingSlot WHERE b.exitTime >= :date")
     List<Booking> findExitedBookingsFromDate(@Param("date") LocalDateTime date);
 
     /**
      * Find active booking by vehicle number
      */
+    @EntityGraph(attributePaths = {"parkingSlot"})
     Optional<Booking> findByVehicleNumberAndIsActiveTrue(String vehicleNumber);
+
+    /**
+     * Count active bookings directly in the database
+     */
+    long countByIsActiveTrue();
 
     /**
      * Find booking by ID with parking slot eagerly loaded

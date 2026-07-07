@@ -1,6 +1,7 @@
 package com.smartparking.service;
 
 import com.smartparking.entity.Booking;
+import com.smartparking.repository.BookingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,9 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
  * with 8-hour in-memory cache (does not survive server restarts)
  */
 @Service
+@Transactional(readOnly = true)
 public class DataSyncService {
     
     private static final Logger log = LoggerFactory.getLogger(DataSyncService.class);
@@ -33,6 +37,9 @@ public class DataSyncService {
     @Lazy
     @Autowired
     private ExitService exitService;
+
+    @Autowired
+    private BookingRepository bookingRepository;
     
     @Autowired(required = false)
     private CacheManager cacheManager;
@@ -66,10 +73,13 @@ public class DataSyncService {
     /**
      * Get today's exit data with caching
      */
+    /**
+     * Get today's exit data with caching
+     */
     @Cacheable(value = "exitData", key = "'today-exits'")
     public Map<String, Object> getTodayExitData() {
         // Fetch fresh data and store through proxy
-        return self.storeExitData(fetchFreshExitData());
+        return self.storeExitData(self.fetchFreshExitData());
     }
     
     /**
@@ -147,7 +157,7 @@ public class DataSyncService {
         Map<String, Object> exitData = new HashMap<>(data);
         
         // Add exit-page specific fields with centralized hourly rate
-        exitData.put("activeBookings", getActiveBookingsCount());
+        exitData.put("activeBookings", self.getActiveBookingsCount());
         exitData.put("hourlyRate", HOURLY_RATE);
         
         return exitData;
@@ -163,7 +173,7 @@ public class DataSyncService {
         memoryCache.clear();
         
         // Store fresh data after clearing
-        storeExitData(fetchFreshExitData());
+        storeExitData(self.fetchFreshExitData());
     }
     
     /**
@@ -181,15 +191,16 @@ public class DataSyncService {
     /**
      * Fetch fresh exit data from database
      */
-    private Map<String, Object> fetchFreshExitData() {
+    @Transactional(readOnly = true)
+    Map<String, Object> fetchFreshExitData() {
         try {
-            List<Booking> allBookings = exitService.getAllBookings();
+            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            List<Booking> todayExitsList = bookingRepository.findExitedBookingsFromDate(startOfToday);
             LocalDateTime now = LocalDateTime.now();
             
-            // Filter today's exits
-            List<Map<String, Object>> todayExits = allBookings.stream()
-                .filter(booking -> booking.getExitTime() != null)
-                .filter(booking -> booking.getExitTime().toLocalDate().equals(now.toLocalDate()))
+            // Filter today's exits (double-check exitTime is indeed today) and map
+            List<Map<String, Object>> todayExits = todayExitsList.stream()
+                .filter(booking -> booking.getExitTime() != null && booking.getExitTime().toLocalDate().equals(now.toLocalDate()))
                 .sorted((b1, b2) -> b2.getExitTime().compareTo(b1.getExitTime())) // Most recent first
                 .map(booking -> convertBookingToMap(booking, false))
                 .collect(Collectors.toList());
@@ -339,13 +350,12 @@ public class DataSyncService {
     /**
      * Get active bookings count
      */
-    private int getActiveBookingsCount() {
+    @Transactional(readOnly = true)
+    public int getActiveBookingsCount() {
         try {
-            List<Booking> allBookings = exitService.getAllBookings();
-            return (int) allBookings.stream()
-                .filter(booking -> booking.getIsActive() != null && booking.getIsActive())
-                .count();
+            return (int) bookingRepository.countByIsActiveTrue();
         } catch (Exception e) {
+            log.error("Error getting active bookings count: {}", e.getMessage(), e);
             return 0;
         }
     }

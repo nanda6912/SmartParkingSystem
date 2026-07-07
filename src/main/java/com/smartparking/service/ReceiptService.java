@@ -4,6 +4,7 @@ import com.smartparking.entity.Booking;
 import com.smartparking.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class ReceiptService {
 
     @Autowired
