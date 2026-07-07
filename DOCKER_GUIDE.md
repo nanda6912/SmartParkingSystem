@@ -1,444 +1,176 @@
-# Docker Guide - Smart Parking System
+# Docker Guide - Smart Parking Management System
 
-## 🐳 Quick Start (WSL2)
+This guide explains the containerization architecture, configuration, and workflows for deploying the Smart Parking Management System using Docker.
 
-### Prerequisites
-- Docker Desktop with WSL2 integration enabled
-- Git
-- Make sure Docker Desktop is running
+---
 
-### 1. Clone and Setup
-```bash
-git clone <repository-url>
-cd SmartParkingSystem
-git checkout docker-setup
+## 🏗️ Docker Architecture
+
+The application is structured into two main container services within a dedicated bridge network:
+
+```mermaid
+graph LR
+    subgraph Host Machine
+        Port8081[Port 8081]
+        Port8082[Port 8082]
+        VolLogs[./logs Directory]
+    end
+    subgraph Docker Bridge Network: smart-parking-network
+        Backend[parking-backend <br> Spring Boot 3.2 JRE 21 <br> Port 10000 / 8081 / 8082]
+        Database[parking-db <br> PostgreSQL 16-Alpine <br> Port 5432]
+    end
+    subgraph Named Volumes
+        VolData[(smart-parking-postgres-data)]
+    end
+
+    Port8081 -->|Port Forwarding| Backend
+    Port8082 -->|Port Forwarding| Backend
+    Backend -->|Internal DB Connection| Database
+    Database -->|Data Persistence| VolData
+    Backend -->|Log Persistence| VolLogs
 ```
 
-### 2. Environment Configuration
+---
+
+## 📦 Multi-stage Dockerfile
+
+The system uses a multi-stage `Dockerfile` to optimize build caching, reduce runtime image size, and separate compilation tools from execution binaries.
+
+### Build Stage
+* **Base Image**: `maven:3.9.6-eclipse-temurin-21`
+* **Purpose**: Fetches project dependencies and builds the fat JAR file.
+* **Cache Optimization**: Copies the `pom.xml` and downloads Maven dependencies before copying the source code, preventing rebuilds of dependencies when only source code changes.
+
+### Runtime Stage
+* **Base Image**: `eclipse-temurin:21-jre`
+* **Purpose**: Executes the application in a lightweight JRE environment.
+* **Security Controls**:
+  * Creates and runs the process under a non-root system group and user (`parking:parking`).
+  * Restricts write access of directories to only necessary log folder locations.
+* **JVM Tuning**:
+  * `-XX:+UseContainerSupport`: Allows the JVM to respect memory limits set by the Docker engine.
+  * `-XX:MaxRAMPercentage=70`: Configures the JVM to allocate a maximum of 70% of container memory to the heap.
+  * `-XX:+UseG1GC -XX:+UseStringDeduplication`: Optimizes garbage collection and string memory overhead.
+* **Timezone & Locale**:
+  * Set to `Asia/Kolkata` (`TZ=Asia/Kolkata`).
+  * Enforces UTF-8 encoding locales globally (`LANG=en_US.UTF-8`, `LC_ALL=en_US.UTF-8`).
+* **Ports**:
+  * Exposes port `10000` as the default application listener port (configurable via `SERVER_PORT`).
+* **Health Check**:
+  * Runs a `curl` query against the local Actuator health endpoint:
+    `HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 CMD curl --fail http://localhost:${SERVER_PORT:-10000}/actuator/health || exit 1`
+
+---
+
+## 🐳 Docker Compose Orchestration
+
+The `docker-compose.yml` file configures two services:
+
+### 1. `parking-db`
+* **Image**: `postgres:16-alpine`
+* **Environment Variables**: Sets database user, password, database name, and UTF-8 encoding parameters.
+* **Volumes**: Named volume `smart-parking-postgres-data` maps to `/var/lib/postgresql/data` for data persistence.
+* **Ports**: Maps host port `5432` to container port `5432`.
+* **Health Check**: Uses `pg_isready` to report container readiness status.
+
+### 2. `parking-backend`
+* **Build Context**: Uses the local root `Dockerfile`.
+* **Dependency Controls**: Configures `depends_on` with `condition: service_healthy` to block backend startup until PostgreSQL is ready.
+* **Environment Variables**: Overrides Spring Boot settings (e.g. database credentials, profile selection, listener ports).
+* **Volumes**: Binds `./logs` on the host to `/app/logs` inside the container.
+* **Ports**: Exposes port `8081` for the main application and `8082` for Actuator metrics.
+
+---
+
+## ⚙️ Environment Variables
+
+The container configuration is managed via a `.env` file at the root.
+
+| Environment Variable | Description |
+| :--- | :--- |
+| `DB_NAME` | PostgreSQL Database name (default: `smart_parking_db`). |
+| `DB_USERNAME` | PostgreSQL User name (default: `postgres`). |
+| `DB_PASSWORD` | PostgreSQL password. |
+| `DB_PORT` | PostgreSQL external mapping port (default: `5432`). |
+| `SERVER_PORT` | Application HTTP listener port (default: `8081` in compose, `10000` in container). |
+| `ACTUATOR_PORT` | Actuator HTTP listener port (default: `8082`). |
+| `SPRING_DATASOURCE_URL` | JDBC database URL (points to container service `jdbc:postgresql://parking-db:5432/`). |
+| `UPI_MERCHANT_ID` | Production UPI merchant target. |
+| `UPI_MERCHANT_NAME` | Merchant display name. |
+
+---
+
+## 🚀 Execution & Command Reference
+
+Run all commands from the repository root directory.
+
+### Build and Run Services
 ```bash
-# Copy environment template
+# Copy template env
 cp .env.example .env
 
-# Edit environment variables (required)
-nano .env
+# Build images and start containers in detached mode
+docker compose up --build -d
 ```
 
-**Important: Update these values in `.env`:**
-- `POSTGRES_PASSWORD=your_secure_password_here`
-- `SPRING_DATASOURCE_PASSWORD=your_secure_password_here`
-- `JWT_SECRET=your-jwt-secret-key-change-this`
-- `PARKING_UPI_MERCHANT_ID=your-actual-upi-id`
-- Other values as needed
-
-### 3. Start Application
+### Monitoring Containers
 ```bash
-# Build and start all services
-docker-compose up --build -d
+# Check container status and health
+docker compose ps
 
-# View logs
-docker-compose logs -f
+# Follow container logs (both backend and database)
+docker compose logs -f
 
-# Check container status
-docker ps
+# Check resource utilization metrics
+docker stats
 ```
 
-### 4. Verify Application
+### Accessing Container Shells
 ```bash
-# Health check
-curl http://localhost:8081/actuator/health
+# Access Backend command line
+docker compose exec parking-backend bash
 
-# Test API endpoints
-curl http://localhost:8081/api/parking-slots
-curl http://localhost:8081/api/exit/active-bookings
-```
-
-### 5. Access the Application
-- **Main Application**: http://localhost:8081
-- **Ground Floor**: http://localhost:8081/ground-floor.html
-- **First Floor**: http://localhost:8081/floor1.html
-- **Exit Management**: http://localhost:8081/exit.html
-- **Health Check**: http://localhost:8081/actuator/health
-
-## 🛠️ Docker Commands Reference
-
-### Start Services
-```bash
-# Build and start
-docker-compose up --build -d
-
-# Start without rebuilding
-docker-compose up -d
-
-# Start with logs
-docker-compose up --build
-```
-
-### Monitor Services
-```bash
-# View logs
-docker-compose logs -f
-
-# View specific service logs
-docker-compose logs -f parking-backend
-docker-compose logs -f parking-db
-
-# Check container status
-docker ps
-docker-compose ps
+# Access PostgreSQL Command Line Directly
+docker compose exec parking-db psql -U postgres -d smart_parking_db
 ```
 
 ### Stop Services
 ```bash
-# Stop all services
-docker-compose down
+# Stop containers (preserves database data)
+docker compose down
 
-# Stop and remove volumes (WARNING: This deletes database data)
-docker-compose down -v
-
-# Stop and remove images
-docker-compose down --rmi all
+# Stop and wipe databases (WARNING: Deletes postgres volume)
+docker compose down -v
 ```
-
-### Maintenance
-```bash
-# Rebuild specific service
-docker-compose up --build parking-backend
-
-# View resource usage
-docker stats
-
-# Access container shell
-docker exec -it smart-parking-backend sh
-docker exec -it smart-parking-db psql -U postgres -d smart_parking_db
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-#### 1. Port Already in Use
-```bash
-# Check what's using port 8081
-netstat -tulpn | grep :8081
-
-# Kill process
-sudo kill -9 <PID>
-```
-
-#### 2. Database Connection Issues
-```bash
-# Check database container
-docker-compose logs parking-db
-
-# Test database connection
-docker exec -it smart-parking-db psql -U postgres -d smart_parking_db -c "SELECT 1;"
-```
-
-#### 3. Backend Startup Issues
-```bash
-# View backend logs
-docker-compose logs parking-backend
-
-# Check backend health
-curl http://localhost:8081/actuator/health
-```
-
-#### 4. Permission Issues (WSL2)
-```bash
-# Fix permissions for logs directory
-sudo chown -R $USER:$USER logs/
-sudo chmod -R 755 logs/
-```
-
-### Health Checks
-
-#### Backend Health
-```bash
-# Detailed health check
-curl http://localhost:8081/actuator/health
-
-# Application info
-curl http://localhost:8081/actuator/info
-
-# Metrics
-curl http://localhost:8081/actuator/metrics
-```
-
-#### Database Health
-```bash
-# Check database container health
-docker inspect smart-parking-db | grep Health -A 10
-
-# Connect to database
-docker exec -it smart-parking-db psql -U postgres -d smart_parking_db
-```
-
-## 🔄 Development Workflow
-
-### Making Changes
-```bash
-# 1. Make code changes
-# 2. Rebuild and restart
-docker-compose up --build -d parking-backend
-
-# 3. View logs to verify
-docker-compose logs -f parking-backend
-```
-
-### Environment Variables
-```bash
-# Update .env file
-nano .env
-
-# Restart services to apply changes
-docker-compose down
-docker-compose up --build -d
-```
-
-## 🌐 Network Configuration
-
-### Docker Network
-```bash
-# View network details
-docker network ls
-docker network inspect smart-parking-network
-
-# Test connectivity between containers
-docker exec smart-parking-backend ping parking-db
-```
-
-## 📁 File Structure in Docker
-
-### Container Paths
-- **Application**: `/app`
-- **Logs**: `/app/logs` (mounted to `./logs`)
-- **Temporary files**: `/app/temp` (mounted to `./temp`)
-- **Database data**: `/var/lib/postgresql/data` (Docker volume)
-
-### Important Files
-- **JAR file**: `/app/app.jar`
-- **Static resources**: Inside JAR at `/app.jar`
-- **Configuration**: Environment variables + `application-prod.properties`
-
-## 🔒 Security Notes
-
-### Production Deployment
-1. **Change default passwords** in `.env`
-2. **Use strong JWT secret**
-3. **Enable HTTPS** in production
-4. **Restrict network access**
-5. **Regular security updates**
-
-### Environment Variables
-```bash
-# Never commit .env to version control
-echo ".env" >> .gitignore
-
-# Use different values for production
-POSTGRES_PASSWORD=your_production_password
-SPRING_DATASOURCE_PASSWORD=your_production_password
-JWT_SECRET=your_production_jwt_secret
-PARKING_UPI_MERCHANT_ID=your_production_upi_id
-```
-
-## 🚀 Performance Tuning
-
-### JVM Options
-```bash
-# Edit .env to customize JVM settings
-JAVA_OPTS="-Xms1g -Xmx4g -XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
-```
-
-### Database Performance
-```bash
-# Connect to database and tune PostgreSQL settings
-docker exec -it smart-parking-db psql -U postgres -d smart_parking_db
-```
-
-## 📱 Access from Different Platforms
-
-### Windows
-- Access via `http://localhost:8081`
-- Docker Desktop handles port mapping
-
-### WSL2
-- Access via `http://localhost:8081`
-- Same as Windows due to Docker Desktop integration
-
-### macOS
-- Access via `http://localhost:8081`
-- Docker Desktop handles port mapping
-
-### Linux
-- Access via `http://localhost:8081`
-- Direct Docker installation
-
-## 🆘 Support
-
-### Getting Help
-```bash
-# Check container status
-docker-compose ps
-
-# View system logs
-docker-compose logs
-
-# Check Docker system
-docker system df
-docker system events
-```
-
-### Reset Everything
-```bash
-# Complete reset (WARNING: Deletes all data)
-docker-compose down -v --rmi all
-docker system prune -a
-docker volume prune
-```
-
-## 🏗️ Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Docker Network                          │
-│                 smart-parking-network                       │
-├─────────────────────┬───────────────────────────────────────┤
-│   parking-db        │         parking-backend               │
-│   PostgreSQL 16     │       Spring Boot 3.2.0              │
-│   Port: 5432       │       Port: 8081                      │
-│   Volume: data     │       Health: /actuator/health        │
-└─────────────────────┴───────────────────────────────────────┘
-```
-
-## 🔧 Key Technical Features
-
-### Multi-stage Dockerfile
-- **Build Stage**: Maven 3.9.6 + Eclipse Temurin JDK 21
-- **Runtime Stage**: Eclipse Temurin JRE 21 Alpine
-- **Security**: Non-root user (appuser:1001)
-- **Optimization**: Layer caching, UTF-8 encoding, Asia/Kolkata timezone
-- **Health Checks**: Built-in container health monitoring
-
-### Docker Compose Services
-- **parking-db**: PostgreSQL 16 Alpine with persistent volumes
-- **parking-backend**: Spring Boot application with health dependencies
-- **Network**: Dedicated bridge network (172.20.0.0/16)
-- **Volumes**: PostgreSQL data, application logs, temporary files
-
-### Environment Configuration
-- **Database**: PostgreSQL connection parameters
-- **Application**: Server port, Spring profiles
-- **Security**: JWT secret, API keys
-- **Performance**: Rate limiting, JVM options
-- **Business**: UPI merchant details
-
-## 📊 Application Features Preserved
-
-### Core Parking Management
-- ✅ 600 parking slots (300 per floor)
-- ✅ Real-time slot status tracking
-- ✅ Multi-floor organization (Ground & First)
-- ✅ Human-readable slot IDs (AG01, AF01, etc.)
-
-### Booking System
-- ✅ Direct access (no authentication)
-- ✅ 5-minute slot locking
-- ✅ Vehicle type support (Cars, Bikes, SUVs, Vans)
-- ✅ Booking confirmation downloads
-
-### Exit Management
-- ✅ Real-time synchronization
-- ✅ Fee calculation
-- ✅ Professional receipts (PDF/text)
-- ✅ Staff confirmation dialogs
-
-### Payment Integration
-- ✅ UPI QR code generation
-- ✅ iText PDF generation
-- ✅ ZXing QR code support
-- ✅ UTF-8 encoding support
-
-### Technical Features
-- ✅ Caffeine caching
-- ✅ Rate limiting (token bucket)
-- ✅ Scheduled lock cleanup
-- ✅ Spring Boot Actuator
-- ✅ Real-time data synchronization
-
-## 🔒 Security & Production Considerations
-
-### Container Security
-- ✅ Non-root user execution
-- ✅ Minimal runtime image (Alpine)
-- ✅ Health checks and monitoring
-- ✅ Graceful shutdown handling
-
-### Data Security
-- ✅ Environment variable externalization
-- ✅ Persistent volume encryption (host-dependent)
-- ✅ Network isolation via bridge network
-- ✅ No sensitive data in images
-
-### Operational Security
-- ✅ Rate limiting protection
-- ✅ Input validation preserved
-- ✅ Database connection pooling
-- ✅ Log rotation and management
-
-## 📈 Performance Optimizations
-
-### JVM Tuning
-- ✅ Container support enabled
-- ✅ Memory percentage-based allocation
-- ✅ G1GC with string deduplication
-- ✅ Optimized for container environments
-
-### Database Performance
-- ✅ Connection pooling (HikariCP)
-- ✅ Optimized PostgreSQL settings
-- ✅ Persistent volume performance
-- ✅ Health monitoring
-
-### Application Performance
-- ✅ Caffeine caching enabled
-- ✅ Optimized Docker layers
-- ✅ Efficient resource utilization
-- ✅ Fast startup times
-
-## 🔧 Configuration Management
-
-### Environment Variables
-```bash
-# Database
-POSTGRES_DB=smart_parking_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-SPRING_DATASOURCE_URL=jdbc:postgresql://parking-db:5432/smart_parking_db
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=your_password
-
-# Application
-SPRING_PROFILES_ACTIVE=prod
-SERVER_PORT=8081
-
-# Business Logic
-PARKING_UPI_MERCHANT_ID=merchant@upi
-PARKING_UPI_MERCHANT_NAME=Smart Parking System
-JWT_SECRET=your-jwt-secret
-
-# Performance
-RATE_LIMIT_BOOKINGS=30
-RATE_LIMIT_LOCKS=50
-RATE_LIMIT_GENERAL=300
-```
-
-### Spring Profiles
-- **prod**: Production configuration with environment variables
-- **dev**: Development configuration (local PostgreSQL)
-- **Docker**: Uses prod profile with container networking
 
 ---
 
-**Last Updated**: $(date)
-**Compatible with**: Docker Desktop 4.0+, Docker Compose 2.0+
-**Tested Platforms**: Windows 11 + WSL2, Ubuntu 22.04, macOS 13+
+## 🔧 Troubleshooting
+
+### 1. Database Connection Failures
+* **Symptom**: Backend logs display `Connection refused` or Hikari Pool startup timeout.
+* **Resolution**: Verify that the database container is healthy:
+  `docker compose ps`
+  If database is unhealthy, check database-specific logs:
+  `docker compose logs parking-db`
+
+### 2. Port Collision Issues
+* **Symptom**: Docker compose fails with `bind: address already in use` for `8081` or `5432`.
+* **Resolution**: Find and terminate the process holding the port on the host machine:
+  * **Windows**: `netstat -ano | findstr :8081` followed by `taskkill /PID <PID> /F`
+  * **Linux/Mac**: `sudo lsof -i :8081` followed by `kill -9 <PID>`
+  Or, modify the port bindings in your `.env` file and restart.
+
+### 3. Log Folder Permissions
+* **Symptom**: Container crashes with write permission errors inside `/app/logs`.
+* **Resolution**: Adjust the host permissions of the local `./logs` bind mount:
+  `chmod -R 777 ./logs` or `chown -R 10001:10001 ./logs`
+
+---
+
+## 🔒 Production Recommendations
+
+1. **Explicit Credentials**: Never use default passwords in production. Override `DB_PASSWORD` using a secure vault or runtime environment parameters.
+2. **Read-Only Root Filesystem**: Configure container security contexts with a read-only root directory, mounting only `/tmp` and `/app/logs` as writeable paths.
+3. **Internal Networking**: Do not expose port `5432` of the database container to the internet. Restrict connections to the backend container within the docker bridge network.
+4. **Volume Encryption**: Ensure the host filesystem path hosting Docker volumes (`/var/lib/docker/volumes/`) uses disk-level encryption.

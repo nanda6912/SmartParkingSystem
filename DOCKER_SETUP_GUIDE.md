@@ -1,275 +1,135 @@
-# Smart Parking System - Docker Setup Guide
+# Smart Parking Management System - End-to-End Deployment Guide
 
-## 🐳 Prerequisites
+This guide details the step-by-step processes to deploy the Smart Parking Management System, covering local Docker configurations and cloud deployment using Render and Neon Serverless PostgreSQL.
 
-1. **Docker Desktop** (for Windows/Mac) or **Docker Engine** (for Linux)
-2. **Docker Compose** (included with Docker Desktop)
-3. **WSL2** (for Windows users)
-4. **Git** (for cloning the repository)
+---
 
-## 🚀 Quick Start
+## 💻 1. Local Container Deployment
 
-### 1. Clone and Setup
+### Step 1: Clone the Repository
+Clone the repository and navigate into the project root directory:
 ```bash
 git clone <repository-url>
 cd SmartParkingSystem
 ```
 
-### 2. Configure Environment
+### Step 2: Configure Environment Variables
+Copy the template configuration file to create `.env`:
 ```bash
-# Copy environment template
 cp .env.example .env
-
-# Edit .env with your configuration
-nano .env
 ```
+Open `.env` in a text editor (e.g., `nano .env`) and update variables:
+* Set `DB_PASSWORD` and `SPRING_DATASOURCE_PASSWORD` to a secure custom password.
+* Set the port parameters (`SERVER_PORT`, `ACTUATOR_PORT`, `DB_PORT`) if you have port conflicts.
+* Configure `UPI_MERCHANT_ID` and `UPI_MERCHANT_NAME` with merchant identifiers.
 
-### 3. Build and Run
+### Step 3: Build the Application & Docker Image
+Trigger the container build. This compiles code, downloads dependencies, and builds the container runtime:
 ```bash
-# Build and start all services
 docker compose up --build -d
-
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
 ```
 
-### 4. Verify Deployment
+### Step 4: Start Containers
+Start the multi-container configuration:
 ```bash
-# Check health status
-curl http://localhost:8081/actuator/health
-
-# Check parking slots API
-curl http://localhost:8081/api/parking-slots
-
-# Access application
-# Main Page: http://localhost:8081
-# Exit Management: http://localhost:8081/exit.html
-```
-
-## 📋 Environment Variables
-
-### Required Variables
-- `DB_PASSWORD`: PostgreSQL database password
-- `UPI_MERCHANT_ID`: UPI merchant ID for payments
-
-### Optional Variables
-- `DB_NAME`: Database name (default: smart_parking_db)
-- `DB_USERNAME`: Database username (default: postgres)
-- `SERVER_PORT`: Application port (default: 8081)
-- `ACTUATOR_PORT`: Actuator port (default: 8082)
-
-## 🔧 Docker Services
-
-### parking-db (PostgreSQL)
-- **Image**: postgres:16-alpine
-- **Port**: 5432 (host) → 5432 (container)
-- **Volume**: postgres_data (persistent storage)
-- **Health Check**: pg_isready
-
-### parking-backend (Spring Boot)
-- **Build**: Multi-stage Dockerfile
-- **Port**: 8081 (host) → 8081 (container)
-- **Port**: 8082 (host) → 8082 (container) - Actuator
-- **Volume**: ./logs:/app/logs
-- **Health Check**: curl http://localhost:8081/actuator/health
-
-## 🗂️ File Structure
-
-```
-SmartParkingSystem/
-├── Dockerfile                 # Multi-stage build configuration
-├── docker-compose.yml          # Service orchestration
-├── .dockerignore             # Build context exclusions
-├── .env                      # Environment variables (create from .env.example)
-├── .env.example              # Environment template
-├── logs/                    # Application logs (mounted volume)
-└── src/                     # Source code
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### 1. Port Already in Use
-```bash
-# Check what's using the port
-netstat -tulpn | grep :8081
-
-# Kill the process or change port in .env
-SERVER_PORT=8082
-```
-
-#### 2. Database Connection Issues
-```bash
-# Check database logs
-docker compose logs parking-db
-
-# Restart database
-docker compose restart parking-db
-
-# Reset database volume (WARNING: Deletes all data)
-docker compose down -v
 docker compose up -d
 ```
 
-#### 3. Build Failures
-```bash
-# Clean build
-docker compose down
-docker system prune -f
-docker compose up --build --force-recreate
-```
-
-#### 4. Permission Issues (Linux)
-```bash
-# Fix log directory permissions
-sudo chown -R $USER:$USER logs/
-chmod -R 755 logs/
-```
-
-### Health Checks
-
-#### Check Container Status
+### Step 5: Verify Application Status
+Verify that containers are up and running:
 ```bash
 docker compose ps
 ```
-
-#### View Logs
+Perform a curl request to verify backend health:
 ```bash
-# All services
-docker compose logs -f
-
-# Specific service
-docker compose logs -f parking-backend
-docker compose logs -f parking-db
+curl http://localhost:8081/actuator/health
 ```
+You should receive a `{"status":"UP"}` JSON response.
 
-#### Container Shell Access
+### Step 6: Verify Flyway Migration Status
+Connect to the database container CLI:
 ```bash
-# Backend container
-docker compose exec parking-backend bash
-
-# Database container
 docker compose exec parking-db psql -U postgres -d smart_parking_db
 ```
+Verify migrations were successfully applied by inspecting the schema history table:
+```sql
+SELECT version, description, success FROM flyway_schema_history;
+```
+It should display versions `1`, `2`, `3`, and `4` as successfully applied.
 
-## 📊 Monitoring
+---
 
-### Application Health
-- **Health Endpoint**: http://localhost:8081/actuator/health
-- **Metrics**: http://localhost:8082/actuator/metrics
-- **Info**: http://localhost:8082/actuator/info
+## 🐘 2. Cloud Database Setup (Neon PostgreSQL)
 
-### Database Health
+Production deployments use Neon PostgreSQL for scalable and serverless hosting:
+
+1. **Create Neon Project**: Log into [Neon Console](https://neon.tech/) and create a new project.
+2. **Retrieve Connection String**: Copy the provided JDBC connection string. It will look like:
+   `jdbc:postgresql://ep-example-123456.us-east-2.aws.neon.tech/neondb?sslmode=require`
+3. **Database Credentials**: Note the server user name, host domain name, database name, and password.
+4. **Initial Schema**: Flyway executes migration scripts automatically on application startup. You do not need to create tables manually.
+
+---
+
+## ☁️ 3. Production Deployment (Render Web Service)
+
+Deploy the system as a Docker Web Service on Render:
+
+1. **Connect Repository**: Go to [Render Dashboard](https://dashboard.render.com/), click **New** -> **Web Service**, and link your GitHub repository.
+2. **Environment/Language**: Select **Docker** as the deployment runtime. Render will automatically read the root-level `Dockerfile` and execute its multi-stage instructions.
+3. **Region**: Select the region closest to your users (and matching your Neon database region to reduce network latency).
+4. **Plan**: Select your target plan (e.g. Free or Starter).
+
+---
+
+## ⚙️ 4. Required Production Environment Variables (Render)
+
+Configure these key-value pairs in the **Environment** section of your Render Web Service settings:
+
+| Key | Value | Description |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | `prod` | Activates production database properties. |
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://<neon-host-url>/neondb?sslmode=require` | Your Neon database URL. |
+| `SPRING_DATASOURCE_USERNAME` | `<neon-db-user>` | Neon database user name. |
+| `SPRING_DATASOURCE_PASSWORD` | `<neon-db-password>` | Neon database connection password. |
+| `UPI_MERCHANT_ID` | `nandakumar27@ptyes` | Production UPI ID for payment QR codes. |
+| `UPI_MERCHANT_NAME` | `Smart Parking System` | Payment display name. |
+
+> [!IMPORTANT]
+> The container JRE configuration defaults the application port to `10000`. Render automatically routes external traffic to container port `10000`, so no port mapping is required.
+
+---
+
+## 🔄 5. Updates & Redeployment Workflow
+
+### Step 1: Commit Local Code Modifications
+Commit your changes and push them to your target deployment branch (e.g. `main`):
 ```bash
-# Check database connection
-docker compose exec parking-db pg_isready -U postgres
-
-# Connect to database
-docker compose exec parking-db psql -U postgres -d smart_parking_db
+git add .
+git commit -m "Optimize query fetches and disable OSIV"
+git push origin main
 ```
 
-## 🔄 Development Workflow
+### Step 2: Render Automated Deployments
+By default, Render has **Auto-Deploy** enabled. Pushing commits to your repository triggers a build and redeployment.
+If Auto-Deploy is disabled, go to the Render dashboard and click **Manual Deploy** -> **Clear Build Cache & Deploy**.
 
-### 1. Development Mode
-```bash
-# Run with hot reload (if enabled)
-docker compose up --build
+### Step 3: Monitor Deploy Progress
+1. Watch the Render compilation logs to ensure JRE packaging completes.
+2. Check startup logs for connection metrics:
+   `Started SmartParkingApplication in X seconds`
+3. Verify that Flyway executes schema checks without validation errors.
 
-# View logs in real-time
-docker compose logs -f parking-backend
-```
+---
 
-### 2. Production Mode
-```bash
-# Run in detached mode
-docker compose up --build -d
+## ❌ 6. Cloud Troubleshooting
 
-# Check status
-docker compose ps
-```
-
-### 3. Updates
-```bash
-# Pull latest changes
-git pull
-
-# Rebuild and restart
-docker compose down
-docker compose up --build -d
-```
-
-## 🌐 Network Configuration
-
-### Docker Network
-- **Name**: smart-parking-network
-- **Subnet**: 172.20.0.0/16
-- **Driver**: bridge
-
-### Service Communication
-- Backend connects to database via: `parking-db:5432`
-- Host machine accesses services via: `localhost:8081`, `localhost:8082`
-
-## 📦 Volumes
-
-### Persistent Data
-- **postgres_data**: Database data (named volume)
-- **./logs**: Application logs (bind mount)
-
-### Backup Database
-```bash
-# Create backup
-docker compose exec parking-db pg_dump -U postgres smart_parking_db > backup.sql
-
-# Restore backup
-docker compose exec -T parking-db psql -U postgres smart_parking_db < backup.sql
-```
-
-## 🔒 Security Considerations
-
-### Production Deployment
-1. Change default passwords in `.env`
-2. Use HTTPS (configure SSL in production)
-3. Restrict CORS origins
-4. Enable firewall rules
-5. Regular security updates
-
-### Environment Variables
-- Never commit `.env` to version control
-- Use strong passwords
-- Rotate secrets regularly
-- Use secrets management in production
-
-## 📈 Performance Tuning
-
-### JVM Options
-```bash
-# Default JVM settings
-JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx1024m"
-```
-
-### Database Settings
-```bash
-# Connection pool settings (in application-prod.properties)
-spring.datasource.hikari.maximum-pool-size=20
-spring.datasource.hikari.minimum-idle=10
-```
-
-## 🆘 Support
-
-If you encounter issues:
-
-1. Check the logs: `docker compose logs -f`
-2. Verify environment variables in `.env`
-3. Check Docker and Docker Compose versions
-4. Ensure sufficient disk space and memory
-5. Review this troubleshooting guide
-
-For additional support, create an issue in the repository with:
-- Error messages
-- Docker and system versions
-- Steps to reproduce
-- Logs output
+* **Connection Pool Blocked**:
+  * *Symptom*: Application logs show database connection time outs.
+  * *Fix*: Verify that `sslmode=require` is present in the `SPRING_DATASOURCE_URL` configuration. Ensure your Neon instance is active and not paused due to inactivity.
+* **Out Of Memory (OOM) Container Crash**:
+  * *Symptom*: Web service restarts repeatedly with code `137` (SIGKILL).
+  * *Fix*: Render free tier limits memory to 512MB. If you exceed this, adjust the `JAVA_OPTS` setting in your environment variables to use lower heap boundaries (e.g. `-Xmx256m -Xms128m`).
+* **Flyway Migration Checksum Mismatches**:
+  * *Symptom*: Startup logs show `Migration checksum mismatch` for applied versions.
+  * *Fix*: Never edit files inside `src/main/resources/db/migration/` after they are applied to production. If an index or constraint changes, write a new migration file (e.g. `V5__New_Index.sql`).

@@ -1,542 +1,336 @@
 # Smart Parking Management System
 
-A comprehensive parking management system built with Java 21, Spring Boot, PostgreSQL, and modern web technologies.
+[![Java Version](https://img.shields.io/badge/Java-21-orange.svg?style=flat-square&logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-blue.svg?style=flat-square&logo=docker)](https://www.docker.com/)
+[![Flyway](https://img.shields.io/badge/Flyway-Migrations-red.svg?style=flat-square&logo=flyway)](https://flywaydb.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-## 🚀 Features
+A robust, enterprise-grade Smart Parking Management System built with **Java 21**, **Spring Boot 3.2**, **PostgreSQL**, **Caffeine Cache**, and **Docker**. The system provides real-time multi-floor parking slot locking, booking, session-based staff authentication, and exit portal fee processing.
 
-### ✨ Professional UI & Design System
-- **Modern Design System**: Unified CSS variables and components
-- **Responsive Layout**: Mobile-friendly interface
-- **Ghost Badges**: Subtle status indicators (Available, Booked, Locked)
-- **Skeleton Loaders**: Smooth loading experience
+---
 
-### 🎯 Exit Management Dashboard
-- **Real-time Synchronization**: Instant updates after vehicle exits
-- **Complete Data Display**: Phone numbers, vehicle types, duration, hours charged
-- **Live Statistics**: Today's exits, revenue, and active bookings
-- **Fee Calculation**: Automatic parking fee computation
-- **Receipt Generation**: Professional receipt downloads
+## 🔗 Live Demo
+* **Production Web App URL**: `https://smartparkingsystem-lxzp.onrender.com` 
 
-### 🔧 Enhanced Exit Process
-- **Staff Confirmation Dialog**: Professional confirmation before vehicle release
-- **Release Confirmation Modal**: Clear feedback with receipt download options
-- **Controlled Receipt Download**: Staff-controlled download timing
-- **Professional Workflow**: Enhanced user experience for parking operations
+---
 
-### 📊 Parking Slot Management
-- **Real-time Slot Status**: Available, Booked, Locked states
-- **Floor-based Organization**: Multi-floor parking structure
-- **Vehicle Type Support**: Cars, Bikes, SUVs, Vans
-- **Booking Management**: Create and manage parking reservations
-- **Complete Data Preservation**: Full booking details maintained through exit process
-
-### 📊 Real-time Data Synchronization (NEW!)
-- **Multi-method Communication**: BroadcastChannel, localStorage events, and polling
-- **Duplicate Prevention**: Advanced notification deduplication
-- **Complete Exit Data**: Phone numbers, vehicle types, and all booking details preserved
-- **Instant Updates**: Admin dashboard updates immediately after vehicle exit
-- **Data Integrity**: Prevents duplicate entries and notifications
-- **Booking ID Preservation**: Fixed data mapping to ensure booking IDs display correctly for released vehicles
-- **Payment Data Sync**: Enhanced synchronization of payment method and transaction details
-
-### 🎯 Advanced Booking System
-- **Vehicle Re-booking Support**: Same vehicle can book again after exit
-- **Custom JSON Deserializer**: Bulletproof handling of booking requests
-- **Enhanced Rate Limiting**: 50x more bookings (3→30/hour), 10x more locks (5→50/hour)
-- **Debug Logging**: Comprehensive troubleshooting capabilities
-- **5-minute Slot Lock**: Extended lock duration for better user experience
-
-### 📄 Professional Receipt System
-- **Dual Download Methods**: By booking ID or booking code
-- **UTF-8 Encoding**: Proper file handling and readability
-- **Smart Receipt Generation**: Works for both active and exited bookings
-- **User-friendly Filenames**: Uses booking codes for easy identification
-- **Enhanced Content**: Dynamic fee calculation and professional formatting
-- **Payment Mode Details**: UPI receipts include transaction ID, Cash receipts show payment mode
-- **Post-Payment Downloads**: Receipt download option immediately after payment confirmation
-- **Released Vehicle Receipts**: Download buttons for all released vehicles in exit history
-- **Fallback Receipt Generation**: Automatic frontend receipts when backend data unavailable
-
-### 🔧 Technical Improvements
-- **Enhanced Error Handling**: Better error messages and recovery
-- **Debug Endpoints**: `/api/exit/debug/bookings` and `/api/exit/debug/vehicle/{number}`
-- **Active Booking Queries**: Prevents double-booking with proper checks
-- **Improved File Downloads**: Reliable receipt download mechanism
-- **Synchronized Components**: All frontend and backend components aligned
-
-## Core Functionality
-- **Real-time Parking Slot Management**: View availability across 2 floors (200 slots total)
-- **Temporary Slot Locking**: 5-minute lock mechanism to prevent double booking (enhanced from 2 minutes)
-- **Strict Input Validation**: Vehicle number format (XX00XX0000), name validation, phone number validation
-- **Concurrent Access Control**: Row-level locking prevents race conditions
-- **Auto-refresh**: Frontend updates every 10 seconds (optimized from 5 seconds)
-
-## User Interface & Design System
-
-### 🎨 Professional Design System
-- **Cambria Typography**: Professional font family across all pages
-- **Bold Headings**: Cambria Bold for titles, page headers, and section headings
-- **Consistent Styling**: Normal Cambria weight for body text and descriptions
-- **Modern CSS Variables**: Unified design tokens for colors, spacing, and typography
-- **Responsive Design**: Mobile-friendly interface with consistent breakpoints
-
-### 📱 Page-Specific Features
-- **Main Booking Page**: Real-time slot grid with visual status indicators
-- **Exit Management**: Staff confirmation dialogs, active bookings tracking, and receipt generation
-- **Direct Access**: No authentication required - immediate access to all features
-
-### 🔄 Real-time Updates
-- **Auto-refresh**: Frontend updates every 10 seconds (optimized performance)
-- **Live Status**: Real-time slot availability and lock countdown timers
-- **Instant Notifications**: Admin dashboard updates immediately after vehicle exit
-- **Visual Feedback**: Color-coded status and loading indicators
-
-### 🎯 User Experience
-- **Intuitive Navigation**: Clear page flow from booking to exit
-- **Form Validation**: Real-time validation with helpful error messages
-- **Confirmation Dialogs**: Professional confirmation for critical actions
-- **Receipt Options**: Multiple download methods for user convenience
-- **Direct Access**: Immediate access to all features without login
-
-## Performance & Reliability
-- **Enhanced Rate Limiting**: User-friendly limits (50 locks, 30 bookings, 300 general requests per hour)
-- **Input Validation**: Both frontend and backend validation with custom JSON deserializer
-- **Concurrent Control**: Database-level locking for slot operations
-- **Debug Support**: Comprehensive logging and troubleshooting endpoints
-
-## Technology Stack
+## 🎨 Technology Stack
 
 ### Backend
-- **Java 21**: Latest Java features and performance
-- **Spring Boot 3.2.0**: Modern Spring framework
-- **PostgreSQL**: Robust relational database
-- **Spring Data JPA**: Database operations
-- **Maven**: Dependency management
+* **Language & Runtime**: Java 21 (Eclipse Temurin JDK)
+* **Framework**: Spring Boot 3.2.0 (Starter Web, Actuator, Validation, Thymeleaf)
+* **Data Access**: Spring Data JPA & Hibernate 6
+* **Database Migration**: Flyway DB
+* **Caching**: Caffeine Cache (Local In-Memory Cache)
+* **API Documentation**: Springdoc OpenAPI (Swagger UI)
+* **Security & Utilities**: BCrypt Password Hashing, ZXing (QR Code generation), iText Core (PDF Receipt logic)
 
 ### Frontend
-- **HTML5/CSS3**: Modern web standards
-- **Vanilla JavaScript**: No framework dependencies
-- **Responsive Design**: Mobile-friendly interface
-- **Real-time Updates**: Fetch API for communication
+* **Core Technologies**: HTML5, Vanilla CSS3 (Custom Design System with CSS variables), Vanilla JavaScript (No frameworks)
+* **Real-time Synchronization**: BroadcastChannel API with localStorage fallbacks for cross-tab communication
+* **UI Features**: Responsive grid layout, stationary centering modals, backdrop-blur transitions, and loading states
 
-## Database Configuration
+---
 
-### PostgreSQL Setup
-```sql
--- Create database
-CREATE DATABASE smart_parking_db;
+## 🏗️ System Architecture
 
--- The application will auto-create tables on startup
-```
-## Installation & Setup
+The following diagram illustrates the application layers and data flow:
 
-### Prerequisites
-- Java 21 or higher
-- Maven 3.6+
-- PostgreSQL 12+
-- Git
-
-### Steps
-
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd SmartParkingSystem
-```
-
-2. **Set up PostgreSQL database**
-```sql
--- Connect to PostgreSQL and run:
-CREATE DATABASE smart_parking_db;
+```mermaid
+graph TD
+    Client[Web Browser / Frontend]
+    Controller[Spring REST Controllers]
+    Filter[Rate Limiting Filter]
+    Interceptor[Auth Interceptor]
+    Service[Business Services]
+    Repo[Spring Data JPA Repositories]
+    DB[(PostgreSQL / Neon Database)]
+    Cache[(Caffeine Cache)]
+    Client -->|HTTP Requests| Filter
+    Filter -->|Validated IP Rate Limits| Interceptor
+    Interceptor -->|Verified Session / exit.html protection| Controller
+    Controller --> Service
+    Service --> Repo
+    Service -->|Cached Slot / Exit Data| Cache
+    Repo --> DB
 ```
 
-3. **Run the application**
+---
 
-```bash
-mvn spring-boot:run
-```
-
-The app uses `application-dev.properties` with PostgreSQL on localhost:5432.
-
-4. **Access the application**
-- **Main Page**: http://localhost:8081/ (redirects to parking page)
-- **Parking**: http://localhost:8081/index.html
-- **Exit Management**: http://localhost:8081/exit.html
-
-## 📡 API Endpoints
-
-### Parking Management
-- `GET /api/parking-slots` - Get all parking slots with status
-- `POST /api/parking-slots/lock/{slotId}` - Lock a parking slot
-- `POST /api/parking-slots/book` - Create a new booking
-- `POST /api/parking-slots/book-debug` - Debug endpoint for booking requests
-
-### Exit Management
-- `GET /api/exit/active-bookings` - Get all active bookings
-- `POST /api/exit/process/{bookingId}` - Process vehicle exit
-- `GET /api/exit/receipt/{bookingId}` - Download receipt by booking ID
-- `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
-
-## 🔧 Configuration
-
-### Application Properties Files
-- `application-dev.properties` - Development configuration (PostgreSQL with defaults)
-- `application-prod.properties` - Production configuration (PostgreSQL)
-
-### Local Development
-
-For local development, the application uses `application-dev.properties` with default values:
-- Database: PostgreSQL on localhost:5432
-- Server Port: 8081
-- SSL: Disabled
-
-Simply run with: `mvn spring-boot:run`
-
-## 🐛 Troubleshooting
-
-### Common Issues & Solutions
-
-#### 1. Receipt Download Shows "Site Unavailable"
-**Solution**: The system now supports both booking ID and booking code downloads:
-- Use booking ID: `/api/exit/receipt/{bookingId}`
-- Use booking code: `/api/exit/receipt/by-code/{bookingCode}`
-- **New**: Automatic fallback receipt generation for vehicles with missing booking IDs
-
-#### 2. Booking ID Shows "N/A" for Released Vehicles
-**Solution**: Data synchronization issue has been fixed:
-- **Backend Fix**: Corrected data mapping in `ExitController.convertExitDetailsToSyncFormat()`
-- **Frontend Fix**: Enhanced fallback handling for missing booking IDs
-- **Result**: New vehicle releases will show correct booking IDs
-
-#### 3. "Unable to download receipt: No booking ID found"
-**Solution**: Fallback receipt generation implemented:
-- **Primary**: Backend API receipt with payment details
-- **Fallback**: Frontend-generated receipt with available information
-- **User Experience**: Receipt download always works regardless of data issues
-
-#### 4. "Too Many Requests" Error
-**Solution**: Rate limiting has been enhanced:
-- Bookings: 30 per hour (increased from 3)
-- Locks: 50 per hour (increased from 5)
-- General requests: 300 per hour (increased from 60)
-
-#### 5. Vehicle Cannot Be Re-booked After Exit
-**Solution**: The system now supports vehicle re-booking:
-- Only active bookings are checked for duplicates
-- Exited vehicles can book again immediately
-
-#### 6. Slot Lock Expires Too Quickly
-**Solution**: Lock duration extended to 5 minutes:
-- Previous: 2 minutes
-- Current: 5 minutes
-
-### Debug Tools
-- **View All Bookings**: `GET /api/exit/debug/bookings`
-- **Check Vehicle Status**: `GET /api/exit/debug/vehicle/{vehicleNumber}`
-- **Debug Booking Requests**: `POST /api/parking-slots/book-debug`
-
-## 📅 Latest Updates (May 2026)
-
-### 🎯 **Enhanced Receipt Download System**
-- **Post-Payment Receipts**: Receipt download option immediately after payment confirmation
-- **Released Vehicle Receipts**: Download buttons for all released vehicles in exit history
-- **Payment Mode Details**: UPI receipts include transaction ID, Cash receipts show payment mode
-- **Fallback Receipt Generation**: Automatic frontend receipts when backend data unavailable
-- **Professional Receipt Format**: Complete payment details with timestamps and proper formatting
-
-### 🔧 **Data Synchronization Fixes**
-- **Booking ID Preservation**: Fixed data mapping to ensure booking IDs display correctly for released vehicles
-- **Payment Data Sync**: Enhanced synchronization of payment method and transaction details
-- **Real-time Updates**: Improved data flow between backend and frontend for released vehicles
-- **Debug Logging**: Added comprehensive debugging for data synchronization issues
-
-### 📊 **Enhanced Exit Management**
-- **Complete Vehicle Information**: Booking ID, vehicle number, slot, and amount properly displayed
-- **Receipt Integration**: Seamless receipt download integration in payment confirmation flow
-- **User Experience**: Professional confirmation dialogs with receipt download options
-- **Error Handling**: Robust fallback mechanisms for receipt downloads
-
-## 📅 Previous Updates (April 2026)
-
-### 🏗️ **Enhanced Slot System - 300 Slots Per Floor**
-- **Scaled Capacity**: Expanded from 100 to 300 slots per floor (600 total slots)
-- **Floor-based Organization**: 15 areas (A-O) with 20 slots each
-- **Human-Readable IDs**: AG01-AG20, BG01-BG20 (Ground), AF01-AF20, BF01-BF20 (First)
-- **Optimized Performance**: Efficient loading and rendering for larger slot grids
-
-### 🎯 **Separate Floor Pages - Focused Booking Experience**
-- **Ground Floor Page**: Dedicated booking interface for ground floor slots
-- **First Floor Page**: Dedicated booking interface for first floor slots
-- **Main Dashboard**: View-only status display for all floors
-- **Professional Navigation**: Clean routing between floor-specific pages
-- **Consistent UX**: Unified booking flow across all interfaces
-
-### 📋 **Professional Booking Modal System**
-- **Stationary Positioning**: Fixed centering with backdrop blur and animation
-- **Enhanced UX**: Body scroll prevention and backdrop click to close
-- **Professional Styling**: Modern design with proper shadows and transitions
-- **Form Validation**: Real-time validation with helpful error messages
-
-### 📄 **Automatic Booking Confirmation Downloads**
-- **Instant Download**: Text file generation after successful booking
-- **Professional Format**: Complete booking details with timestamps and instructions
-- **File Naming**: Uses booking code for easy identification
-- **Cross-Platform**: Works on all modern browsers with UTF-8 encoding
-
-### 🔧 **Clean Production-Ready Code**
-- **Debugging Removed**: All console.log statements cleaned up
-- **Error Handling**: Professional error messages and recovery
-- **Performance Optimized**: Fast response times and efficient database queries
-- **Code Quality**: Clean, maintainable, and well-documented
-
-### 📊 **Current System Capabilities**
-- **Total Slots**: 600 parking slots (300 per floor × 2 floors)
-- **Real-time Updates**: Live slot status and booking synchronization
-- **Multi-floor Support**: Organized parking structure with clear identification
-- **Professional Receipts**: Dual download methods (ID and code-based)
-- **Enhanced Rate Limiting**: Token bucket algorithm with IP tracking
-- **Direct Access**: No authentication barriers - immediate feature access
-
-### ✨ Professional UI & Design System
-- **Modern Design System**: Unified CSS variables and components
-- **Responsive Layout**: Mobile-friendly interface
-- **Ghost Badges**: Subtle status indicators (Available, Booked, Locked)
-- **Skeleton Loaders**: Smooth loading experience
-- **Professional Typography**: Cambria font family across all pages
-
-### 🎯 Enhanced Exit Management
-- **Real-time Synchronization**: Advanced multi-method communication
-- **Complete Data Display**: Phone numbers, vehicle types, duration, hours charged
-- **Live Statistics**: Today's exits, revenue, and active bookings
-- **Fee Calculation**: Automatic parking fee computation
-- **Receipt Generation**: Professional receipt downloads
-- **Staff Confirmation Dialogs**: Professional confirmation before vehicle release
-
-### 📊 Parking Slot Management
-- **Real-time Slot Status**: Available, Booked, Locked states
-- **Floor-based Organization**: Multi-floor parking structure (200 slots total)
-- **Human-Readable Slot IDs**: AG06, BG15, AF22 format for easy identification
-- **Vehicle Type Support**: Cars, Bikes, SUVs, Vans
-- **Booking Management**: Create and manage parking reservations
-- **5-minute Slot Lock**: Extended lock duration for better user experience
-- **Vehicle Re-booking Support**: Same vehicles can book again after exit
-- **Clean Receipt Format**: Simplified slot display (shows only slot ID like AG06)
-- **Optimized Database Structure**: Efficient slot and booking management
-
-### 🔧 Technical Improvements
-- **Enhanced Rate Limiting**: 50 locks, 30 bookings, 300 general requests per hour
-- **Input Validation**: Both frontend and backend validation
-- **Concurrent Control**: Database-level locking for slot operations
-- **Debug Support**: Comprehensive logging and troubleshooting endpoints
-- **Professional Receipt System**: Dual download methods with UTF-8 encoding
-- **Streamlined Architecture**: Direct access without authentication overhead
-- **Optimized Performance**: Fast response times and efficient database queries
-
-## 🏗️ Project Structure
+## 📁 Folder Structure
 
 ```
 SmartParkingSystem/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/smartparking/
-│   │   │   ├── controller/     # REST controllers (Parking, Exit, Home)
-│   │   │   ├── dto/           # Data transfer objects
-│   │   │   ├── entity/        # JPA entities (Booking, ParkingSlot)
-│   │   │   ├── enums/         # Enumerations (SlotStatus, VehicleType)
-│   │   │   ├── filter/        # Request filters (Rate limiting)
-│   │   │   ├── ratelimit/     # Rate limiting implementation
-│   │   │   ├── repository/    # Data repositories
-│   │   │   ├── scheduler/     # Scheduled tasks
-│   │   │   └── service/       # Business logic services
+│   │   │   ├── config/        # System configuration (WebMvc, Caffeine Cache, Passwords)
+│   │   │   ├── controller/    # REST API Controllers (Auth, Parking, Exit, Health)
+│   │   │   ├── dto/           # Data Transfer Objects (Requests/Responses)
+│   │   │   ├── entity/        # JPA Entities (Booking, ParkingSlot, StaffUser)
+│   │   │   ├── enums/         # Domain Enums (SlotStatus, VehicleType, BookingStatus)
+│   │   │   ├── filter/        # HTTP Servlet Filters (Rate Limiting Filter)
+│   │   │   ├── exception/     # Global & business logic exception handlers
+│   │   │   ├── ratelimit/     # Token Bucket algorithm structures
+│   │   │   ├── repository/    # JPA Repositories (Booking, ParkingSlot, StaffUser)
+│   │   │   ├── scheduler/     # Lock cleanup schedulers
+│   │   │   └── service/       # Services (Auth, Parking, Exit, Receipt, UPIPayment)
 │   │   └── resources/
-│   │       ├── static/        # HTML pages and assets
-│   │       │   ├── index.html     # Parking management page
-│   │       │   ├── exit.html      # Exit management page
-│   │       │   └── styles/        # CSS stylesheets
-│   │       ├── application.properties      # Base configuration
-│   │       ├── application-dev.properties    # Development config
-│   │       └── application-prod.properties   # Production config
-├── pom.xml                    # Maven dependencies
-├── README.md                  # Project documentation
-└── .gitignore                 # Git ignore rules
+│   │       ├── db/migration/  # Flyway schema and seed SQL scripts
+│   │       ├── static/        # Frontend pages (index.html, login.html, exit.html)
+│   │       │   └── styles/    # Core styling files
+│   │       ├── application.properties        # Base settings
+│   │       ├── application-dev.properties     # Development settings
+│   │       └── application-prod.properties    # Production settings
+├── Dockerfile                 # Multi-stage Docker build configuration
+├── docker-compose.yml         # Container orchestration configuration
+├── pom.xml                    # Maven configuration
+└── README.md                  # Project documentation
 ```
 
-## 🎯 Key Features
+---
 
-### Direct Access System
-- **No Authentication Required**: Immediate access to all features
-- **Simplified User Experience**: Direct navigation to parking and exit management
-- **Clean Interface**: Streamlined UI without login barriers
+---
 
-### Core Functionality
-- **Real-time Parking Management**: 200 slots across 2 floors with human-readable IDs
-- **Vehicle Exit Processing**: Fee calculation and receipt generation
-- **Booking System**: Slot locking and reservation management
-- **Data Synchronization**: Real-time updates across all interfaces
-- **Professional Receipts**: Clean format with slot ID display (e.g., AG06)
-- **Multi-floor Support**: Organized parking structure with clear slot identification
+## 🔐 Authentication System
 
-## Rate Limiting Implementation
+The system implements a **Session-based Authentication System** (no JWT state overhead) using Spring HTTP Session management.
 
-### Token Bucket Algorithm
-Implements a token bucket algorithm for rate limiting with the following features:
+* **Endpoints**:
+  * `POST /api/auth/login` - Authenticates credentials, invalidates old sessions to prevent session fixation, and starts a secure session.
+  * `POST /api/auth/logout` - Invalidates the HTTP session.
+  * `GET /api/auth/me` - Resolves the current authenticated user session details.
+* **Security Controls**:
+  * **BCrypt Hashing**: Password hashes stored securely (`staff_users` table).
+  * **AuthInterceptor**: Restricts access to all `/api/exit/**` endpoints and the `/exit.html` page to authenticated staff members.
+  * **Cache Control**: Disables page caching for the Exit Portal to prevent accessing sensitive pages via browser back-buttons after logging out.
 
-### Configuration (requests per hour)
-| Endpoint Type | Limit | Purpose |
-|--------------|-------|---------|
-| Lock | 50 | Slot locking attempts |
-| Book | 30 | Booking confirmations |
-| View | 200 | Page views and slot queries |
-| Receipt | 50 | Receipt downloads |
-| General | 300 | All other requests |
+---
 
-### Key Components
-- **RateLimitingFilter**: Servlet filter that intercepts all requests
-- **RateLimitingService**: Core service implementing token bucket logic
-- **RateLimitConfig**: Configuration properties for limits
-- **Cleanup**: Automatic cleanup of expired buckets every 5 minutes
+## 🚗 Parking Management
 
-### Features
-- **IP-based tracking**: Limits applied per client IP address
-- **Thread-safe**: Concurrent access handling
-- **Burst handling**: Allows short bursts while maintaining overall limits
-- **Automatic cleanup**: Removes inactive IP records to prevent memory leaks
+* **Total Slots**: **600 Slots** divided across 2 floors:
+  * **Ground Floor (G)**: 300 slots (mapped to groups `AG01-AG20` through `OG01-OG20`).
+  * **First Floor (F)**: 300 slots (mapped to groups `AF01-AF20` through `OF01-OF20`).
+* **Temporary Locking**: Allows locking a slot for **2 minutes** (matching the frontend timer) before committing a booking.
+* **Concurrency Control**: Pessimistic write locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) at the database row level prevents race conditions and double-locking.
+* **Input Validation**: Strict regex checks for vehicle numbers (`^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$`), customer names, and 10-digit phone numbers.
 
-### Response Headers
-```
-X-RateLimit-Limit: 50
-X-RateLimit-Remaining: 45
-X-RateLimit-Reset: 1640995200
-```
+---
 
-## 🎯 Slot ID Format
+## 🚪 Exit Management & Payment
 
-### Structure
-The parking system uses a human-readable slot ID format for easy identification:
+* **Active Bookings Tracking**: Real-time display of parked vehicles and parking durations.
+* **Fee Calculation**: Flat rate of **₹20.00/hour**, rounding up to the nearest hour.
+* **Payment Support**:
+  * **Cash**: Processed directly by staff.
+  * **UPI**: Dynamically generates a UPI QR code using the ZXing library based on the target merchant UPI configuration and calculated amount. Requires validation of the last 5 digits of the transaction ID.
+* **State Updates**: Releasing a vehicle sets the booking `isActive = false`, records payment details, releases the associated `ParkingSlot` back to `AVAILABLE`, and locks are cleared.
 
-**Format**: `[Area][Floor][Number]`
+---
 
-### Examples
-- **AG06**: Area A, Ground Floor (1), Slot 06
-- **BG15**: Area B, Ground Floor (1), Slot 15  
-- **AF22**: Area A, Floor 2, Slot 22
-- **DF08**: Area D, Floor 2, Slot 08
+## 📄 Receipt Generation
 
-### Receipt Display
-- **Before**: SLOT ID: AG06, SLOT NUMBER: 6, FLOOR: 1 (confusing)
-- **After**: SLOT NUMBER: AG06 (clean and clear)
+Receipts are generated dynamically on demand.
+* **Dual Download Modes**: Downloadable as a `.txt` file by querying either the booking ID (`/api/exit/receipt/{bookingId}`) or the booking code (`/api/exit/receipt/by-code/{bookingCode}`).
+* **UTF-8 Encoding**: Explicit UTF-8 configuration prevents characters display issues across modern operating systems.
+* **Fallback receipts**: Embedded frontend logic handles receipt generation if the backend is unreachable.
 
-### Internal Structure
-The system maintains both formats internally:
-- `slot_id`: Human-readable (AG06) - shown to users
-- `slot_number`: Numeric (6) - used for sorting
-- `floor`: Numeric (1) - used for grouping
+---
 
-This provides the best of both worlds: user-friendly display and efficient database operations.
+## 🗄️ Database Design
 
-## 🗄️ Database Schema & ER Diagram
-
-### **📊 ER Diagram**
+The schema contains three core tables optimized with performance indexes:
 
 ```
-┌─────────────────────┐          ┌─────────────────────┐
-│    PARKING_SLOTS    │          │       BOOKINGS      │
-├─────────────────────┤          ├─────────────────────┤
-│ id (PK, Auto)       │◄─────────│ id (PK, Auto)       │
-│ slot_number         │          │ booking_code (UK)   │
-│ floor               │          │ parking_slot_id (FK)│
-│ slot_id (UNIQUE)    │          │ vehicle_number      │
-│ status              │          │ customer_name       │
-│ lock_until          │          │ phone_number        │
-│ version             │          │ vehicle_type        │
-└─────────────────────┘          │ booking_time        │
-                                 │ exit_time           │
-                                 │ parking_fee         │
-                                 │ is_active           │
-                                 └─────────────────────┘
-
-Relationship: One-to-Many (1 Parking Slot ↔ Many Bookings)
+                  ┌─────────────────┐
+                  │  PARKING_SLOTS  │
+                  ├─────────────────┤
+                  │ id (PK)         │
+                  │ slot_number     │
+                  │ floor           │
+                  │ slot_id (Unique)│
+                  │ status          │
+                  │ lock_until      │
+                  │ version         │
+                  └────────┬────────┘
+                           │ 1
+                           │
+                           │ 1..*
+                  ┌────────▼────────┐        ┌─────────────────┐
+                  │    BOOKINGS     │        │   STAFF_USERS   │
+                  ├─────────────────┤        ├─────────────────┤
+                  │ id (PK)         │        │ id (PK)         │
+                  │ booking_code (U)│        │ username (U)    │
+                  │ parking_slot_id │        │ password        │
+                  │ vehicle_number  │        │ full_name       │
+                  │ customer_name   │        │ role            │
+                  │ phone_number    │        │ enabled         │
+                  │ created_at      │        └─────────────────┘
+                  │ booking_time    │
+                  │ exit_time       │
+                  │ status          │
+                  │ parking_fee     │
+                  │ duration_minutes│
+                  │ is_active       │
+                  │ payment_method  │
+                  │ transaction_id  │
+                  │ payment_time    │
+                  └─────────────────┘
 ```
 
-### **📋 Table Definitions**
+* **Indexes**: Created on `bookings(vehicle_number)`, `bookings(status)`, `bookings(is_active)`, `bookings(booking_code)`, and `parking_slots(status)`.
 
-#### **parking_slots**
+---
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| **id** | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
-| **slot_number** | INTEGER | NOT NULL, (1-300) | Sequential slot number |
-| **floor** | INTEGER | NOT NULL, (1-2) | Floor level |
-| **slot_id** | VARCHAR | NOT NULL, UNIQUE | Human-readable ID (AG01, AF01) |
-| **status** | VARCHAR | NOT NULL | AVAILABLE/LOCKED/OCCUPIED |
-| **lock_until** | TIMESTAMP | NULLABLE | Lock expiration time |
-| **version** | BIGINT | NULL | Optimistic locking |
+## 🚀 Flyway Migration System
 
-#### **bookings**
+Flyway maintains schema version control sequentially:
+* **V1__Synchronize_Schema.sql**: Creates `parking_slots` and `bookings` tables, indexes, and primary foreign key constraints.
+* **V2__Fix_Active_Vehicle_Constraint.sql**: Creates a partial unique index on `bookings(vehicle_number) WHERE is_active = TRUE` to prevent duplicate active bookings while allowing same-vehicle re-bookings after exit.
+* **V3__Create_Staff_Users.sql**: Creates the `staff_users` table and inserts the default admin account `admin`.
+* **V4__Fix_Admin_Password.sql**: Updates the default admin password to the BCrypt hash of `Admin@123`.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| **id** | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique identifier |
-| **booking_code** | VARCHAR | NOT NULL, UNIQUE (5 chars) | Booking reference |
-| **parking_slot_id** | BIGINT | NOT NULL, FOREIGN KEY | Linked parking slot |
-| **vehicle_number** | VARCHAR | NOT NULL, FIXED | Vehicle registration |
-| **customer_name** | VARCHAR | NOT NULL, (max 20) | Customer name |
-| **phone_number** | VARCHAR | NOT NULL, (10 digits) | Contact number |
-| **vehicle_type** | VARCHAR | NOT NULL | CAR/BIKE/SUV/VAN |
-| **booking_time** | TIMESTAMP | NOT NULL | Entry timestamp |
-| **exit_time** | TIMESTAMP | NULLABLE | Exit timestamp |
-| **parking_fee** | INTEGER | NULLABLE | Calculated fee |
-| **is_active** | BOOLEAN | DEFAULT TRUE | Active status |
+---
 
-### **🔗 Relationships & Constraints**
+## 🐳 Docker Support
 
-#### **Primary Keys**
-- `parking_slots.id` - Auto-generated unique identifier
-- `bookings.id` - Auto-generated unique identifier
+The application is completely dockerized using a multi-stage Docker build file:
+* **Build Stage**: Compiles and packages source code using `maven:3.9.6-eclipse-temurin-21`.
+* **Runtime Stage**: Runs using lightweight `eclipse-temurin:21-jre`.
+  * Drops privileges by executing under a non-root system user `parking`.
+  * Runs with default port `10000` (exposing environment overrides).
+  * Automatically sets time zone to `Asia/Kolkata` and configures UTF-8 locales.
+  * Embeds runtime container JVM tuning: `-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseStringDeduplication`.
 
-#### **Foreign Keys**
-- `bookings.parking_slot_id` → `parking_slots.id`
-- **Cardinality:** One slot can have many bookings (historical)
-- **Integrity:** ON DELETE RESTRICT
+---
 
-#### **Unique Constraints**
-- `parking_slots.slot_id` - Human-readable slot identifier
-- `bookings.booking_code` - Unique booking reference
-- `bookings(vehicle_number, is_active)` - Prevent duplicate active bookings
+## ☁️ Cloud Deployment
 
-#### **Enums**
-- **SlotStatus:** AVAILABLE, LOCKED, OCCUPIED
-- **VehicleType:** CAR, BIKE, SUV, VAN
+### Neon PostgreSQL Integration
+The application uses Neon Serverless PostgreSQL in production, leveraging connection pooling and SSL encryption for secure data persistence.
 
-### **📈 Data Flow & Business Logic**
+### Render Deployment
+Deployed as a web service on Render:
+* **Build Command**: `docker build` (using the multi-stage Dockerfile)
+* **Port**: Binds to port `10000` via Render's routing layer.
+* **Database**: Links directly to the Neon PostgreSQL instance.
+* **Static Assets**: Bundled and served directly by Tomcat from Spring Boot classpath resource mappings.
 
-#### **Slot Lifecycle**
-1. **AVAILABLE** → **LOCKED** (5-minute timer)
-2. **LOCKED** → **OCCUPIED** (on booking)
-3. **OCCUPIED** → **AVAILABLE** (on exit)
+---
 
-#### **Booking Process**
-1. Lock slot → Create booking → Update slot status
-2. Exit processing → Calculate fee → Update exit_time
-3. Archive booking → Free slot for reuse
+## 📡 REST API Overview
 
-#### **Data Integrity**
-- **Optimistic Locking:** Version field prevents concurrent updates
-- **Unique Constraints:** Prevent duplicate active bookings
-- **Foreign Keys:** Maintain referential integrity
+### 🔐 Authentication
+* `POST /api/auth/login` - JSON payload: `{ "username": "admin", "password": "..." }`
+* `POST /api/auth/logout` - Invalidate session
+* `GET /api/auth/me` - Get current session details
 
-### **🎯 Key Features**
+### 🚗 Parking Slots
+* `GET /api/parking-slots` - Fetch all slot DTOs
+* `GET /api/parking-slots/floor/{floor}` - Fetch slots for floor (1 or 2)
+* `POST /api/parking-slots/lock/{slotId}` - Locks slot for booking
+* `POST /api/parking-slots/book` - Commit booking reservation
 
-- **600 Slots Total:** 300 slots per floor (2 floors)
-- **Human-Readable IDs:** AG01-AG20 (Ground), AF01-AF20 (First)
-- **Real-time Status:** Live slot availability tracking
-- **Historical Data:** Complete booking history preserved
-- **Performance Optimized:** Indexed queries and caching
+### 🚪 Exit Management (Staff Protected)
+* `GET /api/exit/active-bookings` - Fetch active bookings
+* `GET /api/exit/calculate-fee/{bookingId}` - Calculate hours and fees
+* `POST /api/exit/process-payment/{bookingId}` - Processes payment and completes exit
+* `GET /api/exit/stats` - Fetch statistics metrics (today's exits, revenue, active count)
+* `GET /api/exit/receipt/{bookingId}` - Download receipt text file
+* `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
 
-## License
+---
 
-This project is licensed under the MIT License.
+## ⚙️ Environment Variables
 
-## Support
+Configure these variables in your `.env` file for local Docker setup or in Render/Production Settings:
 
-For support and questions, please contact the development team or create an issue in the repository.
+| Environment Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | `dev` | Active spring profile (`dev` or `prod`) |
+| `SERVER_PORT` | `8081` | Web server listener port (defaults to `10000` in container) |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/smart_parking_db` | PostgreSQL connection URL |
+| `DB_USERNAME` | `postgres` | Database username |
+| `DB_PASSWORD` | `*******` | Database connection password |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:8081` | Allowed origins configuration |
+| `UPI_MERCHANT_ID` | `nandakumar27@ptyes` | Production merchant UPI ID for dynamic QR generation |
+| `UPI_MERCHANT_NAME` | `Smart Parking System` | Display merchant name for UPI payments |
+
+---
+
+## 🛠️ Local Development Setup
+
+### Prerequisites
+* Java 21 SDK
+* Maven 3.6+
+* PostgreSQL 12+ running locally
+
+### Configuration
+1. Create a database named `smart_parking_db` in your PostgreSQL server.
+2. Verify local credentials match those in `src/main/resources/application-dev.properties`.
+
+### Execution
+Run the following commands:
+```bash
+# Clone the repository
+git clone <repository-url>
+cd SmartParkingSystem
+
+# Compile and start
+mvn spring-boot:run
+```
+The application will boot on `http://localhost:8081`. 
+
+---
+
+## 🐳 Docker Compose Deployment
+
+To build and run the system locally using containers:
+
+```bash
+# Copy and edit environment variables
+cp .env.example .env
+
+# Start all containers in detached mode
+docker compose up --build -d
+
+# Verify container status
+docker compose ps
+
+# View real-time logs
+docker compose logs -f parking-backend
+```
+* Access the app at `http://localhost:8081` (database mapped locally).
+
+---
+
+## ⚡ Performance Optimizations
+* **Eager Fetch Joins**: Essential queries in `BookingRepository` use `LEFT JOIN FETCH` or `@EntityGraph` to eagerly load mappings in a single query, resolving all N+1 query overhead and eliminating `LazyInitializationException` risks.
+* **No OSIV**: Disabling Open Session in View (`spring.jpa.open-in-view=false`) prevents database connection holding during view serialization.
+* **Caffeine Cache**: Caching configuration in `CacheConfig.java` caches static slot definitions to prevent redundant database hits.
+* **Optimal Startup Queries**: Replaced slow table scans on startup with direct indexed count queries (`countByIsActiveTrue()`), dropping initialization from 130s to milliseconds.
+
+---
+
+## 🔒 Security Features
+* **Rate Limiting**: Custom token-bucket rate limiter (`RateLimitingFilter`) tracks IP addresses to protect key endpoints (locks, bookings, and logins) from DDoS attacks.
+* **Session Protection**: Automatic session invalidation upon login/logout prevents session fixation attacks.
+* **BCrypt Encoding**: Secure, salted password storage.
+* **Strict CORS Rules**: Explicit allowed-origins mapping.
+
+---
+
+## 🧪 Testing
+
+Execute unit and integration tests using Maven:
+```bash
+mvn clean test
+```
+
+---
+
+## 📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
