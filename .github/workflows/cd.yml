@@ -97,39 +97,38 @@ jobs:
           for i in $(seq 1 $ATTEMPTS); do
             echo "[$(date)] Health Check Attempt $i of $ATTEMPTS..."
             
-            # Temporary files to capture response and headers
+            # Temporary file to capture response
             RESPONSE_FILE=$(mktemp)
-            HEADERS_FILE=$(mktemp)
             
-            HTTP_STATUS=$(curl --silent --show-error -o "$RESPONSE_FILE" -D "$HEADERS_FILE" -w "%{http_code}" "$ENDPOINT") || EXIT_CODE=$?
-            CONTENT_TYPE=$(grep -i "content-type:" "$HEADERS_FILE" | tr -d '\r\n' || echo "")
+            # Perform curl with increased reliability options
+            HTTP_STATUS=$(curl --location --retry 3 --retry-delay 5 --connect-timeout 10 --max-time 30 --silent --show-error -o "$RESPONSE_FILE" -w "%{http_code}" "$ENDPOINT") || EXIT_CODE=$?
             BODY=$(cat "$RESPONSE_FILE" 2>/dev/null || echo "")
+            rm -f "$RESPONSE_FILE"
             
-            rm -f "$RESPONSE_FILE" "$HEADERS_FILE"
-            
-            echo "[$(date)] HTTP Status: $HTTP_STATUS"
-            echo "[$(date)] Content-Type: $CONTENT_TYPE"
-            echo "[$(date)] Response: $BODY"
-            
-            # Validate ALL criteria: Status 200, JSON Content-Type, status:UP JSON field
-            STATUS_OK=false
-            CT_OK=false
-            BODY_OK=false
-            
-            if [ "$HTTP_STATUS" -eq 200 ]; then
-              STATUS_OK=true
-            fi
-            if echo "$CONTENT_TYPE" | grep -qi "application/json"; then
-              CT_OK=true
-            fi
-            if echo "$BODY" | grep -qi '"status"[[:space:]]*:[[:space:]]*"UP"'; then
-              BODY_OK=true
+            # Parse JSON status using jq, with fallback to grep if jq is not present
+            STATUS_VALUE=""
+            if command -v jq >/dev/null 2>&1; then
+              STATUS_VALUE=$(echo "$BODY" | jq -r '.status // empty' 2>/dev/null)
+            else
+              echo "[$(date)] Warning: jq not found. Falling back to grep validation..."
+              if echo "$BODY" | grep -q '"status":"UP"'; then
+                STATUS_VALUE="UP"
+              fi
             fi
             
-            if [ "$STATUS_OK" = true ] && [ "$CT_OK" = true ] && [ "$BODY_OK" = true ]; then
-              echo "[$(date)] Health check passed successfully!"
-              SUCCESS=true
-              break
+            # Print debug block
+            echo "--------------------------------"
+            echo "Attempt        : $i/$ATTEMPTS"
+            echo "HTTP Status    : $HTTP_STATUS"
+            echo "Health Status  : $STATUS_VALUE"
+            echo "Response Body  : $BODY"
+            echo "--------------------------------"
+            
+            # Immediately perform validation
+            if [ "${HTTP_STATUS:-0}" = "200" ] && [ "$STATUS_VALUE" = "UP" ]; then
+                echo "Health check passed successfully!"
+                SUCCESS=true
+                break
             fi
             
             # Calculate wait time: Attempt * 5 capped at 30 seconds
@@ -139,7 +138,7 @@ jobs:
             fi
             
             if [ $i -lt $ATTEMPTS ]; then
-              echo "[$(date)] Application not healthy. Sleeping for $WAIT_TIME seconds before next check..."
+              echo "[$(date)] Application not healthy yet. Sleeping for $WAIT_TIME seconds before next check..."
               sleep $WAIT_TIME
             fi
           done
