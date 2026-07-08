@@ -14,7 +14,6 @@
 ### 🚀 Live Application
 * **Production Web App URL**: [smartparkingsystem-lxzp.onrender.com](https://smartparkingsystem-lxzp.onrender.com) 
 * **API Health Endpoint**: [smartparkingsystem-lxzp.onrender.com/actuator/health](https://smartparkingsystem-lxzp.onrender.com/actuator/health)
-* **Swagger API Documentation**: [smartparkingsystem-lxzp.onrender.com/swagger-ui/index.html](https://smartparkingsystem-lxzp.onrender.com/swagger-ui/index.html)
 * **GitHub Repository**: [github.com/nanda6912/SmartParkingSystem](https://github.com/nanda6912/SmartParkingSystem)
 
 ---
