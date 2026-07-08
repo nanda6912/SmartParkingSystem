@@ -1,0 +1,140 @@
+# =============================================================================
+# Smart Parking System - Continuous Integration (CI) Pipeline
+# =============================================================================
+# Purpose: Automatically validates every push and pull request to the main branch
+# by checking out, compiling, testing, packaging, and verifying the Docker build.
+# =============================================================================
+
+name: Smart Parking System CI
+
+# Trigger workflow on push and pull requests targeting the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Concurrency control: cancel previous runs of the same workflow on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Limit permissions to read-only for contents
+permissions:
+  contents: read
+
+# Environment variables
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  ARTIFACT_NAME: 'smart-parking-jar'
+  RETENTION_DAYS: 7
+
+jobs:
+  build-and-test:
+    name: Build, Test, and Containerize
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Java 21 (Temurin) & 3. Cache Maven dependencies
+      - name: Set up Java 21 (${{ env.JAVA_DISTRIBUTION }})
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      # 4. Detect Maven Wrapper automatically
+      - name: Detect Maven Wrapper
+        run: |
+          if [ -f "mvnw" ]; then
+            echo "Maven Wrapper detected. Ensuring execution permission..."
+            chmod +x mvnw
+            echo "Using Maven Wrapper (./mvnw)"
+            echo "MVN_CMD=./mvnw" >> $GITHUB_ENV
+          else
+            echo "Maven Wrapper not found. Using System Maven (mvn)"
+            echo "MVN_CMD=mvn" >> $GITHUB_ENV
+          fi
+
+      # 5. Display Java and Maven versions
+      - name: Display Environment Versions
+        run: |
+          java -version
+          ${{ env.MVN_CMD }} -version
+
+      # 6. Compile application (mvn clean compile)
+      - name: Compile Application
+        run: ${{ env.MVN_CMD }} clean compile
+
+      # 7. Execute unit tests (mvn test)
+      - name: Run Unit Tests
+        run: ${{ env.MVN_CMD }} test
+
+      # 8. Package application (mvn package -DskipTests - without clean)
+      - name: Package Application
+        run: ${{ env.MVN_CMD }} package -DskipTests
+
+      # 9. Verify build artifact
+      - name: Verify Build Artifact
+        run: |
+          echo "Listing target directory contents:"
+          ls -la target/
+          # Verify JAR artifact is present
+          JAR_COUNT=$(find target/ -maxdepth 1 -name "*.jar" | wc -l)
+          if [ "$JAR_COUNT" -eq 0 ]; then
+            echo "Error: Packaged JAR file is missing in target/!"
+            exit 1
+          fi
+          echo "Found $JAR_COUNT JAR file(s)."
+
+      # 10. Build Docker image (validation only, no push)
+      - name: Build Docker Image
+        run: docker build -t smart-parking-system:ci .
+
+      # 11. Upload build artifact
+      - name: Upload JAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: target/*.jar
+          retention-days: ${{ env.RETENTION_DAYS }}
+
+      # 12. Publish build summary
+      - name: Publish Build Summary
+        run: |
+          # Retrieve versions for the summary
+          JAVA_VER=$(java -version 2>&1 | head -n 1)
+          MAVEN_VER=$(${{ env.MVN_CMD }} -version | head -n 1)
+          
+          # Console Summary
+          echo "=================================================="
+          echo "           CI PIPELINE SUCCESS SUMMARY            "
+          echo "=================================================="
+          echo "✓ Java Version: $JAVA_VER"
+          echo "✓ Maven Version: $MAVEN_VER"
+          echo "✓ Compilation Successful"
+          echo "✓ Tests Passed"
+          echo "✓ JAR Generated"
+          echo "✓ Docker Build Successful"
+          echo "=================================================="
+          
+          # GitHub Step Summary
+          echo "### :rocket: Smart Parking System - CI Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "The Continuous Integration pipeline completed successfully." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Validation Step | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Java Setup** | :white_check_mark: Success | \`$JAVA_VER\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Maven Setup** | :white_check_mark: Success | \`$MAVEN_VER\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Compilation** | :white_check_mark: Compilation Successful | \`${{ env.MVN_CMD }} clean compile\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Unit Tests** | :white_check_mark: Tests Passed | Unit tests completed successfully |" >> $GITHUB_STEP_SUMMARY
+          echo "| **JAR Packaging** | :white_check_mark: JAR Generated | Saved as artifact: \`${{ env.ARTIFACT_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Docker Image Build** | :white_check_mark: Docker Build Successful | Built image: \`smart-parking-system:ci\` |" >> $GITHUB_STEP_SUMMARY
