@@ -1,148 +1,247 @@
-# Smart Parking Management System
+# 🚗 Smart Parking Management System
 
 [![Java Version](https://img.shields.io/badge/Java-21-orange.svg?style=flat-square&logo=openjdk)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-blue.svg?style=flat-square&logo=docker)](https://www.docker.com/)
 [![Flyway](https://img.shields.io/badge/Flyway-Migrations-red.svg?style=flat-square&logo=flyway)](https://flywaydb.org/)
+[![CI Pipeline](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/ci.yml/badge.svg)](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/ci.yml)
+[![CD Pipeline](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/cd.yml/badge.svg)](https://github.com/nanda6912/SmartParkingSystem/actions/workflows/cd.yml)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-A robust, enterprise-grade Smart Parking Management System built with **Java 21**, **Spring Boot 3.2**, **PostgreSQL**, **Caffeine Cache**, and **Docker**. The system provides real-time multi-floor parking slot locking, booking, session-based staff authentication, and exit portal fee processing.
+---
+
+### 🚀 Live Application
+* **Production Web App URL**: [smartparkingsystem-lxzp.onrender.com](https://smartparkingsystem-lxzp.onrender.com) 
+* **API Health Endpoint**: [smartparkingsystem-lxzp.onrender.com/actuator/health](https://smartparkingsystem-lxzp.onrender.com/actuator/health)
+* **Swagger API Documentation**: [smartparkingsystem-lxzp.onrender.com/swagger-ui/index.html](https://smartparkingsystem-lxzp.onrender.com/swagger-ui/index.html)
+* **GitHub Repository**: [github.com/nanda6912/SmartParkingSystem](https://github.com/nanda6912/SmartParkingSystem)
 
 ---
 
-## 🔗 Live Demo
-* **Production Web App URL**: `https://smartparkingsystem-lxzp.onrender.com` 
+<p align="center">
+  <img src="docs/images/dashboard.png" width="100%" alt="Smart Parking Management System Dashboard">
+</p>
+
+<p align="center">
+  <em>A robust, enterprise-grade web application for real-time parking slot allocation, multi-floor occupancy tracking, and exit fee management.</em>
+</p>
 
 ---
 
-## 🎨 Technology Stack
+## 🎨 Application Gallery
 
-### Backend
-* **Language & Runtime**: Java 21 (Eclipse Temurin JDK)
-* **Framework**: Spring Boot 3.2.0 (Starter Web, Actuator, Validation, Thymeleaf)
-* **Data Access**: Spring Data JPA & Hibernate 6
-* **Database Migration**: Flyway DB
-* **Caching**: Caffeine Cache (Local In-Memory Cache)
-* **API Documentation**: Springdoc OpenAPI (Swagger UI)
-* **Security & Utilities**: BCrypt Password Hashing, ZXing (QR Code generation), iText Core (PDF Receipt logic)
-
-### Frontend
-* **Core Technologies**: HTML5, Vanilla CSS3 (Custom Design System with CSS variables), Vanilla JavaScript (No frameworks)
-* **Real-time Synchronization**: BroadcastChannel API with localStorage fallbacks for cross-tab communication
-* **UI Features**: Responsive grid layout, stationary centering modals, backdrop-blur transitions, and loading states
+| Dashboard Overview | Ground Floor Slots | First Floor Slots |
+| :---: | :---: | :---: |
+| ![Dashboard](docs/images/dashboard.png) | ![Ground Floor](docs/images/ground-floor.png) | ![First Floor](docs/images/first-floor.png) |
+| **Slot Booking Dialog** | **Booking Confirmation** | **Staff Exit Login** |
+| ![Booking Dialog](docs/images/booking-dialog.png) | ![Booking Confirmation](docs/images/booking-confirmation.png) | ![Exit Login](docs/images/exit-login.png) |
+| **Exit Management Dashboard** | **Payment Method Selection** | **Dynamic UPI QR Code** |
+| ![Exit Dashboard](docs/images/exit-dashboard.png) | ![Payment Selection](docs/images/payment-selection.png) | ![UPI Payment](docs/images/upi-payment.png) |
+| **Payment Success State** | **Digital Receipt Download** | **Released Vehicles log** |
+| ![Payment Success](docs/images/payment-success.png) | ![Receipt](docs/images/exit-receipt.png) | ![Released Vehicles](docs/images/released-vehicles.png) |
 
 ---
 
-## 🏗️ System Architecture
+## ✨ Key Features
 
-The following diagram illustrates the application layers and data flow:
+* 🚗 **Real-time Parking Management**: Dynamic tracking and status updates for **600 parking slots** mapped across two floors (Ground & First).
+* 🔒 **Database Row Locking**: Concurrency control using row-level pessimistic write locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) to prevent double-booking slot race conditions.
+* 👤 **Staff Authentication**: Secure session-based authentication utilizing salted BCrypt hashing and custom `AuthInterceptor` route filters.
+* 💳 **UPI Payment Integration**: Dynamically generated UPI payment QR codes using the ZXing library based on calculation parameters.
+* 📄 **Receipt Generation**: Plain-text receipt downloadable generation with UTF-8 encoding support and client-side fallbacks.
+* 🐳 **Dockerization**: Complete container orchestration via multi-stage builds and `docker-compose`.
+* ☁️ **Render Cloud Deployment**: Production web hosting linked with Serverless Neon PostgreSQL database.
+* 🔄 **GitHub Actions CI/CD**: Automatic compilation, testing, packaging, validation builds, and deploy webhooks.
+* 📊 **Health Monitoring**: Integrated Spring Boot Actuator health polling check loops.
+* ⚡ **Performance Optimizations**: Caffeine local caching, eager fetch joins, custom indexes, and disabled OSIV.
+
+---
+
+## 🏗️ Deployment Architecture
+
+The following diagram illustrates the deployment topology and application data flow:
 
 ```mermaid
 graph TD
-    Client[Web Browser / Frontend]
-    Controller[Spring REST Controllers]
-    Filter[Rate Limiting Filter]
-    Interceptor[Auth Interceptor]
-    Service[Business Services]
-    Repo[Spring Data JPA Repositories]
-    DB[(PostgreSQL / Neon Database)]
-    Cache[(Caffeine Cache)]
-    Client -->|HTTP Requests| Filter
-    Filter -->|Validated IP Rate Limits| Interceptor
-    Interceptor -->|Verified Session / exit.html protection| Controller
-    Controller --> Service
-    Service --> Repo
-    Service -->|Cached Slot / Exit Data| Cache
-    Repo --> DB
+    Browser[Web Browser / Client]
+    Render[Render Cloud Hosting]
+    SpringBoot["Spring Boot 3.2"]
+    Hibernate["Hibernate ORM"]
+    Flyway["Flyway Migration Engine"]
+    NeonPostgres[("Neon PostgreSQL Database")]
+
+    Browser -->|HTTPS Requests| Render
+    Render -->|Serves Web Application| SpringBoot
+    SpringBoot -->|JPA Data Operations| Hibernate
+    Hibernate -->|Schema DDL Versioning| Flyway
+    Flyway -->|Manages Tables| NeonPostgres
+    Hibernate -->|Saves & Queries Data| NeonPostgres
 ```
 
 ---
 
-## 📁 Folder Structure
+## 🔄 CI/CD Pipeline Flow
+
+Our GitHub Actions workflow processes and deploys updates seamlessly:
+
+```mermaid
+graph TD
+    Developer[Developer]
+    GitHub[GitHub Repository]
+    GACI[GitHub Actions CI Workflow]
+    Compile[Compile: mvn clean compile]
+    Test[Test: mvn test]
+    Package[Package: mvn package -DskipTests]
+    DockerBuild[Docker Build: docker build]
+    GACD[GitHub Actions CD Workflow]
+    RenderHook[Render Deploy Hook POST]
+    RenderDeploy[Render Build & Deploy]
+    HealthCheck[Health Check Loop: status UP]
+
+    Developer -->|Pushes Code / PR| GitHub
+    GitHub -->|Triggers CI| GACI
+    GACI -->|Step 1| Compile
+    Compile -->|Step 2| Test
+    Test -->|Step 3| Package
+    Package -->|Step 4| DockerBuild
+    DockerBuild -->|CI Success| GACD
+    GACD -->|Webhook Trigger| RenderHook
+    RenderHook -->|Builds Image| RenderDeploy
+    RenderDeploy -->|Checks Actuator Health| HealthCheck
+```
+
+---
+
+## 📊 Project Metrics & Tech Stack
+
+| Component | Technology | Version / Description |
+| :--- | :--- | :--- |
+| **Backend Framework** | Spring Boot | 3.2.0 |
+| **Language Runtime** | Java JDK | 21 (Eclipse Temurin) |
+| **Database** | PostgreSQL | 16 (Neon Serverless Cloud) |
+| **ORM Framework** | Hibernate / Spring Data JPA | 6.x |
+| **Migration Control** | Flyway | Core Schema Migrator |
+| **Cache Engine** | Caffeine Cache | Local In-Memory caching |
+| **Container Engine** | Docker / Compose | Multi-Stage Build & Orchestration |
+| **CI/CD Platform** | GitHub Actions | Workflows for automated CI & CD |
+| **Authentication** | Spring HTTP Session | Stateful Cookie-based Auth |
+| **Security Cryptography**| BCrypt | Salted password encoding |
+| **UI Presentation** | HTML5 / CSS3 / Vanilla JS | Responsive custom stylesheet grid |
+
+---
+
+## 📁 Project Structure
 
 ```
 SmartParkingSystem/
+├── .github/
+│   └── workflows/          # GitHub Actions CI/CD workflow definitions (ci.yml, cd.yml)
+├── docs/
+│   └── images/             # Application screenshots for gallery and documentation
 ├── src/
 │   ├── main/
 │   │   ├── java/com/smartparking/
-│   │   │   ├── config/        # System configuration (WebMvc, Caffeine Cache, Passwords)
-│   │   │   ├── controller/    # REST API Controllers (Auth, Parking, Exit, Health)
-│   │   │   ├── dto/           # Data Transfer Objects (Requests/Responses)
-│   │   │   ├── entity/        # JPA Entities (Booking, ParkingSlot, StaffUser)
-│   │   │   ├── enums/         # Domain Enums (SlotStatus, VehicleType, BookingStatus)
-│   │   │   ├── filter/        # HTTP Servlet Filters (Rate Limiting Filter)
-│   │   │   ├── exception/     # Global & business logic exception handlers
-│   │   │   ├── ratelimit/     # Token Bucket algorithm structures
-│   │   │   ├── repository/    # JPA Repositories (Booking, ParkingSlot, StaffUser)
-│   │   │   ├── scheduler/     # Lock cleanup schedulers
-│   │   │   └── service/       # Services (Auth, Parking, Exit, Receipt, UPIPayment)
+│   │   │   ├── config/     # System configuration (WebMvcConfig, CacheConfig, PasswordConfig)
+│   │   │   ├── controller/ # REST Controllers (AuthController, ParkingController, ExitController)
+│   │   │   ├── dto/        # DTOs (BookingRequestDTO, BookingResponseDTO, LoginRequest, etc.)
+│   │   │   ├── entity/     # JPA Entities (ParkingSlot, Booking, StaffUser)
+│   │   │   ├── enums/      # Enums (SlotStatus, VehicleType, BookingStatus)
+│   │   │   ├── exception/  # GlobalExceptionController and custom exceptions
+│   │   │   ├── filter/     # HTTP Servlet Filters (RateLimitingFilter, AuthInterceptor)
+│   │   │   ├── ratelimit/  # Token bucket implementation details
+│   │   │   ├── repository/ # Spring Data JPA Repositories
+│   │   │   ├── scheduler/  # Schedulers (LockReleaseScheduler)
+│   │   │   └── service/    # Services (AuthService, ParkingService, ExitService, UPIPaymentService, etc.)
 │   │   └── resources/
-│   │       ├── db/migration/  # Flyway schema and seed SQL scripts
-│   │       ├── static/        # Frontend pages (index.html, login.html, exit.html)
-│   │       │   └── styles/    # Core styling files
-│   │       ├── application.properties        # Base settings
-│   │       ├── application-dev.properties     # Development settings
-│   │       └── application-prod.properties    # Production settings
-├── Dockerfile                 # Multi-stage Docker build configuration
-├── docker-compose.yml         # Container orchestration configuration
-├── pom.xml                    # Maven configuration
-└── README.md                  # Project documentation
+│   │       ├── db/migration/ # Flyway database migration scripts
+│   │       ├── static/     # Static front-end pages (index.html, login.html, exit.html)
+│   │       │   └── styles/ # Frontend custom stylesheet design systems
+│   │       ├── application.properties        # Base Spring configuration template
+│   │       ├── application-dev.properties     # Development profile configuration
+│   │       └── application-prod.properties    # Production profile configuration
+│   └── test/               # JUnit 5 test classes (AuthControllerTest, ParkingControllerTest)
+├── Dockerfile              # Multi-stage Docker build configuration
+├── docker-compose.yml      # Docker Compose local orchestration definition
+├── pom.xml                 # Maven project configuration file
+└── README.md               # Main project documentation
 ```
 
 ---
 
----
+## 🛠️ Local Development & Quick Start
 
-## 🔐 Authentication System
+### Prerequisites
+* **Java SDK**: JDK 21 installed.
+* **Build Engine**: Maven 3.8+ installed.
+* **Database**: Local PostgreSQL 12+ instance.
 
-The system implements a **Session-based Authentication System** (no JWT state overhead) using Spring HTTP Session management.
+### Step-by-Step Installation
 
-* **Endpoints**:
-  * `POST /api/auth/login` - Authenticates credentials, invalidates old sessions to prevent session fixation, and starts a secure session.
-  * `POST /api/auth/logout` - Invalidates the HTTP session.
-  * `GET /api/auth/me` - Resolves the current authenticated user session details.
-* **Security Controls**:
-  * **BCrypt Hashing**: Password hashes stored securely (`staff_users` table).
-  * **AuthInterceptor**: Restricts access to all `/api/exit/**` endpoints and the `/exit.html` page to authenticated staff members.
-  * **Cache Control**: Disables page caching for the Exit Portal to prevent accessing sensitive pages via browser back-buttons after logging out.
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/nanda6912/SmartParkingSystem.git
+   cd SmartParkingSystem
+   ```
 
----
+2. **Configure Environment Variables**
+   Create a local configuration environment file:
+   ```bash
+   cp .env.example .env
+   ```
+   Modify `.env` variables (e.g., PostgreSQL credentials, ports, and UPI details).
 
-## 🚗 Parking Management
+3. **Run with Docker Compose (Recommended)**
+   Build and start container environments locally:
+   ```bash
+   docker compose up --build -d
+   ```
+   Access the application interface at `http://localhost:8081`.
 
-* **Total Slots**: **600 Slots** divided across 2 floors:
-  * **Ground Floor (G)**: 300 slots (mapped to groups `AG01-AG20` through `OG01-OG20`).
-  * **First Floor (F)**: 300 slots (mapped to groups `AF01-AF20` through `OF01-OF20`).
-* **Temporary Locking**: Allows locking a slot for **2 minutes** (matching the frontend timer) before committing a booking.
-* **Concurrency Control**: Pessimistic write locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) at the database row level prevents race conditions and double-locking.
-* **Input Validation**: Strict regex checks for vehicle numbers (`^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$`), customer names, and 10-digit phone numbers.
-
----
-
-## 🚪 Exit Management & Payment
-
-* **Active Bookings Tracking**: Real-time display of parked vehicles and parking durations.
-* **Fee Calculation**: Flat rate of **₹20.00/hour**, rounding up to the nearest hour.
-* **Payment Support**:
-  * **Cash**: Processed directly by staff.
-  * **UPI**: Dynamically generates a UPI QR code using the ZXing library based on the target merchant UPI configuration and calculated amount. Requires validation of the last 5 digits of the transaction ID.
-* **State Updates**: Releasing a vehicle sets the booking `isActive = false`, records payment details, releases the associated `ParkingSlot` back to `AVAILABLE`, and locks are cleared.
-
----
-
-## 📄 Receipt Generation
-
-Receipts are generated dynamically on demand.
-* **Dual Download Modes**: Downloadable as a `.txt` file by querying either the booking ID (`/api/exit/receipt/{bookingId}`) or the booking code (`/api/exit/receipt/by-code/{bookingCode}`).
-* **UTF-8 Encoding**: Explicit UTF-8 configuration prevents characters display issues across modern operating systems.
-* **Fallback receipts**: Embedded frontend logic handles receipt generation if the backend is unreachable.
+4. **Run with Local Maven**
+   Create a PostgreSQL database named `smart_parking_db` locally and start Spring Boot:
+   ```bash
+   mvn spring-boot:run
+   ```
+   The application will start on `http://localhost:8081`.
 
 ---
 
-## 🗄️ Database Design
+## 🔐 Security Features
 
-The schema contains three core tables optimized with performance indexes:
+The system follows industry security best practices to protect parking resources:
+
+* **Salted BCrypt Hashing**: Password strings are hashed using the secure BCrypt password encoder before persistent database storage.
+* **HTTP Session Authentication**: Employs stateful cookie session identifiers without the storage complexity of JWT. Prevents session fixation attacks by invalidating active sessions upon login.
+* **Route Protection via Interceptors**: The custom `AuthInterceptor` filters access to all `/api/exit/**` endpoints and the `/exit.html` dashboard, checking for verified session tokens.
+* **IP Rate Limiting**: The custom `RateLimitingFilter` applies a Token Bucket algorithm to throttle clients accessing key endpoints (logins, booking commits, slot locks) to protect against DDoS attacks.
+* **Input Regex Sanitization**: Strictly validates fields such as vehicle registration codes (`^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$`), user names, and 10-digit phone numbers.
+* **SQL Injection Protection**: All data requests use parameterized queries mapped through Spring Data JPA to mitigate malicious input injection.
+* **Explicit CORS Constraints**: Strictly binds allowed cross-origin access lists.
+
+---
+
+## ⚡ Performance Optimizations
+
+To handle high concurrency, the application implements the following techniques:
+
+* **Caffeine Local Cache**: Caches static metadata definitions (such as slot configurations) using Caffeine to decrease PostgreSQL resource load.
+* **Eager Fetch Joins & EntityGraphs**: Preemptively resolves queries using `LEFT JOIN FETCH` or `@EntityGraph` annotations. This eliminates Hibernate N+1 query overhead and lazy loading initialization issues.
+* **Disabled OSIV**: Explicitly sets `spring.jpa.open-in-view=false` to close database transactions immediately after business logic completion.
+* **Direct Database Indexes**: Configures Postgres indexes on query filter columns such as `bookings(vehicle_number)`, `bookings(status)`, `bookings(is_active)`, `bookings(booking_code)`, and `parking_slots(status)`.
+* **Optimized Initialization**: Replaced slow table database scans on system startup with fast, direct count query executions, dropping startup times to milliseconds.
+
+---
+
+## 🗄️ Database Design & Migration Control
+
+Flyway maintains schema version control sequentially:
+* **`V1__Synchronize_Schema.sql`**: Generates tables `parking_slots` and `bookings`, setting up primary/foreign key connections and query indexes.
+* **`V2__Fix_Active_Vehicle_Constraint.sql`**: Creates a partial unique index on `bookings(vehicle_number) WHERE is_active = TRUE` to ensure a vehicle cannot have multiple overlapping active parking bookings.
+* **`V3__Create_Staff_Users.sql`**: Configures the `staff_users` login schema.
+* **`V4__Fix_Admin_Password.sql`**: Initializes the admin password (`Admin@123`) using BCrypt.
+
+### ER Diagram & Relationships
 
 ```
                   ┌─────────────────┐
@@ -181,156 +280,39 @@ The schema contains three core tables optimized with performance indexes:
                   └─────────────────┘
 ```
 
-* **Indexes**: Created on `bookings(vehicle_number)`, `bookings(status)`, `bookings(is_active)`, `bookings(booking_code)`, and `parking_slots(status)`.
+---
+
+## 📡 REST API Summary
+
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `POST` | `/api/auth/login` | Authenticate credentials and establish session | No |
+| `POST` | `/api/auth/logout` | Terminate and invalidate session | No |
+| `GET` | `/api/auth/me` | Fetch active user credentials | No |
+| `GET` | `/api/parking-slots` | Fetch all parking slot configurations | No |
+| `GET` | `/api/parking-slots/floor/{floor}` | Fetch slot configurations for a specific floor | No |
+| `POST` | `/api/parking-slots/lock/{slotId}` | Lock a parking slot temporarily (2 minutes) | No |
+| `POST` | `/api/parking-slots/book` | Book a locked parking slot | No |
+| `GET` | `/api/exit/active-bookings` | Fetch currently active bookings | **Yes** |
+| `GET` | `/api/exit/calculate-fee/{bookingId}` | Calculate parking hours and billing fees | **Yes** |
+| `POST` | `/api/exit/process-payment/{bookingId}` | Process parking payment and complete release | **Yes** |
+| `GET` | `/api/exit/stats` | Fetch daily revenue and vehicle counts | **Yes** |
+| `GET` | `/api/exit/receipt/{bookingId}` | Download text-based invoice receipt | **Yes** |
+| `GET` | `/api/exit/receipt/by-code/{bookingCode}` | Download receipt using booking code | **Yes** |
 
 ---
 
-## 🚀 Flyway Migration System
+## 🔮 Future Enhancements
 
-Flyway maintains schema version control sequentially:
-* **V1__Synchronize_Schema.sql**: Creates `parking_slots` and `bookings` tables, indexes, and primary foreign key constraints.
-* **V2__Fix_Active_Vehicle_Constraint.sql**: Creates a partial unique index on `bookings(vehicle_number) WHERE is_active = TRUE` to prevent duplicate active bookings while allowing same-vehicle re-bookings after exit.
-* **V3__Create_Staff_Users.sql**: Creates the `staff_users` table and inserts the default admin account `admin`.
-* **V4__Fix_Admin_Password.sql**: Updates the default admin password to the BCrypt hash of `Admin@123`.
-
----
-
-## 🐳 Docker Support
-
-The application is completely dockerized using a multi-stage Docker build file:
-* **Build Stage**: Compiles and packages source code using `maven:3.9.6-eclipse-temurin-21`.
-* **Runtime Stage**: Runs using lightweight `eclipse-temurin:21-jre`.
-  * Drops privileges by executing under a non-root system user `parking`.
-  * Runs with default port `10000` (exposing environment overrides).
-  * Automatically sets time zone to `Asia/Kolkata` and configures UTF-8 locales.
-  * Embeds runtime container JVM tuning: `-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+UseG1GC -XX:+UseStringDeduplication`.
-
----
-
-## ☁️ Cloud Deployment
-
-### Neon PostgreSQL Integration
-The application uses Neon Serverless PostgreSQL in production, leveraging connection pooling and SSL encryption for secure data persistence.
-
-### Render Deployment
-Deployed as a web service on Render:
-* **Build Command**: `docker build` (using the multi-stage Dockerfile)
-* **Port**: Binds to port `10000` via Render's routing layer.
-* **Database**: Links directly to the Neon PostgreSQL instance.
-* **Static Assets**: Bundled and served directly by Tomcat from Spring Boot classpath resource mappings.
-
----
-
-## 📡 REST API Overview
-
-### 🔐 Authentication
-* `POST /api/auth/login` - JSON payload: `{ "username": "admin", "password": "..." }`
-* `POST /api/auth/logout` - Invalidate session
-* `GET /api/auth/me` - Get current session details
-
-### 🚗 Parking Slots
-* `GET /api/parking-slots` - Fetch all slot DTOs
-* `GET /api/parking-slots/floor/{floor}` - Fetch slots for floor (1 or 2)
-* `POST /api/parking-slots/lock/{slotId}` - Locks slot for booking
-* `POST /api/parking-slots/book` - Commit booking reservation
-
-### 🚪 Exit Management (Staff Protected)
-* `GET /api/exit/active-bookings` - Fetch active bookings
-* `GET /api/exit/calculate-fee/{bookingId}` - Calculate hours and fees
-* `POST /api/exit/process-payment/{bookingId}` - Processes payment and completes exit
-* `GET /api/exit/stats` - Fetch statistics metrics (today's exits, revenue, active count)
-* `GET /api/exit/receipt/{bookingId}` - Download receipt text file
-* `GET /api/exit/receipt/by-code/{bookingCode}` - Download receipt by booking code
-
----
-
-## ⚙️ Environment Variables
-
-Configure these variables in your `.env` file for local Docker setup or in Render/Production Settings:
-
-| Environment Variable | Default Value | Description |
-| :--- | :--- | :--- |
-| `SPRING_PROFILES_ACTIVE` | `dev` | Active spring profile (`dev` or `prod`) |
-| `SERVER_PORT` | `8081` | Web server listener port (defaults to `10000` in container) |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/smart_parking_db` | PostgreSQL connection URL |
-| `DB_USERNAME` | `postgres` | Database username |
-| `DB_PASSWORD` | `*******` | Database connection password |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:8081` | Allowed origins configuration |
-| `UPI_MERCHANT_ID` | `nandakumar27@ptyes` | Production merchant UPI ID for dynamic QR generation |
-| `UPI_MERCHANT_NAME` | `Smart Parking System` | Display merchant name for UPI payments |
-
----
-
-## 🛠️ Local Development Setup
-
-### Prerequisites
-* Java 21 SDK
-* Maven 3.6+
-* PostgreSQL 12+ running locally
-
-### Configuration
-1. Create a database named `smart_parking_db` in your PostgreSQL server.
-2. Verify local credentials match those in `src/main/resources/application-dev.properties`.
-
-### Execution
-Run the following commands:
-```bash
-# Clone the repository
-git clone <repository-url>
-cd SmartParkingSystem
-
-# Compile and start
-mvn spring-boot:run
-```
-The application will boot on `http://localhost:8081`. 
-
----
-
-## 🐳 Docker Compose Deployment
-
-To build and run the system locally using containers:
-
-```bash
-# Copy and edit environment variables
-cp .env.example .env
-
-# Start all containers in detached mode
-docker compose up --build -d
-
-# Verify container status
-docker compose ps
-
-# View real-time logs
-docker compose logs -f parking-backend
-```
-* Access the app at `http://localhost:8081` (database mapped locally).
-
----
-
-## ⚡ Performance Optimizations
-* **Eager Fetch Joins**: Essential queries in `BookingRepository` use `LEFT JOIN FETCH` or `@EntityGraph` to eagerly load mappings in a single query, resolving all N+1 query overhead and eliminating `LazyInitializationException` risks.
-* **No OSIV**: Disabling Open Session in View (`spring.jpa.open-in-view=false`) prevents database connection holding during view serialization.
-* **Caffeine Cache**: Caching configuration in `CacheConfig.java` caches static slot definitions to prevent redundant database hits.
-* **Optimal Startup Queries**: Replaced slow table scans on startup with direct indexed count queries (`countByIsActiveTrue()`), dropping initialization from 130s to milliseconds.
-
----
-
-## 🔒 Security Features
-* **Rate Limiting**: Custom token-bucket rate limiter (`RateLimitingFilter`) tracks IP addresses to protect key endpoints (locks, bookings, and logins) from DDoS attacks.
-* **Session Protection**: Automatic session invalidation upon login/logout prevents session fixation attacks.
-* **BCrypt Encoding**: Secure, salted password storage.
-* **Strict CORS Rules**: Explicit allowed-origins mapping.
-
----
-
-## 🧪 Testing
-
-Execute unit and integration tests using Maven:
-```bash
-mvn clean test
-```
+- 📧 **Automated Email Notifications**: Email digital receipts to customers immediately after check-out.
+- 💬 **SMS Notifications**: Send text alerts with slot confirmation and active booking time indicators.
+- 📊 **Advanced Analytics Dashboard**: Graphical reports on parking trends and revenue generation.
+- 📅 **Advance Booking System**: Pre-book parking slots days ahead.
+- 📱 **Native Mobile Application**: Cross-platform app for booking management.
+- 📷 **License Plate Camera Scanning (ALPR)**: Automatic entry scanning.
+- 🏷️ **Role-Based Access Control Expansion**: Dynamic portal roles for Staff, Operators, and Admins.
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](file:///c:/Users/HP/Desktop/SmartParkingSystem/LICENSE) file for details.
