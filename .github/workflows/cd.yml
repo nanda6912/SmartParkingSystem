@@ -1,0 +1,233 @@
+# =============================================================================
+# Smart Parking System - Continuous Deployment (CD) Pipeline
+# =============================================================================
+# Purpose: Automatically deploys the application to Render after a successful CI run
+# on the main branch. Includes deployment validation, health polling, and linear-capped
+# backoff health check validation.
+# =============================================================================
+
+name: Smart Parking System CD
+
+# Trigger ONLY after the workflow 'Smart Parking System CI' has completed successfully.
+# Restrict execution to the main branch.
+on:
+  workflow_run:
+    workflows: ["Smart Parking System CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+# Concurrency control: cancel previous deployment runs of the same workflow on the same branch
+concurrency:
+  group: cd-${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+# Limit permissions to read-only for contents
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Deploy only if the triggering workflow succeeded and it was on the main branch
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    
+    # GitHub Environment configuration
+    environment:
+      name: production
+      url: https://smartparkingsystem-lxzp.onrender.com
+
+    steps:
+      # 1. Record Start Time (used to calculate execution duration)
+      - name: Record Start Time
+        id: record_start
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # 2. Verify GitHub Secrets Exist
+      - name: Check Deployment Secrets
+        id: check_secrets
+        run: |
+          echo "[$(date)] Checking deployment secrets..."
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ] || [ -z "${{ secrets.APP_HEALTH_URL }}" ]; then
+            echo "[$(date)] Error: Missing required secrets (RENDER_DEPLOY_HOOK_URL or APP_HEALTH_URL)."
+            exit 1
+          fi
+          echo "[$(date)] Deployment secrets verified successfully."
+
+      # 3. Trigger Render Deployment
+      - name: Trigger Render Deployment
+        id: trigger_deploy
+        run: |
+          echo "[$(date)] Triggering Render deployment..."
+          RESPONSE_FILE=$(mktemp)
+          
+          # Execute POST request capturing HTTP status and response body
+          HTTP_STATUS=$(curl --fail --silent --show-error -o "$RESPONSE_FILE" -w "%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}") || EXIT_CODE=$?
+          BODY=$(cat "$RESPONSE_FILE" 2>/dev/null || echo "No response body captured")
+          rm -f "$RESPONSE_FILE"
+          
+          # Clean response body for use in ENV (remove newline and special characters)
+          CLEANED_BODY=$(echo "$BODY" | tr -d '\r\n' | cut -c 1-200)
+          
+          echo "[$(date)] Render HTTP Status: ${HTTP_STATUS:-unknown}"
+          echo "[$(date)] Render Response Body: $BODY"
+          
+          # Save outputs to environment variables for subsequent steps
+          echo "RENDER_STATUS=${HTTP_STATUS:-unknown}" >> $GITHUB_ENV
+          echo "RENDER_BODY=$CLEANED_BODY" >> $GITHUB_ENV
+          
+          # Fail immediately if the status is not successful (non-2xx range) or exit code was set
+          if [ -n "$EXIT_CODE" ] || [ "${HTTP_STATUS:-500}" -lt 200 ] || [ "${HTTP_STATUS:-500}" -ge 300 ]; then
+            echo "[$(date)] Error: Render deploy hook returned status code ${HTTP_STATUS:-unknown}. Exit code: ${EXIT_CODE:-0}"
+            exit 1
+          fi
+
+      # 4. Execute Health Check (Verify APP_HEALTH_URL with linear-capped backoff)
+      - name: Execute Health Check
+        id: health_check
+        run: |
+          echo "[$(date)] Waiting for application to report healthy..."
+          ENDPOINT="${{ secrets.APP_HEALTH_URL }}"
+          ATTEMPTS=15
+          SUCCESS=false
+          
+          for i in $(seq 1 $ATTEMPTS); do
+            echo "[$(date)] Health Check Attempt $i of $ATTEMPTS..."
+            
+            # Temporary files to capture response and headers
+            RESPONSE_FILE=$(mktemp)
+            HEADERS_FILE=$(mktemp)
+            
+            HTTP_STATUS=$(curl --silent --show-error -o "$RESPONSE_FILE" -D "$HEADERS_FILE" -w "%{http_code}" "$ENDPOINT") || EXIT_CODE=$?
+            CONTENT_TYPE=$(grep -i "content-type:" "$HEADERS_FILE" | tr -d '\r\n' || echo "")
+            BODY=$(cat "$RESPONSE_FILE" 2>/dev/null || echo "")
+            
+            rm -f "$RESPONSE_FILE" "$HEADERS_FILE"
+            
+            echo "[$(date)] HTTP Status: $HTTP_STATUS"
+            echo "[$(date)] Content-Type: $CONTENT_TYPE"
+            echo "[$(date)] Response: $BODY"
+            
+            # Validate ALL criteria: Status 200, JSON Content-Type, status:UP JSON field
+            STATUS_OK=false
+            CT_OK=false
+            BODY_OK=false
+            
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              STATUS_OK=true
+            fi
+            if echo "$CONTENT_TYPE" | grep -qi "application/json"; then
+              CT_OK=true
+            fi
+            if echo "$BODY" | grep -qi '"status"[[:space:]]*:[[:space:]]*"UP"'; then
+              BODY_OK=true
+            fi
+            
+            if [ "$STATUS_OK" = true ] && [ "$CT_OK" = true ] && [ "$BODY_OK" = true ]; then
+              echo "[$(date)] Health check passed successfully!"
+              SUCCESS=true
+              break
+            fi
+            
+            # Calculate wait time: Attempt * 5 capped at 30 seconds
+            WAIT_TIME=$(( i * 5 ))
+            if [ "$WAIT_TIME" -gt 30 ]; then
+              WAIT_TIME=30
+            fi
+            
+            if [ $i -lt $ATTEMPTS ]; then
+              echo "[$(date)] Application not healthy. Sleeping for $WAIT_TIME seconds before next check..."
+              sleep $WAIT_TIME
+            fi
+          done
+          
+          if [ "$SUCCESS" = false ]; then
+            echo "[$(date)] Error: Application failed health validation after $ATTEMPTS attempts."
+            exit 1
+          fi
+
+      # 5. Generate and Publish Deployment Summary
+      - name: Generate Deployment Summary
+        id: publish_summary
+        if: always()
+        run: |
+          echo "[$(date)] Generating deployment summaries..."
+          
+          # Calculate duration
+          END_TIME=$(date +%s)
+          START=${{ env.START_TIME }}
+          DURATION=$((END_TIME - START))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          EXEC_TIME="${MINUTES}m ${SECONDS}s"
+          
+          # Fetch Render Response status and body
+          RENDER_ST="${{ env.RENDER_STATUS }}"
+          RENDER_BD="${{ env.RENDER_BODY }}"
+          
+          # Defaults if empty
+          RENDER_ST=${RENDER_ST:-"N/A"}
+          RENDER_BD=${RENDER_BD:-"No response captured"}
+          
+          # Parse outcome of steps
+          if [ "${{ steps.trigger_deploy.outcome }}" = "success" ]; then
+            TRIGGER_STATUS="✓ Triggered Successfully"
+          else
+            TRIGGER_STATUS="✗ Trigger Failed"
+          fi
+          
+          if [ "${{ steps.health_check.outcome }}" = "success" ]; then
+            HEALTH_STATUS="✓ Passed (HTTP 200, JSON, UP)"
+          elif [ "${{ steps.trigger_deploy.outcome }}" = "success" ]; then
+            HEALTH_STATUS="✗ Failed (Timeout or Unhealthy)"
+          else
+            HEALTH_STATUS="⚠ Skipped"
+          fi
+          
+          if [ "${{ job.status }}" = "success" ]; then
+            DEPLOY_STATUS="✓ Deployment Completed Successfully"
+            STATUS_ICON=":white_check_mark:"
+            STATUS_TEXT="Successful"
+          else
+            DEPLOY_STATUS="✗ Deployment Failed"
+            STATUS_ICON=":x:"
+            STATUS_TEXT="Failed"
+          fi
+          
+          # Print to Runner Console
+          echo "=================================================="
+          echo "           CD PIPELINE DEPLOYMENT SUMMARY         "
+          echo "=================================================="
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow Name: Smart Parking System CD"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Commit SHA: ${{ github.event.workflow_run.head_sha }}"
+          echo "Triggered By: ${{ github.event.workflow_run.actor.login }}"
+          echo "Deployment Triggered: $TRIGGER_STATUS"
+          echo "Render Status Code: $RENDER_ST"
+          echo "Render Response: $RENDER_BD"
+          echo "Health Check Result: $HEALTH_STATUS"
+          echo "Overall Status: $DEPLOY_STATUS"
+          echo "Execution Time: $EXEC_TIME"
+          echo "=================================================="
+          
+          # Append Markdown Summary
+          echo "### :ship: Smart Parking System - CD Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "The Continuous Deployment workflow execution ended with status: **$STATUS_TEXT**." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric Parameter | Status / Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Overall Status** | $STATUS_ICON $STATUS_TEXT |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Repository** | \`${{ github.repository }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Workflow Name** | \`Smart Parking System CD\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Branch** | \`${{ github.event.workflow_run.head_branch }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit SHA** | \`${{ github.event.workflow_run.head_sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered By** | \`${{ github.event.workflow_run.actor.login }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Deployment URL** | [smartparkingsystem-lxzp.onrender.com](https://smartparkingsystem-lxzp.onrender.com) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Render HTTP Status** | \`$RENDER_ST\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Render Response Body** | \`$RENDER_BD\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Health Check Result** | $HEALTH_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Execution Time** | \`$EXEC_TIME\` |" >> $GITHUB_STEP_SUMMARY
