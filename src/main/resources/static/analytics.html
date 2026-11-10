@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking Analysis - Smart Parking</title>
+    <link rel="stylesheet" href="/styles/design-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .analytics-header { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; margin-bottom: var(--space-5); }
+        .filter-group { display: flex; flex-direction: column; gap: var(--space-1); }
+        .filter-group label { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); }
+        .filter-group select, .filter-group input { padding: var(--space-2) var(--space-3); border: 1px solid var(--border-primary); border-radius: var(--radius-md); font-family: var(--font-family-primary); font-size: var(--font-size-sm); background: var(--bg-secondary); color: var(--text-primary); }
+        .filter-group input[type="date"] { min-width: 140px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+        .kpi-card { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-sm); }
+        .kpi-card .kpi-icon { font-size: var(--font-size-xl); color: var(--accent-primary); margin-bottom: var(--space-2); }
+        .kpi-card .kpi-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
+        .kpi-card .kpi-label { font-size: var(--font-size-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-top: var(--space-1); }
+        .kpi-card .kpi-sub { font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: var(--space-1); }
+        .kpi-card .kpi-trend { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); margin-top: var(--space-1); }
+        .trend-up { color: #166534; } .trend-down { color: #991B1B; } .trend-flat { color: var(--text-tertiary); }
+        .section-card { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); box-shadow: var(--shadow-sm); }
+        .section-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-1); }
+        .section-subtitle { font-size: var(--font-size-sm); color: var(--text-tertiary); margin-bottom: var(--space-4); }
+        .chart-placeholder { min-height: 220px; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: var(--font-size-sm); border: 1px dashed var(--border-primary); border-radius: var(--radius-md); background: var(--bg-tertiary); }
+        .data-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+        .data-table th, .data-table td { padding: var(--space-2) var(--space-3); text-align: left; border-bottom: 1px solid var(--border-primary); white-space: nowrap; }
+        .data-table th { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); color: var(--text-tertiary); background: var(--bg-tertiary); }
+        .table-wrap { overflow-x: auto; }
+        .empty-state { text-align: center; padding: var(--space-8); color: var(--text-tertiary); }
+        .empty-state i { font-size: var(--font-size-3xl); margin-bottom: var(--space-3); display: block; }
+        .error-state { text-align: center; padding: var(--space-6); color: #991B1B; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: var(--radius-md); }
+        .skeleton { background: linear-gradient(90deg, var(--bg-tertiary) 25%, #E2E8F0 50%, var(--bg-tertiary) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: var(--radius-md); }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .metric-row { display: flex; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--border-primary); font-size: var(--font-size-sm); }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-label { color: var(--text-secondary); } .metric-value { font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+        .badge-live { display: inline-block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px var(--space-2); border-radius: var(--radius-xl); background: #F0FDF4; color: #166534; border: 1px solid #86EFAC; }
+        @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
+        @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .analytics-header { flex-direction: column; align-items: stretch; } }
+    </style>
+</head>
+<body>
+    <div class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">&#9776;</button>
+        <div class="mobile-logo">&#x1F17F; Smart Parking</div>
+    </div>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-header flex justify-between items-center">
+                <h2 class="sidebar-logo">&#x1F17F; Smart Parking</h2>
+                <button class="mobile-close-btn" id="mobileCloseBtn">&times;</button>
+            </div>
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="/index.html" class="sidebar-nav-link" id="nav-dashboard">&#x1F3E0; Dashboard</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/ground-floor.html" class="sidebar-nav-link" id="nav-ground">&#x1F697; Ground Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/floor1.html" class="sidebar-nav-link" id="nav-floor1">&#x1F3E2; First Floor</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/analytics.html" class="sidebar-nav-link active" id="nav-analytics">&#x1F4CA; Parking Analysis</a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="/login.html" class="sidebar-nav-link" id="nav-exit">&#x1F6AA; Exit Management</a>
+                </li>
+                <li class="sidebar-nav-item logout-item" id="logout-nav-item">
+                    <a href="javascript:logout()" class="sidebar-nav-link" id="logoutBtn" style="color: #EF4444;">&#x1F513; Logout</a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Parking Analysis</h1>
+                    <p class="page-subtitle">Monitor parking performance, revenue, occupancy and operational efficiency.</p>
+                </div>
+                <div style="display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap;">
+                    <span class="badge-live" id="liveBadge">Live</span>
+                    <span id="lastUpdated" style="font-size:var(--font-size-xs); color:var(--text-tertiary);"></span>
+                    <button class="btn btn-secondary btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+            </div>
+
+            <div class="analytics-header card" style="padding: var(--space-4);">
+                <div class="filter-group">
+                    <label for="presetRange">Date Range</label>
+                    <select id="presetRange">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="7d" selected>Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="month">This Month</option>
+                        <option value="lastmonth">Last Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="customFromGroup" style="display:none;">
+                    <label for="customFrom">From</label>
+                    <input type="date" id="customFrom">
+                </div>
+                <div class="filter-group" id="customToGroup" style="display:none;">
+                    <label for="customTo">To</label>
+                    <input type="date" id="customTo">
+                </div>
+                <div class="filter-group">
+                    <label for="floorFilter">Floor</label>
+                    <select id="floorFilter"><option value="">All Floors</option><option value="1">Floor 1</option><option value="2">Floor 2</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="vehicleFilter">Vehicle Type</label>
+                    <select id="vehicleFilter"><option value="">All Types</option><option value="CAR">Car</option><option value="BIKE">Bike</option><option value="SUV">SUV</option><option value="VAN">Van</option></select>
+                </div>
+                <div class="filter-group">
+                    <label for="paymentFilter">Payment Method</label>
+                    <select id="paymentFilter"><option value="">All Methods</option><option value="UPI">UPI</option><option value="CASH">Cash</option></select>
+                </div>
+                <div class="filter-group" style="flex-direction:row; gap:var(--space-2); align-items:flex-end;">
+                    <button class="btn btn-primary btn-sm" id="applyFilters">Apply Filters</button>
+                    <button class="btn btn-secondary btn-sm" id="resetFilters">Reset</button>
+                </div>
+            </div>
+
+            <section id="kpiSection">
+                <div class="kpi-grid" id="kpiGrid"></div>
+            </section>
+
+            <section class="section-card" id="revenueSection">
+                <h2 class="section-title">Revenue Analysis</h2>
+                <p class="section-subtitle">Recorded revenue only — fees on bookings with a recorded payment. Not verified settlements.</p>
+                <div id="revenueContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+            </section>
+
+            <section class="section-card" id="occupancySection">
+                <h2 class="section-title">Parking Utilization</h2>
+                <p class="section-subtitle">Historical occupancy from recorded snapshots. Tracking begins at first collection.</p>
+                <div id="occupancyContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+            </section>
+
+            <section class="section-card" id="vehiclesSection">
+                <h2 class="section-title">Vehicle Analysis</h2>
+                <p class="section-subtitle">Completed sessions by vehicle type.</p>
+                <div id="vehiclesContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+            </section>
+
+            <section class="section-card" id="operationsSection">
+                <h2 class="section-title">Operational Analysis</h2>
+                <p class="section-subtitle">Booking volumes, payments and lifecycle activity.</p>
+                <div id="operationsContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+            </section>
+
+            <section class="section-card" id="trafficSection">
+                <h2 class="section-title">Peak-Hour Traffic</h2>
+                <p class="section-subtitle">Entries, exits and recorded revenue by hour of day.</p>
+                <div id="trafficContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+            </section>
+
+            <section class="section-card" id="transactionsSection">
+                <h2 class="section-title">Transaction Report</h2>
+                <p class="section-subtitle">Permanent booking history. PII masked.</p>
+                <div class="table-wrap" id="transactionsContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
+                <div style="margin-top:var(--space-3);">
+                    <a class="btn btn-secondary btn-sm" id="csvExportBtn" href="#"><i class="fas fa-file-csv"></i> Export CSV</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const API = '/api/analytics';
+        const state = { from: null, to: null, floor: '', vehicleType: '', paymentMethod: '' };
+
+        // ---------- Auth ----------
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+                if (res.status === 401 || res.status === 403) { window.location.href = '/login.html'; return false; }
+                return res.ok;
+            } catch (e) { return true; }
+        }
+        async function logout() {
+            try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+            window.location.href = '/login.html';
+        }
+
+        // ---------- Date helpers (Asia/Kolkata reporting) ----------
+        function istToday() {
+            // Server/reporting zone is Asia/Kolkata; compute via UTC+5:30 offset
+            const now = new Date();
+            const ist = new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
+            return ist;
+        }
+        function toISODate(d) { return d.toISOString().slice(0, 10); }
+        function computeRange() {
+            const preset = document.getElementById('presetRange').value;
+            const t = istToday();
+            const day = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+            let from, to;
+            switch (preset) {
+                case 'today': from = day; to = day; break;
+                case 'yesterday': from = new Date(day - 86400000); to = from; break;
+                case '7d': from = new Date(day - 6 * 86400000); to = day; break;
+                case '30d': from = new Date(day - 29 * 86400000); to = day; break;
+                case 'month': from = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1)); to = day; break;
+                case 'lastmonth': {
+                    const first = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() - 1, 1));
+                    const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 0));
+                    from = first; to = last; break;
+                }
+                case 'custom':
+                    from = document.getElementById('customFrom').value || toISODate(new Date(day - 6 * 86400000));
+                    to = document.getElementById('customTo').value || toISODate(day);
+                    state.from = from; state.to = to; return;
+            }
+            state.from = toISODate(from); state.to = toISODate(to);
+        }
+        function qs() {
+            const p = new URLSearchParams();
+            if (state.from) p.set('from', state.from);
+            if (state.to) p.set('to', state.to);
+            if (state.floor) p.set('floor', state.floor);
+            return p.toString();
+        }
+
+        // ---------- Rendering helpers ----------
+        const fmtINR = v => '₹' + (v == null ? '0' : Number(v).toLocaleString('en-IN', { maximumFractionDigits: 0 }));
+        const fmtNum = v => v == null ? '—' : Number(v).toLocaleString('en-IN');
+        const fmtDur = m => m == null ? '—' : (m >= 60 ? (m / 60).toFixed(1) + 'h' : Math.round(m) + 'm');
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        function skeleton(html) { return `<div class="chart-placeholder skeleton" style="height:220px;"></div>`; }
+        function sectionError(elId, msg) {
+            document.getElementById(elId).innerHTML = `<div class="error-state"><i class="fas fa-exclamation-triangle"></i>${esc(msg || 'Failed to load this section.')}</div>`;
+        }
+        function sectionEmpty(elId, msg) {
+            document.getElementById(elId).innerHTML = `<div class="empty-state"><i class="fas fa-chart-bar"></i>${esc(msg || 'No data for the selected period.')}</div>`;
+        }
+        function trendHtml(curr, prev) {
+            if (prev == null || prev === 0) return '<span class="trend-flat">—</span>';
+            const pct = ((curr - prev) / prev) * 100;
+            if (Math.abs(pct) < 0.5) return '<span class="trend-flat">no change</span>';
+            const up = pct > 0;
+            return `<span class="${up ? 'trend-up' : 'trend-down'}">${up ? '▲' : '▼'} ${Math.abs(pct).toFixed(1)}%</span> vs prev period`;
+        }
+
+        // ---------- Sections ----------
+        function renderKpis(o) {
+            const cards = [
+                { icon: 'fa-ticket-alt', label: 'Completed Sessions', value: fmtNum(o.totalCompletedSessions), sub: trendHtml(o.totalCompletedSessions, o.previousPeriodCompletedSessions), historical: true },
+                { icon: 'fa-rupee-sign', label: 'Recorded Revenue', value: fmtINR(o.recordedRevenue), sub: trendHtml(o.recordedRevenue, o.previousPeriodRevenue), historical: true },
+                { icon: 'fa-clock', label: 'Avg Parking Duration', value: fmtDur(o.avgDurationMinutes), sub: 'per completed session', historical: true },
+                { icon: 'fa-coins', label: 'Avg Revenue / Session', value: fmtINR(o.avgRevenuePerSession), sub: 'recorded revenue', historical: true },
+                { icon: 'fa-car', label: 'Occupied Slots', value: fmtNum(o.currentOccupiedSlots), sub: '<span class="badge-live">live now</span>', live: true },
+                { icon: 'fa-square', label: 'Available Slots', value: fmtNum(o.currentAvailableSlots), sub: '<span class="badge-live">live now</span>', live: true },
+                { icon: 'fa-layer-group', label: 'Total Capacity', value: fmtNum(o.totalCapacity), sub: 'all floors', live: true },
+                { icon: 'fa-chart-pie', label: 'Occupancy %', value: (o.occupancyPercent ?? 0).toFixed(1) + '%', sub: '<span class="badge-live">live now</span>', live: true },
+            ];
+            document.getElementById('kpiGrid').innerHTML = cards.map(c => `
+                <div class="kpi-card">
+                    <div class="kpi-icon"><i class="fas ${c.icon}"></i></div>
+                    <div class="kpi-value">${esc(c.value)}</div>
+                    <div class="kpi-label">${esc(c.label)}</div>
+                    <div class="kpi-sub">${c.sub || ''}</div>
+                    ${c.historical ? '<div class="kpi-sub" style="font-style:italic;">date-filtered</div>' : ''}
+                </div>`).join('');
+        }
+
+        function renderRevenue(r) {
+            const el = document.getElementById('revenueContent');
+            if (!r || !r.daily || r.daily.length === 0) { sectionEmpty('revenueContent', 'No recorded revenue for this period.'); return; }
+            const rows = r.daily.slice(-14).reverse().map(d => `
+                <div class="metric-row"><span class="metric-label">${esc(d.period)}</span>
+                <span class="metric-value">${fmtINR(d.revenue)} <small style="color:var(--text-tertiary);">(${d.sessions} sessions)</small></span></div>`).join('');
+            const methods = (r.byPaymentMethod || []).map(m =>
+                `<div class="metric-row"><span class="metric-label">${esc(m.paymentMethod)}</span><span class="metric-value">${fmtINR(m.revenue)} (${m.sessions})</span></div>`).join('');
+            const floors = (r.byFloor || []).map(f =>
+                `<div class="metric-row"><span class="metric-label">Floor ${f.floor ?? '?'}</span><span class="metric-value">${fmtINR(f.revenue)} (${f.sessions})</span></div>`).join('');
+            el.innerHTML = `
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:var(--space-5);">
+                    <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Daily Revenue (last 14 days)</h3>${rows || '<div class="empty-state">No daily data</div>'}</div>
+                    <div>
+                        <h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">By Payment Method</h3>${methods || '<div class="empty-state">None</div>'}
+                        <h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">By Floor</h3>${floors || '<div class="empty-state">None</div>'}
+                        <div class="metric-row" style="margin-top:var(--space-3);"><span class="metric-label">Highest day</span><span class="metric-value">${r.highestRevenueDay ? esc(r.highestRevenueDay.period) + ' — ' + fmtINR(r.highestRevenueDay.revenue) : '—'}</span></div>
+                        <div class="metric-row"><span class="metric-label">Previous period</span><span class="metric-value">${fmtINR(r.previousPeriodRevenue)}</span></div>
+                    </div>
+                </div>`;
+        }
+
+        function renderOccupancy(o) {
+            const el = document.getElementById('occupancyContent');
+            if (!o) { sectionError('occupancyContent'); return; }
+            const c = o.current || {};
+            let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:var(--space-4); margin-bottom:var(--space-4);">
+                <div class="metric-row"><span class="metric-label">Current Occupied</span><span class="metric-value">${fmtNum(c.occupied)}</span></div>
+                <div class="metric-row"><span class="metric-label">Current Available</span><span class="metric-value">${fmtNum(c.available)}</span></div>
+                <div class="metric-row"><span class="metric-label">Current Locked</span><span class="metric-value">${fmtNum(c.locked)}</span></div>
+                <div class="metric-row"><span class="metric-label">Capacity</span><span class="metric-value">${fmtNum(c.capacity)}</span></div>
+                <div class="metric-row"><span class="metric-label">Utilization</span><span class="metric-value">${(c.utilizationPercent ?? 0).toFixed(1)}%</span></div>
+                <div class="metric-row"><span class="metric-label">Avg utilization (period)</span><span class="metric-value">${o.averageUtilizationPercent != null ? o.averageUtilizationPercent.toFixed(1) + '%' : '—'}</span></div>
+            </div>`;
+            if (o.trackingStart) {
+                html += `<p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-bottom:var(--space-3);">Snapshot tracking started ${esc(String(o.trackingStart).replace('T',' ').slice(0,19))} — earlier periods have no recorded occupancy.</p>`;
+            } else {
+                html += `<p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-bottom:var(--space-3);">No occupancy snapshots recorded yet.</p>`;
+            }
+            const floors = (o.byFloor || []).map(f =>
+                `<div class="metric-row"><span class="metric-label">Floor ${f.floor ?? '?'}</span><span class="metric-value">${(f.avgUtilizationPercent ?? 0).toFixed(1)}% avg (${fmtNum(f.avgOccupiedSlots)}/${fmtNum(f.avgCapacity)})</span></div>`).join('');
+            const peaks = (o.peakPeriods || []).slice(0, 5).map(p =>
+                `<div class="metric-row"><span class="metric-label">${esc(String(p.capturedAt).replace('T',' ').slice(0,16))} · Floor ${p.floor ?? '?'}</span><span class="metric-value">${(p.utilizationPercent ?? 0).toFixed(1)}%</span></div>`).join('');
+            if (floors) html += `<h3 style="font-size:var(--font-size-sm); margin:var(--space-3) 0 var(--space-2);">Floor Utilization</h3>${floors}`;
+            if (peaks) html += `<h3 style="font-size:var(--font-size-sm); margin:var(--space-3) 0 var(--space-2);">Peak Occupancy Snapshots</h3>${peaks}`;
+            if (!o.trend || o.trend.length === 0) html += `<div class="empty-state" style="padding:var(--space-4);">No historical snapshots in this range.</div>`;
+            el.innerHTML = html;
+        }
+
+        function renderVehicles(v) {
+            const el = document.getElementById('vehiclesContent');
+            if (!v || !v.byType || v.byType.length === 0) { sectionEmpty('vehiclesContent', 'No completed sessions for this period.'); return; }
+            const rows = v.byType.map(t => `
+                <tr><td>${esc(t.vehicleType)}</td><td>${fmtNum(t.sessions)}</td>
+                <td>${(t.percentage ?? 0).toFixed(1)}%</td>
+                <td>${fmtDur(t.avgDurationMinutes)}</td><td>${fmtINR(t.avgRevenue)}</td></tr>`).join('');
+            const trend = (v.entryTrends || []).slice(-14).map(d =>
+                `<div class="metric-row"><span class="metric-label">${esc(d.date)}</span><span class="metric-value">${fmtNum(d.count)} entries</span></div>`).join('');
+            el.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr><th>Type</th><th>Sessions</th><th>Share</th><th>Avg Duration</th><th>Avg Revenue</th></tr></thead><tbody>${rows}</tbody></table></div>
+                ${trend ? `<h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Daily Entries</h3>${trend}` : ''}`;
+        }
+
+        function renderOperations(o) {
+            const el = document.getElementById('operationsContent');
+            if (!o) { sectionError('operationsContent'); return; }
+            const pays = Object.entries(o.paymentMethodCounts || {}).map(([k, v]) =>
+                `<div class="metric-row"><span class="metric-label">${esc(k)} payments</span><span class="metric-value">${fmtNum(v)}</span></div>`).join('');
+            const status = Object.entries(o.statusDistribution || {}).map(([k, v]) =>
+                `<div class="metric-row"><span class="metric-label">${esc(k)}</span><span class="metric-value">${fmtNum(v)}</span></div>`).join('');
+            const trend = (o.bookingTrends || []).slice(-14).map(d =>
+                `<div class="metric-row"><span class="metric-label">${esc(d.date)}</span><span class="metric-value">${fmtNum(d.count)} bookings</span></div>`).join('');
+            el.innerHTML = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:var(--space-5);">
+                <div>
+                    <div class="metric-row"><span class="metric-label">Total bookings</span><span class="metric-value">${fmtNum(o.totalBookings)}</span></div>
+                    <div class="metric-row"><span class="metric-label">Active now (in range)</span><span class="metric-value">${fmtNum(o.activeBookings)}</span></div>
+                    <div class="metric-row"><span class="metric-label">Completed</span><span class="metric-value">${fmtNum(o.completedBookings)}</span></div>
+                    <div class="metric-row"><span class="metric-label">Avg duration</span><span class="metric-value">${fmtDur(o.avgDurationMinutes)}</span></div>
+                    <div class="metric-row"><span class="metric-label">Revenue / session</span><span class="metric-value">${fmtINR(o.recordedRevenuePerCompletedSession)}</span></div>
+                    <div class="metric-row"><span class="metric-label">Lifecycle events</span><span class="metric-value">${fmtNum(o.lifecycleEventsInRange)}</span></div>
+                </div>
+                <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Payments</h3>${pays || '<div class="empty-state">None</div>'}
+                    <h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Status Distribution</h3>${status || '<div class="empty-state">None</div>'}</div>
+                <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Daily Bookings</h3>${trend || '<div class="empty-state">None</div>'}</div>
+            </div>`;
+        }
+
+        function renderTraffic(t) {
+            const el = document.getElementById('trafficContent');
+            if (!t) { sectionError('trafficContent'); return; }
+            const maxE = Math.max(1, ...(t.entriesByHour || []));
+            const maxR = Math.max(1, ...(t.revenueByHour || []));
+            const bars = (t.entriesByHour || []).map((v, h) => {
+                const h12 = h % 12 === 0 ? 12 : h % 12;
+                const ampm = h < 12 ? 'AM' : 'PM';
+                return `<div style="display:flex; align-items:flex-end; gap:2px; flex:1; min-width:0;" title="${h12}${ampm}: ${v} entries, ${t.exitsByHour[h]} exits, ${fmtINR(t.revenueByHour[h])}">
+                    <div style="flex:1; background:var(--accent-primary); height:${Math.round(v / maxE * 90)}px; border-radius:2px 2px 0 0; opacity:.85;"></div>
+                    <div style="flex:1; background:var(--accent-light); height:${Math.round((t.exitsByHour[h] || 0) / maxE * 90)}px; border-radius:2px 2px 0 0; opacity:.6;"></div>
+                </div>`;
+            }).join('');
+            const peaks = (t.peakHours || []).slice(0, 5).map(p => {
+                const h12 = p.hour % 12 === 0 ? 12 : p.hour % 12;
+                return `<div class="metric-row"><span class="metric-label">${h12}${p.hour < 12 ? 'AM' : 'PM'}</span><span class="metric-value">${p.entries} in / ${p.exits} out / ${fmtINR(p.revenue)}</span></div>`;
+            }).join('');
+            el.innerHTML = `<div style="display:flex; align-items:flex-end; gap:2px; height:120px; overflow-x:auto; padding-bottom:4px;">${bars || '<div class="empty-state">No traffic data</div>'}</div>
+                <div style="display:flex; justify-content:space-between; font-size:var(--font-size-xs); color:var(--text-tertiary); margin-top:4px;"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>
+                ${peaks ? `<h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Busiest Hours</h3>${peaks}` : ''}`;
+        }
+
+        async function renderTransactions() {
+            const el = document.getElementById('transactionsContent');
+            const p = new URLSearchParams();
+            if (state.from) p.set('from', state.from);
+            if (state.to) p.set('to', state.to);
+            p.set('size', '50');
+            try {
+                const res = await fetch(`${API}/booking-history?${p}`, { credentials: 'same-origin' });
+                if (res.status === 401) { window.location.href = '/login.html'; return; }
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const rows = (data.content || []).map(b => `<tr>
+                    <td>${esc(b.bookingCode)}</td><td>${esc(b.vehicleNumber)}</td><td>${esc(b.customerName)}</td>
+                    <td>${esc(b.phoneNumber)}</td><td>${esc(b.vehicleType)}</td>
+                    <td>${esc(b.slotId)}${b.floor ? ' · F' + b.floor : ''}</td>
+                    <td>${esc((b.bookingTime || '').replace('T',' ').slice(0,16))}</td>
+                    <td>${esc((b.exitTime || '—').replace('T',' ').slice(0,16))}</td>
+                    <td>${b.durationMinutes != null ? fmtDur(b.durationMinutes) : '—'}</td>
+                    <td>${b.parkingFee != null ? fmtINR(b.parkingFee) : '—'}</td>
+                    <td>${esc(b.status)}</td><td>${esc(b.paymentMethod || '—')}</td></tr>`).join('');
+                el.innerHTML = data.content && data.content.length
+                    ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Code</th><th>Vehicle</th><th>Name</th><th>Phone</th><th>Type</th><th>Slot</th><th>Entry</th><th>Exit</th><th>Duration</th><th>Fee</th><th>Status</th><th>Payment</th></tr></thead><tbody>${rows}</tbody></table></div>
+                       <p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-top:var(--space-2);">Showing ${data.content.length} of ${data.totalElements} records</p>`
+                    : `<div class="empty-state"><i class="fas fa-inbox"></i>No bookings in this period.</div>`;
+            } catch (e) { sectionError('transactionsContent', 'Failed to load transaction report.'); }
+        }
+
+        // ---------- Load orchestration (independent sections) ----------
+        async function fetchJson(url) {
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (res.status === 401 || res.status === 403) { window.location.href = '/login.html'; throw new Error('auth'); }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+        async function loadAll() {
+            document.getElementById('lastUpdated').textContent = 'Updating…';
+            const base = `${API}?${qs()}`;
+            const jobs = [
+                ['overview', fetchJson(`${API}/overview?${qs()}`).then(renderKpis).catch(() => sectionError('kpiGrid', 'Overview unavailable.'))],
+                ['revenue', fetchJson(`${API}/revenue?${qs()}`).then(renderRevenue).catch(() => sectionError('revenueContent'))],
+                ['occupancy', fetchJson(`${API}/occupancy?${qs()}${state.floor ? '&floor=' + state.floor : ''}`).then(renderOccupancy).catch(() => sectionError('occupancyContent'))],
+                ['vehicles', fetchJson(`${API}/vehicles?${qs()}`).then(renderVehicles).catch(() => sectionError('vehiclesContent'))],
+                ['operations', fetchJson(`${API}/operations?${qs()}`).then(renderOperations).catch(() => sectionError('operationsContent'))],
+                ['traffic', fetchJson(`${API}/hourly-traffic?${qs()}`).then(renderTraffic).catch(() => sectionError('trafficContent'))],
+                ['transactions', renderTransactions()],
+            ];
+            await Promise.allSettled(jobs.map(j => j[1]));
+            document.getElementById('lastUpdated').textContent = 'Last updated ' + new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' });
+            const csvP = new URLSearchParams();
+            if (state.from) csvP.set('from', state.from);
+            if (state.to) csvP.set('to', state.to);
+            document.getElementById('csvExportBtn').href = `${API}/reports/transactions.csv?${csvP}`;
+        }
+
+        // ---------- Events ----------
+        document.getElementById('presetRange').addEventListener('change', e => {
+            const custom = e.target.value === 'custom';
+            document.getElementById('customFromGroup').style.display = custom ? 'flex' : 'none';
+            document.getElementById('customToGroup').style.display = custom ? 'flex' : 'none';
+        });
+        document.getElementById('applyFilters').addEventListener('click', () => {
+            state.floor = document.getElementById('floorFilter').value;
+            state.vehicleType = document.getElementById('vehicleFilter').value;
+            state.paymentMethod = document.getElementById('paymentFilter').value;
+            computeRange();
+            loadAll();
+        });
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            document.getElementById('presetRange').value = '7d';
+            document.getElementById('floorFilter').value = '';
+            document.getElementById('vehicleFilter').value = '';
+            document.getElementById('paymentFilter').value = '';
+            document.getElementById('customFromGroup').style.display = 'none';
+            document.getElementById('customToGroup').style.display = 'none';
+            state.floor = state.vehicleType = state.paymentMethod = '';
+            computeRange();
+            loadAll();
+        });
+        document.getElementById('refreshBtn').addEventListener('click', loadAll);
+        document.getElementById('logoutBtn').addEventListener('click', e => { e.preventDefault(); logout(); });
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileCloseBtn = document.getElementById('mobileCloseBtn');
+        const sidebar = document.querySelector('.sidebar');
+        if (mobileMenuBtn && sidebar) mobileMenuBtn.addEventListener('click', () => sidebar.classList.add('open'));
+        if (mobileCloseBtn && sidebar) mobileCloseBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+        window.addEventListener('resize', () => { if (window.innerWidth > 1024 && sidebar) sidebar.classList.remove('open'); });
+
+        // ---------- Init ----------
+        (async function init() {
+            if (!await checkAuth()) return;
+            computeRange();
+            await loadAll();
+        })();
+    </script>
+</body>
+</html>
