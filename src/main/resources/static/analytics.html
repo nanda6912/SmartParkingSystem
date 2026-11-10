@@ -139,6 +139,7 @@
                     <button class="btn btn-primary btn-sm" id="applyFilters">Apply Filters</button>
                     <button class="btn btn-secondary btn-sm" id="resetFilters">Reset</button>
                 </div>
+                <p class="chart-note" style="flex-basis:100%; margin:0;">Filter scope: date range applies to all sections. Floor applies to Parking Utilization only. Vehicle type and payment method apply to the Transaction Report only.</p>
             </div>
 
             <section id="kpiSection">
@@ -784,6 +785,8 @@
             const p = new URLSearchParams();
             if (state.from) p.set('from', state.from);
             if (state.to) p.set('to', state.to);
+            if (state.vehicleType) p.set('vehicleType', state.vehicleType);
+            if (state.paymentMethod) p.set('paymentMethod', state.paymentMethod);
             p.set('size', '50');
             try {
                 const res = await fetch(`${API}/booking-history?${p}`, { credentials: 'same-origin' });

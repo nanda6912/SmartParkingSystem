@@ -54,6 +54,7 @@
 * 🔄 **GitHub Actions CI/CD**: Automatic compilation, testing, packaging, validation builds, and deploy webhooks.
 * 📊 **Health Monitoring**: Integrated Spring Boot Actuator health polling check loops.
 * ⚡ **Performance Optimizations**: Caffeine local caching, eager fetch joins, custom indexes, and disabled OSIV.
+* 📈 **Parking Analytics**: Permanent booking lifecycle history, occupancy snapshots, and a Chart.js analytics dashboard (`/analytics.html`) — see [docs/PARKING_ANALYTICS.md](docs/PARKING_ANALYTICS.md).
 
 ---
 
@@ -212,7 +213,7 @@ The system follows industry security best practices to protect parking resources
 
 * **Salted BCrypt Hashing**: Password strings are hashed using the secure BCrypt password encoder before persistent database storage.
 * **HTTP Session Authentication**: Employs stateful cookie session identifiers without the storage complexity of JWT. Prevents session fixation attacks by invalidating active sessions upon login.
-* **Route Protection via Interceptors**: The custom `AuthInterceptor` filters access to all `/api/exit/**` endpoints and the `/exit.html` dashboard, checking for verified session tokens.
+* **Route Protection via Interceptors**: The custom `AuthInterceptor` filters access to all `/api/exit/**` and `/api/analytics/**` endpoints and the `/exit.html` dashboard, checking for verified session tokens. Analytics responses are served with `Cache-Control: no-store`.
 * **IP Rate Limiting**: The custom `RateLimitingFilter` applies a Token Bucket algorithm to throttle clients accessing key endpoints (logins, booking commits, slot locks) to protect against DDoS attacks.
 * **Input Regex Sanitization**: Strictly validates fields such as vehicle registration codes (`^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$`), user names, and 10-digit phone numbers.
 * **SQL Injection Protection**: All data requests use parameterized queries mapped through Spring Data JPA to mitigate malicious input injection.
@@ -239,6 +240,11 @@ Flyway maintains schema version control sequentially:
 * **`V2__Fix_Active_Vehicle_Constraint.sql`**: Creates a partial unique index on `bookings(vehicle_number) WHERE is_active = TRUE` to ensure a vehicle cannot have multiple overlapping active parking bookings.
 * **`V3__Create_Staff_Users.sql`**: Configures the `staff_users` login schema.
 * **`V4__Fix_Admin_Password.sql`**: Initializes the admin password (`Admin@123`) using BCrypt.
+* **`V5__Booking_Events.sql`**: Creates `booking_events` lifecycle history and backfills `duration_minutes` for exited bookings.
+* **`V6__Booking_Events_Integrity.sql`**: Enforces idempotent event uniqueness and `ON DELETE RESTRICT` retention for bookings with event history.
+* **`V7__Occupancy_Snapshots.sql`**: Creates `occupancy_snapshots` for historical parking occupancy tracking.
+
+See [docs/PARKING_ANALYTICS.md](docs/PARKING_ANALYTICS.md) for analytics configuration, snapshot operations, timezone handling, and API details.
 
 ### ER Diagram & Relationships
 
@@ -298,6 +304,15 @@ Flyway maintains schema version control sequentially:
 | `GET` | `/api/exit/stats` | Fetch daily revenue and vehicle counts | **Yes** |
 | `GET` | `/api/exit/receipt/{bookingId}` | Download text-based invoice receipt | **Yes** |
 | `GET` | `/api/exit/receipt/by-code/{bookingCode}` | Download receipt using booking code | **Yes** |
+| `GET` | `/api/analytics/overview` | KPI overview: sessions, recorded revenue, live occupancy | **Yes** |
+| `GET` | `/api/analytics/revenue` | Recorded revenue by day/week/month, method, floor | **Yes** |
+| `GET` | `/api/analytics/occupancy` | Live + historical occupancy snapshots | **Yes** |
+| `GET` | `/api/analytics/vehicles` | Sessions by vehicle type, floor mix, entry trends | **Yes** |
+| `GET` | `/api/analytics/operations` | Booking volumes, payments, status mix, trends | **Yes** |
+| `GET` | `/api/analytics/hourly-traffic` | Hourly entries/exits/revenue profile and peaks | **Yes** |
+| `GET` | `/api/analytics/booking-history` | Paged permanent booking history (PII masked) | **Yes** |
+| `GET` | `/api/analytics/bookings/{id}/history` | Lifecycle event history for a booking | **Yes** |
+| `GET` | `/api/analytics/reports/transactions.csv` | CSV export of transaction report | **Yes** |
 
 ---
 
@@ -305,7 +320,7 @@ Flyway maintains schema version control sequentially:
 
 - 📧 **Automated Email Notifications**: Email digital receipts to customers immediately after check-out.
 - 💬 **SMS Notifications**: Send text alerts with slot confirmation and active booking time indicators.
-- 📊 **Advanced Analytics Dashboard**: Graphical reports on parking trends and revenue generation.
+- 📊 **Advanced Analytics Dashboard**: ✅ Implemented — see [docs/PARKING_ANALYTICS.md](docs/PARKING_ANALYTICS.md).
 - 📅 **Advance Booking System**: Pre-book parking slots days ahead.
 - 📱 **Native Mobile Application**: Cross-platform app for booking management.
 - 📷 **License Plate Camera Scanning (ALPR)**: Automatic entry scanning.

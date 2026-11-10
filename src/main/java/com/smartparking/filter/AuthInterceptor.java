@@ -26,6 +26,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         // 2. Protect /api/exit/** and /api/analytics/** endpoints
         if (uri.startsWith("/api/exit") || uri.startsWith("/api/analytics")) {
+            // Analytics payloads contain operational data; never allow
+            // shared/browser caching of API responses.
+            if (uri.startsWith("/api/analytics")) {
+                response.setHeader("Cache-Control", "no-store");
+                response.setHeader("Pragma", "no-cache");
+            }
             HttpSession session = request.getSession(false);
             if (session == null || session.getAttribute(AuthService.SESSION_USER_KEY) == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

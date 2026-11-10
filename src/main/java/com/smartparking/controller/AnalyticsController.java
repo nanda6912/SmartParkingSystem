@@ -316,8 +316,49 @@ public class AnalyticsController {
         map.put("eventTimestamp", event.getEventTimestamp() != null
                 ? event.getEventTimestamp().format(FORMATTER) : null);
         map.put("parkingSlotId", event.getParkingSlotId());
-        map.put("additionalDetails", event.getAdditionalDetails());
+        map.put("additionalDetails", sanitizeEventDetails(event.getAdditionalDetails()));
         return map;
+    }
+
+    /**
+     * Event details may embed raw booking fields (e.g. vehicleNumber in
+     * BOOKING_CREATED). Return a copy with the same PII masking applied
+     * as the booking-history endpoint; stored audit data is unchanged.
+     */
+    private Map<String, Object> sanitizeEventDetails(Map<String, Object> details) {
+        if (details == null) {
+            return null;
+        }
+        Map<String, Object> copy = new HashMap<>(details);
+        copy.replaceAll((key, value) -> {
+            if ("vehicleNumber".equals(key) && value instanceof String vehicleNumber) {
+                return maskVehicleNumber(vehicleNumber);
+            }
+            return normalizeJsonbValue(value);
+        });
+        return copy;
+    }
+
+    /**
+     * JSONB round-trips can deserialize timestamps into
+     * [year, month, day, hour, minute, second, nano] arrays. Normalize
+     * them back to the same "yyyy-MM-dd HH:mm:ss" format used elsewhere.
+     */
+    private static Object normalizeJsonbValue(Object value) {
+        if (!(value instanceof List<?> list) || list.size() < 6
+                || !list.subList(0, 6).stream().allMatch(Number.class::isInstance)) {
+            return value;
+        }
+        try {
+            int nano = list.size() > 6 && list.get(6) instanceof Number n ? n.intValue() : 0;
+            LocalDateTime dt = LocalDateTime.of(
+                    ((Number) list.get(0)).intValue(), ((Number) list.get(1)).intValue(),
+                    ((Number) list.get(2)).intValue(), ((Number) list.get(3)).intValue(),
+                    ((Number) list.get(4)).intValue(), ((Number) list.get(5)).intValue(), nano);
+            return dt.format(FORMATTER);
+        } catch (RuntimeException e) {
+            return value;
+        }
     }
 
     private Map<String, Object> toBookingHistoryMap(Booking booking) {
