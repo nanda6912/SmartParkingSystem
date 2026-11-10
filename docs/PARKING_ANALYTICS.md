@@ -186,6 +186,12 @@ Notes:
 
 - "Recorded revenue" = `parking_fee` on bookings with a recorded
   `payment_method` **and** `payment_time`. It is not verified settlement.
+  Unpaid exits still count as completed sessions (count, duration, status,
+  vehicle-type session counts) but contribute no revenue.
+- `/api/analytics/vehicles` `avgRevenue` is the average `parking_fee` over
+  **all** completed sessions of that vehicle type — including unpaid exits.
+  It measures average assessed fee per session, not recorded (collected)
+  revenue; use `/api/analytics/revenue` for payment-filtered figures.
 - Previous-period comparisons use an equal-length window immediately
   before `from`.
 - `booking-history` defaults to **all history** when `from`/`to` are
