@@ -105,13 +105,13 @@ default to the **last 30 days**; `to` is treated as inclusive
 | :--- | :--- |
 | `/api/analytics/overview` | KPI overview: completed sessions, recorded revenue, averages, live occupancy, previous-period comparison |
 | `/api/analytics/revenue` | Recorded revenue by day/week/month, payment method, floor; peak day |
-| `/api/analytics/occupancy` | Live occupancy + historical snapshots trend, per-floor utilization, peak periods; optional `floor` param |
+| `/api/analytics/occupancy` | Live occupancy + historical snapshots trend, per-floor utilization, peak periods; optional `floor` param scopes **all** occupancy metrics (trend, averages, per-floor breakdown, peaks and live current slots) |
 | `/api/analytics/vehicles` | Completed sessions by vehicle type, floor mix, daily entry trend |
 | `/api/analytics/operations` | Booking volumes, status mix, payment-method counts, daily trends, lifecycle event count |
 | `/api/analytics/hourly-traffic` | Entries/exits/revenue per hour of day + top peak hours + reporting timezone |
 | `/api/analytics/booking-history` | Paged permanent booking history (PII masked); filters: `status`, `vehicleType`, `paymentMethod`, `active`, `page`, `size` (max 200) |
 | `/api/analytics/bookings/{id}/history` | Ordered lifecycle events for one booking |
-| `/api/analytics/reports/transactions.csv` | CSV export of booking history (PII masked, formula-injection safe, capped at 50,000 rows) |
+| `/api/analytics/reports/transactions.csv` | CSV export of booking history (PII masked, formula-injection safe, capped at 50,000 rows); accepts the same `vehicleType`/`paymentMethod` filters as `booking-history` in addition to `from`/`to` |
 
 Notes:
 
@@ -168,8 +168,10 @@ Behaviour:
   business time.
 - Analytics date boundaries (`from`/`to`) use `LocalDate` → start/end of
   day in the JVM zone; hourly buckets come from `EXTRACT(HOUR ...)` on
-  stored local timestamps, and `/hourly-traffic` reports
-  `ZoneId.systemDefault()` as `timezone`.
+  stored local timestamps. When `from`/`to` are omitted, the default
+  window (last 30 days) is computed in `parking.analytics.zone-id`
+  (default `Asia/Kolkata`), and `/hourly-traffic` reports that same
+  configured zone as `timezone`.
 - Snapshot bucketing uses `parking.analytics.zone-id`
   (default `Asia/Kolkata`) independently of the JVM zone — keep the two
   consistent.
@@ -184,12 +186,14 @@ Behaviour:
   the CDN is unreachable the page still renders all tables/ KPIs; each
   chart box shows "Chart library unavailable" instead of breaking.
 - Filter scope (also shown on the page): date range applies to every
-  section; **Floor** applies to Parking Utilization only; **Vehicle
-  type** and **Payment method** apply to the Transaction Report only.
-  The "Current slots" occupancy doughnut always shows live all-floor
-  state.
-- The transaction table shows the first 50 rows of the filtered report;
-  use CSV export or the `booking-history` API for full pagination.
+  section; **Floor** applies to Parking Utilization only — every metric
+  in that section (trend, averages, per-floor breakdown, peak periods and
+  the live "Current slots" doughnut) is scoped to the selected floor;
+  **Vehicle type** and **Payment method** apply to the Transaction
+  Report table and its CSV export only — they do not affect any chart.
+- The transaction table is paginated (page controls + 20/50/100 rows per
+  page); filter changes reset to page 1. CSV export honours the date
+  range plus the vehicle-type and payment-method filters.
 
 ## 9. Running tests
 

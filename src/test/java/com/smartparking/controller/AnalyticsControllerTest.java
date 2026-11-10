@@ -25,6 +25,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -159,7 +160,7 @@ class AnalyticsControllerTest {
                 .thenReturn(new PageImpl<>(List.of(legacy, corrupted), PageRequest.of(0, 50000), 2));
 
         ResponseEntity<?> response = analyticsController.exportTransactionsCsv(
-                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), null, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         String csv = (String) response.getBody();
@@ -168,6 +169,18 @@ class AnalyticsControllerTest {
         assertThat(csv).contains(",90,");
         // corrupted row: negative stored value ignored, negative interval clamped to 0
         assertThat(csv).contains(",0,");
+    }
+
+    @Test
+    void exportTransactionsCsv_passesVehicleAndPaymentFilters() {
+        when(bookingRepository.searchBookingHistory(
+                any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 50000), 0));
+
+        analyticsController.exportTransactionsCsv(null, null, VehicleType.BIKE, "CASH");
+
+        verify(bookingRepository).searchBookingHistory(
+                any(), any(), isNull(), eq(VehicleType.BIKE), eq("CASH"), isNull(), any());
     }
 
     @Test

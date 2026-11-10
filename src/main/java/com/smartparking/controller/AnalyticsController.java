@@ -11,6 +11,7 @@ import com.smartparking.service.AnalyticsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +41,14 @@ public class AnalyticsController {
     private static final Logger log = LoggerFactory.getLogger(AnalyticsController.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int MAX_PAGE_SIZE = 200;
+
+    /**
+     * Reporting zone for analytics date defaults. Matches the snapshot
+     * bucketing zone ({@code parking.analytics.zone-id}); stored booking
+     * timestamps remain JVM-local.
+     */
+    @Value("${parking.analytics.zone-id:Asia/Kolkata}")
+    private String zoneId = "Asia/Kolkata";
 
     @Autowired
     private BookingEventRepository bookingEventRepository;
@@ -139,12 +149,14 @@ public class AnalyticsController {
     @GetMapping("/reports/transactions.csv")
     public ResponseEntity<?> exportTransactionsCsv(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) VehicleType vehicleType,
+            @RequestParam(required = false) String paymentMethod) {
         try {
             LocalDateTime fromDt = toFrom(from);
             LocalDateTime toDt = toTo(to);
             var page = bookingRepository.searchBookingHistory(
-                    fromDt, toDt, null, null, null, null,
+                    fromDt, toDt, null, vehicleType, paymentMethod, null,
                     org.springframework.data.domain.PageRequest.of(0, 50000));
 
             StringBuilder csv = new StringBuilder();
@@ -177,7 +189,7 @@ public class AnalyticsController {
 
             return ResponseEntity.ok()
                     .header("Content-Disposition", "attachment; filename=transactions_"
-                            + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv")
+                            + LocalDate.now(reportingZone()).format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv")
                     .contentType(org.springframework.http.MediaType.parseMediaType("text/csv"))
                     .body(csv.toString());
         } catch (Exception e) {
@@ -215,12 +227,18 @@ public class AnalyticsController {
         return s;
     }
 
-    private static LocalDateTime toFrom(LocalDate from) {
-        return from != null ? from.atStartOfDay() : LocalDate.now().minusDays(30).atStartOfDay();
+    private ZoneId reportingZone() {
+        return ZoneId.of(zoneId != null ? zoneId : "Asia/Kolkata");
     }
 
-    private static LocalDateTime toTo(LocalDate to) {
-        return to != null ? to.plusDays(1).atStartOfDay() : LocalDate.now().plusDays(1).atStartOfDay();
+    private LocalDateTime toFrom(LocalDate from) {
+        return from != null ? from.atStartOfDay()
+                : LocalDate.now(reportingZone()).minusDays(30).atStartOfDay();
+    }
+
+    private LocalDateTime toTo(LocalDate to) {
+        return to != null ? to.plusDays(1).atStartOfDay()
+                : LocalDate.now(reportingZone()).plusDays(1).atStartOfDay();
     }
 
     /**

@@ -15,6 +15,7 @@ import com.smartparking.repository.ParkingSlotRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +46,14 @@ public class AnalyticsService {
             "Recorded revenue: fees on bookings with a recorded payment method and payment time. "
                     + "Not independently verified settlements.";
 
+    /**
+     * Reporting zone label reported by hourly-traffic analytics. Matches
+     * the snapshot bucketing zone; hourly buckets themselves come from
+     * stored JVM-local timestamps, so keep the JVM zone consistent.
+     */
+    @Value("${parking.analytics.zone-id:Asia/Kolkata}")
+    private String zoneId = "Asia/Kolkata";
+
     @Autowired
     private BookingRepository bookingRepository;
 
@@ -73,7 +82,7 @@ public class AnalyticsService {
         long prevSessions = prevStats != null ? num(prevStats, 0).longValue() : 0;
         double prevRevenue = prevStats != null ? num(prevStats, 1).doubleValue() : 0;
 
-        OccupancyAnalyticsDTO.CurrentOccupancy current = currentOccupancy();
+        OccupancyAnalyticsDTO.CurrentOccupancy current = currentOccupancy(null);
 
         return new AnalyticsOverviewDTO(
                 sessions,
@@ -177,7 +186,7 @@ public class AnalyticsService {
     // ============================ OCCUPANCY ============================
 
     public OccupancyAnalyticsDTO getOccupancy(LocalDateTime from, LocalDateTime to, Integer floor) {
-        OccupancyAnalyticsDTO.CurrentOccupancy current = currentOccupancy();
+        OccupancyAnalyticsDTO.CurrentOccupancy current = currentOccupancy(floor);
 
         OccupancySnapshot trackingStart = occupancySnapshotRepository.findTopByOrderByCapturedAtAsc();
         LocalDateTime trackingStartAt = trackingStart != null ? trackingStart.getCapturedAt() : null;
@@ -196,12 +205,12 @@ public class AnalyticsService {
                         s.getTotalCapacity(), utilization(s)))
                 .toList();
 
-        Object[] avgRow = firstRow(occupancySnapshotRepository.averageUtilizationBetween(from, to));
+        Object[] avgRow = firstRow(occupancySnapshotRepository.averageUtilizationBetween(from, to, floor));
         Double avgUtil = avgRow != null && avgRow[0] != null ? num(avgRow, 0).doubleValue() : null;
         Long snapCount = avgRow != null && avgRow[1] != null ? num(avgRow, 1).longValue() : 0L;
 
         List<OccupancyAnalyticsDTO.FloorUtilization> byFloor = occupancySnapshotRepository
-                .utilizationByFloorBetween(from, to).stream()
+                .utilizationByFloorBetween(from, to, floor).stream()
                 .map(r -> new OccupancyAnalyticsDTO.FloorUtilization(
                         (Integer) r[0],
                         r[1] != null ? num(r, 1).doubleValue() : 0,
@@ -210,8 +219,9 @@ public class AnalyticsService {
                         num(r, 4).longValue()))
                 .toList();
 
-        List<OccupancyAnalyticsDTO.PeakPeriod> peaks = occupancySnapshotRepository
-                .findTop10ByCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(from, to)
+        List<OccupancyAnalyticsDTO.PeakPeriod> peaks = (floor != null
+                ? occupancySnapshotRepository.findTop10ByFloorAndCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(floor, from, to)
+                : occupancySnapshotRepository.findTop10ByCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(from, to))
                 .stream()
                 .map(s -> new OccupancyAnalyticsDTO.PeakPeriod(
                         s.getCapturedAt(), s.getFloor(), utilization(s),
@@ -315,14 +325,17 @@ public class AnalyticsService {
         return new HourlyTrafficDTO(
                 toIntList(entries), toIntList(exits), toDoubleList(revenue),
                 peaks.stream().limit(10).toList(),
-                java.time.ZoneId.systemDefault().getId());
+                zoneId != null ? zoneId : "Asia/Kolkata");
     }
 
     // ============================ HELPERS ============================
 
-    private OccupancyAnalyticsDTO.CurrentOccupancy currentOccupancy() {
+    private OccupancyAnalyticsDTO.CurrentOccupancy currentOccupancy(Integer floor) {
         long occupied = 0, available = 0, locked = 0;
         for (Object[] row : parkingSlotRepository.countByFloorAndStatus()) {
+            if (floor != null && !(row[0] instanceof Number n && n.intValue() == floor)) {
+                continue;
+            }
             SlotStatus status = (SlotStatus) row[1];
             long count = num(row, 2).longValue();
             switch (status) {

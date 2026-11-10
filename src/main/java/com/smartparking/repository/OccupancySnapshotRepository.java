@@ -24,15 +24,24 @@ public interface OccupancySnapshotRepository extends JpaRepository<OccupancySnap
 
     OccupancySnapshot findTopByOrderByCapturedAtAsc();
 
-    /** Average utilization percent and count over [from, to): [avgUtil, snapshots]. */
+    /**
+     * Average utilization percent and count over [from, to):
+     * [avgUtil, snapshots]. {@code floor} is optional — null covers all floors.
+     */
     @Query("""
                 SELECT AVG(s.occupiedSlots * 100.0 / s.totalCapacity), COUNT(s)
                 FROM OccupancySnapshot s
                 WHERE s.capturedAt >= :from AND s.capturedAt < :to
+                  AND (CAST(:floor AS integer) IS NULL OR s.floor = :floor)
             """)
-    List<Object[]> averageUtilizationBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+    List<Object[]> averageUtilizationBetween(@Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to, @Param("floor") Integer floor);
 
-    /** Per-floor average utilization over [from, to): [floor, avgUtil, avgOccupied, avgCapacity, snapshots]. */
+    /**
+     * Per-floor average utilization over [from, to):
+     * [floor, avgUtil, avgOccupied, avgCapacity, snapshots].
+     * {@code floor} is optional — null covers all floors.
+     */
     @Query("""
                 SELECT s.floor,
                        AVG(s.occupiedSlots * 100.0 / s.totalCapacity),
@@ -41,14 +50,20 @@ public interface OccupancySnapshotRepository extends JpaRepository<OccupancySnap
                        COUNT(s)
                 FROM OccupancySnapshot s
                 WHERE s.capturedAt >= :from AND s.capturedAt < :to
+                  AND (CAST(:floor AS integer) IS NULL OR s.floor = :floor)
                 GROUP BY s.floor
                 ORDER BY s.floor
             """)
-    List<Object[]> utilizationByFloorBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+    List<Object[]> utilizationByFloorBetween(@Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to, @Param("floor") Integer floor);
 
     /** Highest-occupancy snapshots in range (peak periods). */
     List<OccupancySnapshot> findTop10ByCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(
             LocalDateTime from, LocalDateTime to);
+
+    /** Highest-occupancy snapshots on one floor in range (peak periods). */
+    List<OccupancySnapshot> findTop10ByFloorAndCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(
+            Integer floor, LocalDateTime from, LocalDateTime to);
 
     /**
      * PostgreSQL transaction-scoped advisory lock used to coordinate

@@ -46,13 +46,29 @@
         .chart-box.xs { height: 200px; }
         .chart-meta { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--space-3); }
         .chart-note { font-size: var(--font-size-xs); color: var(--text-tertiary); font-style: italic; }
+        .tx-pager { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between; margin-top: var(--space-3); font-size: var(--font-size-xs); color: var(--text-tertiary); }
+        .tx-pages { display: inline-flex; gap: var(--space-1); flex-wrap: wrap; }
+        .tx-page { border: 1px solid var(--border-primary); background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); cursor: pointer; }
+        .tx-page.active { background: var(--accent-primary); color: var(--text-inverse); border-color: var(--accent-primary); }
+        .tx-page:disabled { opacity: 0.45; cursor: default; }
+        .tx-size { padding: var(--space-1) var(--space-2); border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); }
         .seg-btns { display: inline-flex; border: 1px solid var(--border-primary); border-radius: var(--radius-md); overflow: hidden; }
         .seg-btns button { border: none; background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: var(--space-2) var(--space-4); cursor: pointer; border-right: 1px solid var(--border-primary); }
         .seg-btns button:last-child { border-right: none; }
         .seg-btns button.active { background: var(--accent-primary); color: var(--text-inverse); }
         @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
         @media (max-width: 900px) { .chart-card { grid-column: span 12; } }
-        @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .analytics-header { flex-direction: column; align-items: stretch; } .chart-box { height: 260px; } }
+        @media (max-width: 640px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .analytics-header { flex-direction: column; align-items: stretch; }
+            .chart-box { height: 260px; }
+            .filter-group { width: 100%; }
+            .filter-group select, .filter-group input { width: 100%; box-sizing: border-box; }
+            .filter-group input[type="date"] { min-width: 0; }
+            .seg-btns { display: flex; width: 100%; }
+            .seg-btns button { flex: 1; }
+            .tx-pager { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+        }
     </style>
 </head>
 <body>
@@ -139,7 +155,7 @@
                     <button class="btn btn-primary btn-sm" id="applyFilters">Apply Filters</button>
                     <button class="btn btn-secondary btn-sm" id="resetFilters">Reset</button>
                 </div>
-                <p class="chart-note" style="flex-basis:100%; margin:0;">Filter scope: date range applies to all sections. Floor applies to Parking Utilization only. Vehicle type and payment method apply to the Transaction Report only.</p>
+                <p class="chart-note" style="flex-basis:100%; margin:0;">Filter scope: date range applies to all sections. Floor applies to Parking Utilization only (all its metrics, including live current slots). Vehicle type and payment method apply to the Transaction Report table and CSV export only.</p>
             </div>
 
             <section id="kpiSection">
@@ -301,10 +317,11 @@
 
         // ---------- Date helpers (Asia/Kolkata reporting) ----------
         function istToday() {
-            // Server/reporting zone is Asia/Kolkata; compute via UTC+5:30 offset
+            // Reporting zone is Asia/Kolkata (UTC+5:30, no DST). Shift the
+            // absolute instant by +5:30 so its UTC fields equal IST wall
+            // time, regardless of the browser's own time zone.
             const now = new Date();
-            const ist = new Date(now.getTime() + (now.getTimezoneOffset() + 330) * 60000);
-            return ist;
+            return new Date(now.getTime() + 330 * 60000);
         }
         function toISODate(d) { return d.toISOString().slice(0, 10); }
         function computeRange() {
@@ -323,18 +340,26 @@
                     const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 0));
                     from = first; to = last; break;
                 }
-                case 'custom':
-                    from = document.getElementById('customFrom').value || toISODate(new Date(day - 6 * 86400000));
-                    to = document.getElementById('customTo').value || toISODate(day);
-                    state.from = from; state.to = to; return;
+                case 'custom': {
+                    const cf = document.getElementById('customFrom');
+                    const ct = document.getElementById('customTo');
+                    let f = cf.value || toISODate(new Date(day - 6 * 86400000));
+                    let t = ct.value || toISODate(day);
+                    // Custom ranges cannot be reversed — swap if needed.
+                    if (f > t) { const tmp = f; f = t; t = tmp; }
+                    cf.value = f; ct.value = t;
+                    state.from = f; state.to = t; return;
+                }
             }
             state.from = toISODate(from); state.to = toISODate(to);
         }
         function qs() {
+            // Date params shared by every analytics endpoint. Floor is
+            // occupancy-only and is appended by the occupancy call itself;
+            // vehicle/payment filters apply to the transaction report only.
             const p = new URLSearchParams();
             if (state.from) p.set('from', state.from);
             if (state.to) p.set('to', state.to);
-            if (state.floor) p.set('floor', state.floor);
             return p.toString();
         }
 
@@ -498,7 +523,8 @@
             const hasFloors = hasData(o.byFloor);
             const hasPeaks = hasData(o.peakPeriods);
 
-            const currentChart = `<div class="chart-card"><h3>Current slots (live)</h3>
+            const floorLabel = state.floor ? 'Floor ' + state.floor : 'all floors';
+            const currentChart = `<div class="chart-card"><h3>Current slots (live · ${floorLabel})</h3>
                 <div class="chart-box sm"><canvas id="occCurrentChart"></canvas></div></div>`;
             const trendChart = hasTrend
                 ? `<div class="chart-card wide"><h3>Historical occupancy snapshots — utilization %</h3><div class="chart-box"><canvas id="occTrendChart"></canvas></div></div>`
@@ -520,6 +546,7 @@
                     <span>Current: <strong>${fmtNum(c.occupied)}</strong> occupied · <strong>${fmtNum(c.available)}</strong> available · <strong>${fmtNum(c.locked)}</strong> locked · capacity <strong>${fmtNum(c.capacity)}</strong></span>
                     <span style="margin-left:var(--space-4);">Snapshots in range: ${fmtNum(o.snapshotsInRange)}</span>
                     <span style="margin-left:var(--space-4);">Avg utilization (period): ${o.averageUtilizationPercent != null ? o.averageUtilizationPercent.toFixed(1) + '%' : '—'}</span>
+                    ${state.floor ? `<span class="chart-note" style="display:block; margin-top:var(--space-2);">Floor ${esc(state.floor)} selected — every metric in this section is scoped to that floor.</span>` : ''}
                     ${o.trackingStart ? `<span class="chart-note" style="display:block; margin-top:var(--space-2);">Historical snapshot tracking started ${esc(fmtDateTime(o.trackingStart))} — earlier periods have no recorded occupancy.</span>` : '<span class="chart-note" style="display:block; margin-top:var(--space-2);">No occupancy snapshots recorded yet.</span>'}
                 </div>`;
 
@@ -780,16 +807,64 @@
             }
         }
 
-        async function renderTransactions() {
-            const el = document.getElementById('transactionsContent');
+        // ---------- Transaction report (paged) ----------
+        const txState = { page: 0, size: 50 };
+        function txQuery() {
             const p = new URLSearchParams();
             if (state.from) p.set('from', state.from);
             if (state.to) p.set('to', state.to);
             if (state.vehicleType) p.set('vehicleType', state.vehicleType);
             if (state.paymentMethod) p.set('paymentMethod', state.paymentMethod);
-            p.set('size', '50');
+            p.set('page', txState.page);
+            p.set('size', txState.size);
+            return p;
+        }
+        function txPagerHtml(d) {
+            const total = d.totalElements || 0;
+            const size = d.size || txState.size;
+            const pages = Math.max(d.totalPages || 0, 1);
+            const page = Math.min(d.number != null ? d.number : txState.page, pages - 1);
+            const from = total === 0 ? 0 : page * size + 1;
+            const to = Math.min(total, (page + 1) * size);
+            const sizeSel = `<select data-tx-size="1" class="tx-size" aria-label="Rows per page">
+                ${[20, 50, 100].map(s => `<option value="${s}" ${s === size ? 'selected' : ''}>${s} / page</option>`).join('')}
+            </select>`;
+            if (pages <= 1) {
+                return `<div class="tx-pager"><span>Showing ${from}–${to} of ${fmtNum(total)} records</span><span>${sizeSel}</span></div>`;
+            }
+            const start = Math.max(0, Math.min(page - 2, pages - 5));
+            const end = Math.min(pages, start + 5);
+            const nums = [];
+            for (let i = start; i < end; i++) nums.push(i);
+            const btn = (label, target, disabled, active) =>
+                `<button type="button" class="tx-page ${active ? 'active' : ''}" data-tx-page="${target}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+            return `<div class="tx-pager">
+                <span>Showing ${from}–${to} of ${fmtNum(total)} records</span>
+                <span class="tx-pages">
+                    ${btn('‹ Prev', page - 1, page <= 0)}
+                    ${nums.map(i => btn(i + 1, i, false, i === page)).join('')}
+                    ${btn('Next ›', page + 1, page >= pages - 1)}
+                </span>
+                <span>${sizeSel}</span>
+            </div>`;
+        }
+        function bindTxPager(el, d) {
+            el.querySelectorAll('[data-tx-page]').forEach(b => b.addEventListener('click', () => {
+                txState.page = parseInt(b.dataset.txPage, 10);
+                renderTransactions();
+            }));
+            const sel = el.querySelector('[data-tx-size]');
+            if (sel) sel.addEventListener('change', () => {
+                txState.size = parseInt(sel.value, 10);
+                txState.page = 0;
+                renderTransactions();
+            });
+        }
+        async function renderTransactions() {
+            const el = document.getElementById('transactionsContent');
+            el.innerHTML = `<div class="chart-placeholder skeleton" style="height:220px;"><span class="chart-note">Loading transaction report…</span></div>`;
             try {
-                const res = await fetch(`${API}/booking-history?${p}`, { credentials: 'same-origin' });
+                const res = await fetch(`${API}/booking-history?${txQuery()}`, { credentials: 'same-origin' });
                 if (res.status === 401) { window.location.href = '/login.html'; return; }
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
@@ -804,8 +879,9 @@
                     <td>${esc(b.status)}</td><td>${esc(b.paymentMethod || '—')}</td></tr>`).join('');
                 el.innerHTML = data.content && data.content.length
                     ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Code</th><th>Vehicle</th><th>Name</th><th>Phone</th><th>Type</th><th>Slot</th><th>Entry</th><th>Exit</th><th>Duration</th><th>Fee</th><th>Status</th><th>Payment</th></tr></thead><tbody>${rows}</tbody></table></div>
-                       <p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-top:var(--space-2);">Showing ${data.content.length} of ${data.totalElements} records</p>`
-                    : `<div class="empty-state"><i class="fas fa-inbox"></i>No bookings in this period.</div>`;
+                       ${txPagerHtml(data)}`
+                    : `<div class="empty-state"><i class="fas fa-inbox"></i>No bookings match the selected filters.</div>`;
+                bindTxPager(el, data);
             } catch (e) { sectionError('transactionsContent', 'Failed to load transaction report.'); }
         }
 
@@ -833,6 +909,8 @@
             const csvP = new URLSearchParams();
             if (state.from) csvP.set('from', state.from);
             if (state.to) csvP.set('to', state.to);
+            if (state.vehicleType) csvP.set('vehicleType', state.vehicleType);
+            if (state.paymentMethod) csvP.set('paymentMethod', state.paymentMethod);
             document.getElementById('csvExportBtn').href = `${API}/reports/transactions.csv?${csvP}`;
         }
 
@@ -841,6 +919,16 @@
             const custom = e.target.value === 'custom';
             document.getElementById('customFromGroup').style.display = custom ? 'flex' : 'none';
             document.getElementById('customToGroup').style.display = custom ? 'flex' : 'none';
+            if (custom) {
+                // Pre-fill empty custom inputs with the current default
+                // (last 7 days, IST) so the visible range matches the data.
+                const cf = document.getElementById('customFrom');
+                const ct = document.getElementById('customTo');
+                const t = istToday();
+                const day = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+                if (!cf.value) cf.value = toISODate(new Date(day - 6 * 86400000));
+                if (!ct.value) ct.value = toISODate(day);
+            }
         });
         // Revenue view switcher (re-renders from cached response; no extra API call)
         document.addEventListener('click', e => {
@@ -854,6 +942,7 @@
             state.floor = document.getElementById('floorFilter').value;
             state.vehicleType = document.getElementById('vehicleFilter').value;
             state.paymentMethod = document.getElementById('paymentFilter').value;
+            txState.page = 0;
             computeRange();
             loadAll();
         });
@@ -865,6 +954,8 @@
             document.getElementById('customFromGroup').style.display = 'none';
             document.getElementById('customToGroup').style.display = 'none';
             state.floor = state.vehicleType = state.paymentMethod = '';
+            txState.page = 0;
+            txState.size = 50;
             computeRange();
             loadAll();
         });

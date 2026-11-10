@@ -128,9 +128,9 @@ class AnalyticsServiceTest {
         when(occupancySnapshotRepository.findTopByOrderByCapturedAtAsc()).thenReturn(earliest);
         when(occupancySnapshotRepository.findByCapturedAtBetweenOrderByCapturedAtAscFloorAsc(from, to))
                 .thenReturn(List.of(s1));
-        when(occupancySnapshotRepository.averageUtilizationBetween(from, to))
+        when(occupancySnapshotRepository.averageUtilizationBetween(from, to, null))
                 .thenReturn(List.<Object[]>of(new Object[]{66.67, 4L}));
-        when(occupancySnapshotRepository.utilizationByFloorBetween(from, to))
+        when(occupancySnapshotRepository.utilizationByFloorBetween(from, to, null))
                 .thenReturn(List.<Object[]>of(new Object[]{1, 66.67, 200.0, 300.0, 4L}));
         when(occupancySnapshotRepository.findTop10ByCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(from, to))
                 .thenReturn(List.of(s1));
@@ -151,7 +151,7 @@ class AnalyticsServiceTest {
     void occupancy_beforeTrackingStart_returnsEmptyTrend() {
         when(occupancySnapshotRepository.findByFloorAndCapturedAtBetweenOrderByCapturedAtAsc(1, from, to))
                 .thenReturn(List.of());
-        when(occupancySnapshotRepository.averageUtilizationBetween(from, to))
+        when(occupancySnapshotRepository.averageUtilizationBetween(from, to, 1))
                 .thenReturn(List.<Object[]>of(new Object[]{null, 0L}));
 
         OccupancyAnalyticsDTO dto = analyticsService.getOccupancy(from, to, 1);
@@ -159,6 +159,31 @@ class AnalyticsServiceTest {
         assertThat(dto.trend()).isEmpty();
         assertThat(dto.averageUtilizationPercent()).isNull();
         assertThat(dto.trackingStart()).isNull();
+    }
+
+    @Test
+    void occupancy_floorFilter_scopesEveryAggregate() {
+        OccupancySnapshot s1 = new OccupancySnapshot(LocalDateTime.of(2026, 1, 5, 10, 0), 1, 300, 200, 90, 10);
+        when(occupancySnapshotRepository.findTopByOrderByCapturedAtAsc()).thenReturn(null);
+        when(occupancySnapshotRepository.findByFloorAndCapturedAtBetweenOrderByCapturedAtAsc(1, from, to))
+                .thenReturn(List.of(s1));
+        when(occupancySnapshotRepository.averageUtilizationBetween(from, to, 1))
+                .thenReturn(List.<Object[]>of(new Object[]{66.67, 4L}));
+        when(occupancySnapshotRepository.utilizationByFloorBetween(from, to, 1))
+                .thenReturn(List.<Object[]>of(new Object[]{1, 66.67, 200.0, 300.0, 4L}));
+        when(occupancySnapshotRepository.findTop10ByFloorAndCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(1, from, to))
+                .thenReturn(List.of(s1));
+
+        OccupancyAnalyticsDTO dto = analyticsService.getOccupancy(from, to, 1);
+
+        assertThat(dto.trend()).hasSize(1);
+        assertThat(dto.byFloor()).hasSize(1);
+        assertThat(dto.peakPeriods()).hasSize(1);
+        // live current occupancy is floor-scoped too: floor 1 = 60+230+10 = 300
+        assertThat(dto.current().occupied()).isEqualTo(60);
+        assertThat(dto.current().available()).isEqualTo(230);
+        assertThat(dto.current().locked()).isEqualTo(10);
+        assertThat(dto.current().capacity()).isEqualTo(300);
     }
 
     @Test
