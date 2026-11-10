@@ -307,6 +307,7 @@ See [docs/PARKING_ANALYTICS.md](docs/PARKING_ANALYTICS.md) for analytics configu
 | `GET` | `/api/analytics/overview` | KPI overview: sessions, recorded revenue, live occupancy | **Yes** |
 | `GET` | `/api/analytics/revenue` | Recorded revenue by day/week/month, method, floor | **Yes** |
 | `GET` | `/api/analytics/occupancy` | Live + historical occupancy snapshots | **Yes** |
+| `GET` | `/api/analytics/occupancy/health` | Snapshot collection health & missing intervals | **Yes** |
 | `GET` | `/api/analytics/vehicles` | Sessions by vehicle type, floor mix, entry trends | **Yes** |
 | `GET` | `/api/analytics/operations` | Booking volumes, payments, status mix, trends | **Yes** |
 | `GET` | `/api/analytics/hourly-traffic` | Hourly entries/exits/revenue profile and peaks | **Yes** |

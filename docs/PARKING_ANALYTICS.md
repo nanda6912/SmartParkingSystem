@@ -12,10 +12,24 @@ and the Chart.js dashboard (`/analytics.html`).
 | Requirement | Version / Notes |
 | :--- | :--- |
 | Java | **JDK 21** (`pom.xml` → `java.version=21`) |
-| Build tool | Maven 3.8+ |
-| Database | PostgreSQL 12+ |
+| Build tool | Maven 3.8+ (`mvn`; no wrapper committed — install Maven separately) |
+| Framework | Spring Boot **3.2.0** (`spring-boot-starter-parent`), Spring Data JPA / Hibernate 6.x |
+| Database | PostgreSQL **12+** server (developed against 16/18); JDBC driver version comes from the Spring Boot BOM |
 | Reporting time zone | Asia/Kolkata (see §7) |
-| Dashboard charts | Chart.js 4.4.1 via CDN (see §8) |
+| Dashboard charts | Chart.js **4.4.1** via CDN (see §8) |
+| Frontend | Static HTML5/CSS3/vanilla JS — no build step, no npm |
+
+### Verified component versions
+
+| Component | Version | Source of truth |
+| :--- | :--- | :--- |
+| Java | 21 | `pom.xml` → `java.version` |
+| Spring Boot | 3.2.0 | `pom.xml` parent |
+| PostgreSQL JDBC | Spring Boot BOM-managed | `pom.xml` → `org.postgresql:postgresql` (runtime) |
+| Flyway | Spring Boot BOM-managed (`flyway-core` 9.x line) | `pom.xml` parent |
+| Chart.js | 4.4.1 | `analytics.html` CDN URL |
+| Font Awesome | 6.4.0 | `analytics.html` CDN URL |
+| Maven | 3.8+ required; 3.9.x used for development | local toolchain |
 
 ## 2. Database setup
 
@@ -48,6 +62,37 @@ V5–V7 are additive only: no historical migration is modified, existing
 `bookings` rows are preserved, and V5 backfills `duration_minutes` from
 `exit_time - booking_time` for legacy rows.
 
+### Verifying migration success
+
+After startup, confirm Flyway applied V1–V7:
+
+```sql
+SELECT version, description, success
+FROM flyway_schema_history
+ORDER BY installed_rank;
+```
+
+All rows should show `success = true` and the latest version should be
+`7`. The app also logs `Successfully applied N migrations` at startup.
+If `validate-on-migrate` fails (checksum mismatch), do **not** edit the
+migration files — resolve via `flyway repair` only after confirming the
+database is disposable, or point `DB_URL` at a clean database.
+
+### Connecting to a clean database
+
+Point the datasource at any empty PostgreSQL database; Flyway creates
+the full schema on first boot:
+
+```bash
+export DB_URL=jdbc:postgresql://localhost:5432/my_new_db
+export DB_USERNAME=postgres
+export DB_PASSWORD=your_password
+mvn spring-boot:run
+```
+
+Note the profile difference: `dev` uses `spring.jpa.hibernate.ddl-auto=update`
+while `prod` uses `validate` — Flyway is the schema authority in both.
+
 ## 3. Environment variables
 
 Profile-specific properties resolve these variables (defaults shown for dev):
@@ -68,6 +113,16 @@ Profile-specific properties resolve these variables (defaults shown for dev):
 Copy `.env.example` to `.env` and fill in real values. `.env` is
 git-ignored — never commit credentials.
 
+The `parking.analytics.*` properties also bind from environment
+variables via Spring relaxed binding (no code change needed):
+
+| Property | Env var equivalent | Default |
+| :--- | :--- | :--- |
+| `parking.analytics.snapshot-enabled` | `PARKING_ANALYTICS_SNAPSHOT_ENABLED` | `true` |
+| `parking.analytics.snapshot-interval-ms` | `PARKING_ANALYTICS_SNAPSHOT_INTERVAL_MS` | `900000` |
+| `parking.analytics.snapshot-initial-delay-ms` | `PARKING_ANALYTICS_SNAPSHOT_INITIAL_DELAY_MS` | `60000` |
+| `parking.analytics.zone-id` | `PARKING_ANALYTICS_ZONE_ID` | `Asia/Kolkata` |
+
 ## 4. Application startup
 
 ```bash
@@ -85,6 +140,19 @@ docker compose up --build -d
 
 The app listens on `http://localhost:8081` (dev). Actuator health is on
 port `8082` (`/actuator/health`).
+
+**Recommended JVM timezone**: booking timestamps are stored as
+`LocalDateTime` in the JVM default zone, so run the app in IST for
+correct hourly buckets and date filtering:
+
+```bash
+java -Duser.timezone=Asia/Kolkata -jar target/smart-parking-*.jar
+# or for spring-boot:run:
+MAVEN_OPTS="-Duser.timezone=Asia/Kolkata" mvn spring-boot:run
+```
+
+Then open `http://localhost:8081/analytics.html` in a browser (log in
+with the seeded staff account first — the dashboard requires a session).
 
 ### Login
 
@@ -130,6 +198,18 @@ Notes:
 - CSV cells are neutralized against spreadsheet formula injection
   (`=`, `+`, `-`, `@`, tab, CR, LF prefixed with `'`).
 
+### Error responses
+
+| Status | When | Body |
+| :--- | :--- | :--- |
+| `400` | Malformed date/enum/int params, `from > to`, `floor < 1` | `{"success":false,"error":"..."}` |
+| `401` | No/expired session on any `/api/analytics/**` call | `{"success":false,"message":"Unauthorized access. Please login."}` |
+| `404` | Unknown booking ID on `/bookings/{id}/history` | `{"success":false,"error":"Booking not found",...}` |
+| `500` | Unexpected server failure | `{"success":false,"error":"Failed to ..."}` — never includes stack traces or SQL details |
+
+All analytics responses (including errors and the CSV download) carry
+`Cache-Control: no-store` + `Pragma: no-cache`.
+
 ## 6. Occupancy snapshots — operations
 
 | Property | Default | Meaning |
@@ -172,7 +252,19 @@ Behaviour:
 - **Disable collection**: set `parking.analytics.snapshot-enabled=false`
   (env `PARKING_ANALYTICS_SNAPSHOT_ENABLED=false` works via relaxed
   binding). Existing rows are retained; live occupancy KPIs are
-  unaffected.
+  unaffected. The health endpoint then reports `status: DISABLED`.
+- **Retention**: there is no automatic purge — rows accumulate at
+  roughly `floors × (1440/interval-minutes)` per day (≈192 rows/day for
+  2 floors @ 15 min). For long-running deployments, prune old data
+  manually, e.g.
+  `DELETE FROM occupancy_snapshots WHERE captured_at < now() - interval '90 days';`
+  (run during maintenance; the table is append-only so deletes are safe).
+- **Health endpoint**: `GET /api/analytics/occupancy/health` reports
+  `collectionEnabled`, `snapshotIntervalMs`, `zoneId`,
+  `earliestSnapshotAt`, `latestSnapshotAt`, `trackedFloorCount`,
+  `snapshotsLast24h`, `overdue`, `status`
+  (`ACTIVE`/`DELAYED`/`NO_SNAPSHOTS`/`DISABLED`), and missing-interval
+  counts — all computed from real rows, nothing fabricated.
 
 ## 7. Time zones
 
@@ -203,6 +295,10 @@ Behaviour:
 - **Chart.js is loaded from CDN** (`cdnjs.cloudflare.com`, v4.4.1). If
   the CDN is unreachable the page still renders all tables/ KPIs; each
   chart box shows "Chart library unavailable" instead of breaking.
+  Font Awesome 6.4.0 icons come from the same CDN. Requires a modern
+  browser with JavaScript enabled (ES2020+); no build step or npm
+  packages are needed — `analytics.html` is a self-contained static
+  page served by Spring Boot.
 - Filter scope (also shown on the page): date range applies to every
   section; **Floor** applies to Parking Utilization only — every metric
   in that section (trend, averages, per-floor breakdown, peak periods and
