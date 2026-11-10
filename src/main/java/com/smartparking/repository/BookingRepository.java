@@ -91,12 +91,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 SELECT b
                 FROM Booking b
                 LEFT JOIN FETCH b.parkingSlot
-                WHERE (:from IS NULL OR b.bookingTime >= :from)
-                  AND (:to IS NULL OR b.bookingTime < :to)
-                  AND (:status IS NULL OR b.status = :status)
-                  AND (:vehicleType IS NULL OR b.vehicleType = :vehicleType)
-                  AND (:paymentMethod IS NULL OR b.paymentMethod = :paymentMethod)
-                  AND (:isActive IS NULL OR b.isActive = :isActive)
+                WHERE (CAST(:from AS timestamp) IS NULL OR b.bookingTime >= :from)
+                  AND (CAST(:to AS timestamp) IS NULL OR b.bookingTime < :to)
+                  AND (CAST(:status AS string) IS NULL OR b.status = :status)
+                  AND (CAST(:vehicleType AS string) IS NULL OR b.vehicleType = :vehicleType)
+                  AND (CAST(:paymentMethod AS string) IS NULL OR b.paymentMethod = :paymentMethod)
+                  AND (CAST(:isActive AS boolean) IS NULL OR b.isActive = :isActive)
                 ORDER BY b.bookingTime DESC, b.id DESC
             """)
     Page<Booking> searchBookingHistory(
@@ -165,7 +165,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /** Hourly entry counts: [hourOfDay, count] by booking_time. */
     @Query(value = """
-                SELECT EXTRACT(HOUR FROM booking_time)::int AS h, COUNT(*)
+                SELECT CAST(EXTRACT(HOUR FROM booking_time) AS INTEGER) AS h, COUNT(*)
                 FROM bookings
                 WHERE booking_time >= :from AND booking_time < :to
                 GROUP BY h ORDER BY h
@@ -174,7 +174,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /** Hourly exit counts: [hourOfDay, count] by exit_time. */
     @Query(value = """
-                SELECT EXTRACT(HOUR FROM exit_time)::int AS h, COUNT(*)
+                SELECT CAST(EXTRACT(HOUR FROM exit_time) AS INTEGER) AS h, COUNT(*)
                 FROM bookings
                 WHERE exit_time IS NOT NULL
                   AND exit_time >= :from AND exit_time < :to
@@ -184,7 +184,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     /** Hourly recorded revenue: [hourOfDay, revenue] by payment_time. */
     @Query(value = """
-                SELECT EXTRACT(HOUR FROM payment_time)::int AS h, COALESCE(SUM(parking_fee), 0)
+                SELECT CAST(EXTRACT(HOUR FROM payment_time) AS INTEGER) AS h, COALESCE(SUM(parking_fee), 0)
                 FROM bookings
                 WHERE payment_time IS NOT NULL
                   AND payment_time >= :from AND payment_time < :to

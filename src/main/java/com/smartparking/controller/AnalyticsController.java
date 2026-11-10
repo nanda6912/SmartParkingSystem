@@ -205,7 +205,11 @@ public class AnalyticsController {
             return "";
         }
         String s = value.toString();
-        if (s.contains(",") || s.contains("\"") || s.contains("\n")) {
+        // Neutralize spreadsheet formula injection for untrusted text fields
+        if (!s.isEmpty() && "=+-@\t\r".indexOf(s.charAt(0)) >= 0) {
+            s = "'" + s;
+        }
+        if (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r")) {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }
         return s;
