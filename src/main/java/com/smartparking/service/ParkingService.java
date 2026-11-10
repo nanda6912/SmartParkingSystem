@@ -66,6 +66,12 @@ public class ParkingService {
 
     private BookingRepository bookingRepository;
 
+
+
+    @Autowired
+
+    private BookingEventService bookingEventService;
+
     
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -334,7 +340,11 @@ public class ParkingService {
 
             parkingSlotRepository.save(slot);
 
-            
+
+
+            bookingEventService.recordBookingCreated(savedBooking);
+
+
 
             return convertToResponseDTO(savedBooking);
 

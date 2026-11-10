@@ -38,6 +38,9 @@ public class ExitService {
     @Autowired
     private UPIPaymentService upiPaymentService;
 
+    @Autowired
+    private BookingEventService bookingEventService;
+
     /**
      * Get all active bookings for exit management
      */
@@ -144,6 +147,8 @@ public class ExitService {
             // Update booking
             booking.setExitTime(now);
             booking.setParkingFee((int) Math.round(fee));
+            booking.setDurationMinutes(totalMinutes);
+            String previousStatus = booking.getStatus() != null ? booking.getStatus().name() : null;
             booking.setIsActive(false);
 
             // Add null safety check for parking slot
@@ -161,6 +166,10 @@ public class ExitService {
                 slot.setStatus(com.smartparking.enums.SlotStatus.AVAILABLE);
                 slot.setLockUntil(null);
                 parkingSlotRepository.save(slot);
+
+                bookingEventService.recordVehicleExited(savedBooking, previousStatus);
+                bookingEventService.recordStatusChanged(savedBooking, previousStatus,
+                        savedBooking.getStatus() != null ? savedBooking.getStatus().name() : null);
 
                 // Prepare response
                 Map<String, Object> exitDetails = new HashMap<>();
@@ -373,6 +382,17 @@ public class ExitService {
                 if (code == null || code.isEmpty() ||
                         (code.matches("\\d+") && code.length() < 5)) {
 
+                    // Never hard-delete completed/permanent booking records
+                    boolean isPermanentRecord = booking.getExitTime() != null
+                            || booking.getParkingFee() != null
+                            || booking.getPaymentMethod() != null
+                            || Boolean.FALSE.equals(booking.getIsActive())
+                            || booking.getStatus() == com.smartparking.enums.BookingStatus.COMPLETED
+                            || booking.getStatus() == com.smartparking.enums.BookingStatus.CANCELLED;
+                    if (isPermanentRecord) {
+                        continue;
+                    }
+
                     toRemove.add(booking);
 
                     // Release the parking slot
@@ -517,6 +537,8 @@ public class ExitService {
             booking.setPaymentTime(LocalDateTime.now());
             booking.setExitTime(LocalDateTime.now());
             booking.setParkingFee(((Number) feeDetails.get("totalFee")).intValue());
+            booking.setDurationMinutes(Duration.between(booking.getBookingTime(), booking.getExitTime()).toMinutes());
+            String previousStatus = booking.getStatus() != null ? booking.getStatus().name() : null;
             booking.setIsActive(false);
 
             // Save the booking
@@ -530,6 +552,11 @@ public class ExitService {
                 parkingSlotRepository.save(slot);
                 log.info("Released parking slot {} for booking {}", slot.getSlotId(), bookingId);
             }
+
+            bookingEventService.recordVehicleExited(savedBooking, previousStatus);
+            bookingEventService.recordPaymentRecorded(savedBooking, previousStatus);
+            bookingEventService.recordStatusChanged(savedBooking, previousStatus,
+                    savedBooking.getStatus() != null ? savedBooking.getStatus().name() : null);
 
             // Create response
             Map<String, Object> response = new HashMap<>();

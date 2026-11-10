@@ -1,7 +1,11 @@
 package com.smartparking.repository;
 
 import com.smartparking.entity.Booking;
+import com.smartparking.enums.BookingStatus;
+import com.smartparking.enums.VehicleType;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -78,4 +82,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 WHERE b.bookingCode = :bookingCode
             """)
     Optional<Booking> findByBookingCodeWithParkingSlot(@Param("bookingCode") String bookingCode);
+
+    /**
+     * Paged booking history search with optional filters.
+     * {@code to} is exclusive (pass start of the day after the range end).
+     */
+    @Query("""
+                SELECT b
+                FROM Booking b
+                LEFT JOIN FETCH b.parkingSlot
+                WHERE (:from IS NULL OR b.bookingTime >= :from)
+                  AND (:to IS NULL OR b.bookingTime < :to)
+                  AND (:status IS NULL OR b.status = :status)
+                  AND (:vehicleType IS NULL OR b.vehicleType = :vehicleType)
+                  AND (:paymentMethod IS NULL OR b.paymentMethod = :paymentMethod)
+                  AND (:isActive IS NULL OR b.isActive = :isActive)
+                ORDER BY b.bookingTime DESC, b.id DESC
+            """)
+    Page<Booking> searchBookingHistory(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("status") BookingStatus status,
+            @Param("vehicleType") VehicleType vehicleType,
+            @Param("paymentMethod") String paymentMethod,
+            @Param("isActive") Boolean isActive,
+            Pageable pageable);
 }

@@ -24,8 +24,8 @@ public class AuthInterceptor implements HandlerInterceptor {
             response.setDateHeader("Expires", 0);
         }
 
-        // 2. Protect /api/exit/** endpoints
-        if (uri.startsWith("/api/exit")) {
+        // 2. Protect /api/exit/** and /api/analytics/** endpoints
+        if (uri.startsWith("/api/exit") || uri.startsWith("/api/analytics")) {
             HttpSession session = request.getSession(false);
             if (session == null || session.getAttribute(AuthService.SESSION_USER_KEY) == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
