@@ -1,5 +1,6 @@
 package com.smartparking.service;
 
+import com.smartparking.dto.OccupancyHealthDTO;
 import com.smartparking.entity.OccupancySnapshot;
 import com.smartparking.enums.SlotStatus;
 import com.smartparking.repository.OccupancySnapshotRepository;
@@ -8,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +17,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Collects permanent historical occupancy snapshots from live
@@ -50,6 +55,9 @@ public class OccupancySnapshotService {
     @Autowired
     private OccupancySnapshotRepository occupancySnapshotRepository;
 
+    @Autowired
+    private OccupancySnapshotWriter occupancySnapshotWriter;
+
     /**
      * Scheduler/runner entry point: collects a snapshot and logs
      * failures without propagating them.
@@ -72,6 +80,9 @@ public class OccupancySnapshotService {
      * Uses a transaction-scoped advisory lock so only one application
      * instance performs collection per interval; the unique
      * (floor, captured_at) constraint provides a second dedupe layer.
+     * Each floor row is persisted in its own transaction via
+     * {@link OccupancySnapshotWriter} so a duplicate or failed insert
+     * for one floor cannot roll back the others.
      *
      * @return number of snapshot rows written
      */
@@ -96,23 +107,17 @@ public class OccupancySnapshotService {
             Integer floor = entry.getKey();
             FloorCounts counts = entry.getValue();
 
-            if (occupancySnapshotRepository.existsByFloorAndCapturedAt(floor, bucket)) {
-                log.debug("Snapshot already exists for floor {} at {}", floor, bucket);
-                continue;
-            }
-
-            try {
-                occupancySnapshotRepository.save(new OccupancySnapshot(
-                        bucket,
-                        floor,
-                        counts.total(),
-                        counts.occupied(),
-                        counts.available(),
-                        counts.locked()));
+            boolean inserted = occupancySnapshotWriter.persistIfAbsent(new OccupancySnapshot(
+                    bucket,
+                    floor,
+                    counts.total(),
+                    counts.occupied(),
+                    counts.available(),
+                    counts.locked()));
+            if (inserted) {
                 written++;
-            } catch (DataIntegrityViolationException e) {
-                // Concurrent collector won the race for this bucket; dedupe is safe
-                log.debug("Duplicate occupancy snapshot skipped for floor {} at {}", floor, bucket);
+            } else {
+                log.debug("Snapshot already exists for floor {} at {}", floor, bucket);
             }
         }
         return written;
@@ -129,6 +134,98 @@ public class OccupancySnapshotService {
         ZonedDateTime now = ZonedDateTime.now(zone);
         long bucketEpochSecond = (now.toEpochSecond() / intervalSeconds) * intervalSeconds;
         return LocalDateTime.ofInstant(Instant.ofEpochSecond(bucketEpochSecond), zone);
+    }
+
+    /**
+     * Snapshot collection health derived entirely from stored
+     * occupancy_snapshots rows and the parking.analytics.* configuration.
+     * Missing intervals are computed on the same epoch-quantized bucket
+     * grid used at capture time, per floor, between each floor's first
+     * and last observed snapshot — the period before the first-ever
+     * snapshot is never counted as missing.
+     */
+    public OccupancyHealthDTO getSnapshotHealth() {
+        long intervalMs = Math.max(1000L, snapshotIntervalMs);
+        long intervalSec = Math.max(1L, intervalMs / 1000);
+        ZoneId zone = ZoneId.of(zoneIdProperty);
+        LocalDateTime evaluatedAt = LocalDateTime.now(zone);
+        LocalDateTime since24h = evaluatedAt.minusHours(24);
+
+        List<Object[]> pairs = occupancySnapshotRepository.findDistinctFloorCapturedAt();
+        long last24h = occupancySnapshotRepository.countByCapturedAtGreaterThanEqual(since24h);
+
+        if (pairs.isEmpty()) {
+            return new OccupancyHealthDTO(
+                    snapshotEnabled, intervalMs, zoneIdProperty, evaluatedAt,
+                    null, null, 0, last24h, false,
+                    snapshotEnabled ? OccupancyHealthDTO.STATUS_NO_SNAPSHOTS
+                            : OccupancyHealthDTO.STATUS_DISABLED,
+                    0, 0, 0, List.of());
+        }
+
+        // Group observed bucket timestamps per floor (pairs arrive sorted by time)
+        Map<Integer, List<LocalDateTime>> byFloor = new TreeMap<>();
+        LocalDateTime earliest = null;
+        LocalDateTime latest = null;
+        for (Object[] row : pairs) {
+            Integer floor = ((Number) row[0]).intValue();
+            LocalDateTime at = (LocalDateTime) row[1];
+            byFloor.computeIfAbsent(floor, f -> new ArrayList<>()).add(at);
+            if (earliest == null || at.isBefore(earliest)) {
+                earliest = at;
+            }
+            if (latest == null || at.isAfter(latest)) {
+                latest = at;
+            }
+        }
+
+        // Expected bucket grid per floor between its first and last
+        // observed snapshot; buckets with no row for that floor are gaps.
+        long expected = 0;
+        long observed = 0;
+        long missingPairs = 0;
+        Set<LocalDateTime> missingBuckets = new TreeSet<>();
+        for (List<LocalDateTime> times : byFloor.values()) {
+            long startSec = gridFloor(times.get(0), zone, intervalSec);
+            long endSec = gridFloor(times.get(times.size() - 1), zone, intervalSec);
+            Set<LocalDateTime> observedTimes = new HashSet<>(times);
+            for (long sec = startSec; sec <= endSec; sec += intervalSec) {
+                expected++;
+                LocalDateTime bucket = LocalDateTime.ofInstant(Instant.ofEpochSecond(sec), zone);
+                if (observedTimes.contains(bucket)) {
+                    observed++;
+                } else {
+                    missingPairs++;
+                    missingBuckets.add(bucket);
+                }
+            }
+        }
+
+        // Overdue when the newest snapshot is at least one full expected
+        // interval behind the bucket that should exist right now. Bucket
+        // math (not wall-clock age) absorbs normal scheduler drift.
+        long nowSec = evaluatedAt.atZone(zone).toEpochSecond();
+        long currentBucketSec = (nowSec / intervalSec) * intervalSec;
+        long latestBucketSec = gridFloor(latest, zone, intervalSec);
+        boolean overdue = latestBucketSec < currentBucketSec - intervalSec;
+
+        String status = overdue ? OccupancyHealthDTO.STATUS_DELAYED
+                : OccupancyHealthDTO.STATUS_ACTIVE;
+        if (!snapshotEnabled) {
+            status = OccupancyHealthDTO.STATUS_DISABLED;
+        }
+
+        List<LocalDateTime> missingSample = missingBuckets.stream().limit(24).toList();
+
+        return new OccupancyHealthDTO(
+                snapshotEnabled, intervalMs, zoneIdProperty, evaluatedAt,
+                earliest, latest, byFloor.size(), last24h, overdue, status,
+                expected, observed, missingPairs, missingSample);
+    }
+
+    /** Epoch-second bucket start for a timestamp on the configured grid. */
+    private static long gridFloor(LocalDateTime at, ZoneId zone, long intervalSec) {
+        return (at.atZone(zone).toEpochSecond() / intervalSec) * intervalSec;
     }
 
     private Map<Integer, FloorCounts> aggregateSlotCounts() {

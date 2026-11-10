@@ -52,6 +52,12 @@
         .tx-page.active { background: var(--accent-primary); color: var(--text-inverse); border-color: var(--accent-primary); }
         .tx-page:disabled { opacity: 0.45; cursor: default; }
         .tx-size { padding: var(--space-1) var(--space-2); border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); }
+        .occ-health { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-primary); border-radius: var(--radius-md); background: var(--bg-tertiary); font-size: var(--font-size-xs); color: var(--text-secondary); }
+        .occ-health.warn { border-color: #FCD34D; background: #FFFBEB; }
+        .occ-health-status { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: var(--font-weight-semibold); color: var(--text-primary); }
+        .occ-health-facts { color: var(--text-tertiary); }
+        .occ-health-warn { flex-basis: 100%; color: #92400E; font-weight: var(--font-weight-semibold); }
+        .badge-warn { display: inline-block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px var(--space-2); border-radius: var(--radius-xl); background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
         .seg-btns { display: inline-flex; border: 1px solid var(--border-primary); border-radius: var(--radius-md); overflow: hidden; }
         .seg-btns button { border: none; background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: var(--space-2) var(--space-4); cursor: pointer; border-right: 1px solid var(--border-primary); }
         .seg-btns button:last-child { border-right: none; }
@@ -171,6 +177,7 @@
             <section class="section-card" id="occupancySection">
                 <h2 class="section-title">Parking Utilization</h2>
                 <p class="section-subtitle">Historical occupancy from recorded snapshots. Tracking begins at first collection.</p>
+                <div id="occupancyHealth" style="margin-bottom:var(--space-4);"></div>
                 <div id="occupancyContent"><div class="chart-placeholder skeleton" style="height:220px;"></div></div>
             </section>
 
@@ -512,6 +519,49 @@
                     })
                 });
             }
+        }
+
+        // ---------- Occupancy snapshot health ----------
+        function fmtInterval(ms) {
+            if (ms == null) return '—';
+            if (ms % 3600000 === 0) return (ms / 3600000) + 'h';
+            if (ms % 60000 === 0) return (ms / 60000) + ' min';
+            if (ms % 1000 === 0) return (ms / 1000) + ' s';
+            return Math.round(ms / 1000) + ' s';
+        }
+        function renderOccupancyHealth(h) {
+            const el = document.getElementById('occupancyHealth');
+            if (!el) return;
+            if (!h || typeof h !== 'object') { el.innerHTML = ''; return; }
+            const meta = {
+                ACTIVE:       { icon: 'fa-check-circle',     label: 'Snapshot collection healthy', cls: 'badge-live' },
+                DELAYED:      { icon: 'fa-exclamation-triangle', label: 'Snapshot delayed',       cls: 'badge-warn' },
+                NO_SNAPSHOTS: { icon: 'fa-info-circle',      label: 'No snapshots recorded yet', cls: 'badge-warn' },
+                DISABLED:     { icon: 'fa-pause-circle',     label: 'Snapshot tracking disabled', cls: 'badge-warn' },
+            };
+            const m = meta[h.status] || { icon: 'fa-question-circle', label: h.status || 'Unknown', cls: 'badge-warn' };
+            const facts = [
+                h.latestSnapshotAt ? 'Latest snapshot ' + esc(fmtDateTime(h.latestSnapshotAt)) : 'No snapshots yet',
+                h.earliestSnapshotAt ? 'tracking since ' + esc(fmtDateTime(h.earliestSnapshotAt)) : null,
+                'interval ' + esc(fmtInterval(h.snapshotIntervalMs)),
+                fmtNum(h.snapshotsLast24h) + ' snapshots in last 24h',
+                h.trackedFloorCount ? fmtNum(h.trackedFloorCount) + ' floor(s) tracked' : null,
+            ].filter(Boolean).join(' · ');
+            const warnings = [];
+            if (h.overdue) warnings.push('Latest snapshot is overdue — collection may be stalled.');
+            if ((h.missingIntervalCount || 0) > 0) {
+                warnings.push(fmtNum(h.missingIntervalCount) + ' expected interval(s) have no snapshot'
+                    + (h.missingIntervals && h.missingIntervals.length ? ' (e.g. ' + esc(fmtDateTime(h.missingIntervals[0])) + ')' : '') + '.');
+            }
+            el.innerHTML = `<div class="occ-health ${h.status === 'ACTIVE' ? '' : 'warn'}">
+                <span class="occ-health-status ${m.cls}"><i class="fas ${m.icon}"></i> ${esc(m.label)}</span>
+                <span class="occ-health-facts">${facts}</span>
+                ${warnings.map(w => `<div class="occ-health-warn"><i class="fas fa-exclamation-triangle"></i> ${w}</div>`).join('')}
+            </div>`;
+        }
+        function occupancyHealthError() {
+            const el = document.getElementById('occupancyHealth');
+            if (el) el.innerHTML = '<div class="chart-note"><i class="fas fa-exclamation-triangle"></i> Occupancy tracking health unavailable.</div>';
         }
 
         // ---------- Occupancy ----------
@@ -899,6 +949,7 @@
                 ['overview', fetchJson(`${API}/overview?${qs()}`).then(renderKpis).catch(() => sectionError('kpiGrid', 'Overview unavailable.'))],
                 ['revenue', fetchJson(`${API}/revenue?${qs()}`).then(renderRevenue).catch(() => sectionError('revenueContent'))],
                 ['occupancy', fetchJson(`${API}/occupancy?${qs()}${state.floor ? '&floor=' + state.floor : ''}`).then(renderOccupancy).catch(() => sectionError('occupancyContent'))],
+                ['occHealth', fetchJson(`${API}/occupancy/health`).then(renderOccupancyHealth).catch(occupancyHealthError)],
                 ['vehicles', fetchJson(`${API}/vehicles?${qs()}`).then(renderVehicles).catch(() => sectionError('vehiclesContent'))],
                 ['operations', fetchJson(`${API}/operations?${qs()}`).then(renderOperations).catch(() => sectionError('operationsContent'))],
                 ['traffic', fetchJson(`${API}/hourly-traffic?${qs()}`).then(renderTraffic).catch(() => sectionError('trafficContent'))],

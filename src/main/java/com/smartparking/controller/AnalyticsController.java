@@ -8,6 +8,7 @@ import com.smartparking.enums.VehicleType;
 import com.smartparking.repository.BookingEventRepository;
 import com.smartparking.repository.BookingRepository;
 import com.smartparking.service.AnalyticsService;
+import com.smartparking.service.OccupancySnapshotService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,9 @@ public class AnalyticsController {
     @Autowired
     private AnalyticsService analyticsService;
 
+    @Autowired
+    private OccupancySnapshotService occupancySnapshotService;
+
     /**
      * KPI overview: completed sessions, recorded revenue, averages and
      * live (current-state) occupancy. Date filters apply to historical
@@ -100,6 +104,22 @@ public class AnalyticsController {
         } catch (Exception e) {
             log.error("Error building occupancy analytics: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("success", false, "error", "Failed to build occupancy analytics"));
+        }
+    }
+
+    /**
+     * Snapshot collection health: enabled flag, configured interval,
+     * latest/earliest snapshot timestamps, last-24h count, overdue flag
+     * and missing-interval detection. All values come from real
+     * occupancy_snapshots rows and parking.analytics.* configuration.
+     */
+    @GetMapping("/occupancy/health")
+    public ResponseEntity<?> getOccupancyHealth() {
+        try {
+            return ResponseEntity.ok(occupancySnapshotService.getSnapshotHealth());
+        } catch (Exception e) {
+            log.error("Error building occupancy snapshot health: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("success", false, "error", "Failed to build occupancy health"));
         }
     }
 

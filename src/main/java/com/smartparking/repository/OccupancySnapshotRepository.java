@@ -66,6 +66,22 @@ public interface OccupancySnapshotRepository extends JpaRepository<OccupancySnap
             Integer floor, LocalDateTime from, LocalDateTime to);
 
     /**
+     * Distinct (floor, captured_at) pairs ordered by time — the basis for
+     * snapshot-health and missing-interval detection. One row per
+     * collected bucket per floor.
+     */
+    @Query("""
+                SELECT s.floor, s.capturedAt
+                FROM OccupancySnapshot s
+                GROUP BY s.floor, s.capturedAt
+                ORDER BY s.capturedAt
+            """)
+    List<Object[]> findDistinctFloorCapturedAt();
+
+    /** Snapshot rows captured at or after {@code since} (health "last 24h"). */
+    long countByCapturedAtGreaterThanEqual(LocalDateTime since);
+
+    /**
      * PostgreSQL transaction-scoped advisory lock used to coordinate
      * snapshot collection across multiple application instances.
      * Returns true when the lock was acquired by this transaction.

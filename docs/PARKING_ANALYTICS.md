@@ -106,6 +106,7 @@ default to the **last 30 days**; `to` is treated as inclusive
 | `/api/analytics/overview` | KPI overview: completed sessions, recorded revenue, averages, live occupancy, previous-period comparison |
 | `/api/analytics/revenue` | Recorded revenue by day/week/month, payment method, floor; peak day |
 | `/api/analytics/occupancy` | Live occupancy + historical snapshots trend, per-floor utilization, peak periods; optional `floor` param scopes **all** occupancy metrics (trend, averages, per-floor breakdown, peaks and live current slots) |
+| `/api/analytics/occupancy/health` | Snapshot collection health: enabled flag, configured interval/zone, latest & earliest snapshot, last-24h row count, overdue flag, status (`ACTIVE`/`DELAYED`/`NO_SNAPSHOTS`/`DISABLED`) and missing-interval detection |
 | `/api/analytics/vehicles` | Completed sessions by vehicle type, floor mix, daily entry trend |
 | `/api/analytics/operations` | Booking volumes, status mix, payment-method counts, daily trends, lifecycle event count |
 | `/api/analytics/hourly-traffic` | Entries/exits/revenue per hour of day + top peak hours + reporting timezone |
@@ -150,7 +151,20 @@ Behaviour:
   transaction-scoped PostgreSQL advisory lock
   (`pg_try_advisory_xact_lock`); the `(floor, captured_at)` unique
   constraint is a second dedupe layer. Only one row per floor per bucket
-  can exist.
+  can exist. Each floor row is persisted in its own `REQUIRES_NEW`
+  transaction (`OccupancySnapshotWriter`), so a duplicate or failed
+  insert for one floor cannot roll back sibling floors — on PostgreSQL
+  a constraint violation aborts the whole transaction, so catching it
+  inside a shared transaction cannot work.
+- **Health & missing intervals**: `GET /api/analytics/occupancy/health`
+  reports collection status from real snapshot rows. Expected buckets
+  are computed per floor on the same epoch-quantized grid used at
+  capture time, between each floor's first and last observed snapshot —
+  the period before the first-ever snapshot is never counted as missing,
+  and bucket math (not wall-clock age) absorbs normal scheduler drift.
+  `overdue` is true when the newest snapshot is at least one full
+  expected interval behind the current bucket; the dashboard surfaces
+  this as a warning strip in the Parking Utilization section.
 - **Historical tracking limitation**: snapshots only exist from the
   moment collection was enabled. Earlier periods have **no** occupancy
   history and the dashboard reports `trackingStart` accordingly — no
@@ -182,6 +196,10 @@ Behaviour:
 
 - KPI cards, revenue/occupancy/vehicle/operations/hourly-traffic
   Chart.js sections, transaction table, CSV export button.
+- The Parking Utilization section shows an **Occupancy Tracking
+  Health** strip (status badge, latest/earliest snapshot, interval,
+  24h count, overdue and missing-interval warnings) fed by
+  `/api/analytics/occupancy/health`.
 - **Chart.js is loaded from CDN** (`cdnjs.cloudflare.com`, v4.4.1). If
   the CDN is unreachable the page still renders all tables/ KPIs; each
   chart box shows "Chart library unavailable" instead of breaking.
