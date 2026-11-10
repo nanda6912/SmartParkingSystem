@@ -6,6 +6,7 @@
     <title>Parking Analysis - Smart Parking</title>
     <link rel="stylesheet" href="/styles/design-system.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         .analytics-header { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; margin-bottom: var(--space-5); }
         .filter-group { display: flex; flex-direction: column; gap: var(--space-1); }
@@ -18,7 +19,6 @@
         .kpi-card .kpi-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary); }
         .kpi-card .kpi-label { font-size: var(--font-size-xs); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: var(--letter-spacing-wide); margin-top: var(--space-1); }
         .kpi-card .kpi-sub { font-size: var(--font-size-xs); color: var(--text-secondary); margin-top: var(--space-1); }
-        .kpi-card .kpi-trend { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); margin-top: var(--space-1); }
         .trend-up { color: #166534; } .trend-down { color: #991B1B; } .trend-flat { color: var(--text-tertiary); }
         .section-card { background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); box-shadow: var(--shadow-sm); }
         .section-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); color: var(--text-primary); margin-bottom: var(--space-1); }
@@ -37,8 +37,22 @@
         .metric-row:last-child { border-bottom: none; }
         .metric-label { color: var(--text-secondary); } .metric-value { font-weight: var(--font-weight-semibold); color: var(--text-primary); }
         .badge-live { display: inline-block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px var(--space-2); border-radius: var(--radius-xl); background: #F0FDF4; color: #166534; border: 1px solid #86EFAC; }
+        .chart-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-4); }
+        .chart-card { grid-column: span 6; background: var(--bg-primary); border: 1px solid var(--border-primary); border-radius: var(--radius-md); padding: var(--space-4); }
+        .chart-card.wide { grid-column: span 12; }
+        .chart-card h3 { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--text-secondary); margin-bottom: var(--space-3); }
+        .chart-box { position: relative; height: 280px; }
+        .chart-box.sm { height: 240px; }
+        .chart-box.xs { height: 200px; }
+        .chart-meta { font-size: var(--font-size-xs); color: var(--text-tertiary); margin-top: var(--space-3); }
+        .chart-note { font-size: var(--font-size-xs); color: var(--text-tertiary); font-style: italic; }
+        .seg-btns { display: inline-flex; border: 1px solid var(--border-primary); border-radius: var(--radius-md); overflow: hidden; }
+        .seg-btns button { border: none; background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font-family-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: var(--space-2) var(--space-4); cursor: pointer; border-right: 1px solid var(--border-primary); }
+        .seg-btns button:last-child { border-right: none; }
+        .seg-btns button.active { background: var(--accent-primary); color: var(--text-inverse); }
         @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
-        @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .analytics-header { flex-direction: column; align-items: stretch; } }
+        @media (max-width: 900px) { .chart-card { grid-column: span 12; } }
+        @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .analytics-header { flex-direction: column; align-items: stretch; } .chart-box { height: 260px; } }
     </style>
 </head>
 <body>
@@ -174,7 +188,7 @@
 
     <script>
         const API = '/api/analytics';
-        const state = { from: null, to: null, floor: '', vehicleType: '', paymentMethod: '' };
+        const state = { from: null, to: null, floor: '', vehicleType: '', paymentMethod: '', revenueView: 'daily' };
 
         // ---------- Auth ----------
         async function checkAuth() {
@@ -188,6 +202,101 @@
             try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
             window.location.href = '/login.html';
         }
+
+        // ---------- Chart.js registry ----------
+        const charts = {};
+        const chartCache = {};
+        const PALETTE = ['#475569', '#166534', '#B45309', '#1D4ED8', '#6D28D9', '#0F766E', '#BE185D', '#92400E', '#334155', '#7C3AED'];
+
+        function hasChartLib() { return typeof Chart !== 'undefined'; }
+        function initChartDefaults() {
+            if (!hasChartLib() || initChartDefaults.done) return;
+            initChartDefaults.done = true;
+            Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = '#475569';
+            Chart.defaults.plugins.legend.labels.boxWidth = 12;
+            Chart.defaults.plugins.tooltip.padding = 8;
+            Chart.defaults.plugins.tooltip.cornerRadius = 4;
+        }
+
+        function destroyAllCharts() {
+            Object.keys(charts).forEach(k => { try { charts[k].destroy(); } catch (e) {} delete charts[k]; });
+        }
+        function makeChart(key, canvasId, config) {
+            const el = document.getElementById(canvasId);
+            if (!el) return null;
+            initChartDefaults();
+            if (!hasChartLib()) {
+                el.closest('.chart-box').innerHTML = '<div class="empty-state" style="padding:var(--space-4);"><i class="fas fa-chart-bar"></i>Chart library unavailable.</div>';
+                return null;
+            }
+            try {
+                if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+                charts[key] = new Chart(el, config);
+                return charts[key];
+            } catch (e) {
+                console.error('Chart render failed:', key, e);
+                return null;
+            }
+        }
+
+        // ---------- Chart config helpers ----------
+        const INR_TICK = v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v);
+        const NUM_TICK = v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v;
+        function lineOpts(yTitle, yTick, extra) {
+            return Object.assign({
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } },
+                    y: { beginAtZero: true, title: yTitle ? { display: true, text: yTitle } : undefined, ticks: { callback: yTick || NUM_TICK } }
+                }
+            }, extra || {});
+        }
+        function barOpts(yTitle, yTick, extra) {
+            return Object.assign({
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+                scales: {
+                    x: { ticks: { maxRotation: 45, autoSkip: true }, grid: { display: false } },
+                    y: { beginAtZero: true, title: yTitle ? { display: true, text: yTitle } : undefined, ticks: { callback: yTick || NUM_TICK } }
+                }
+            }, extra || {});
+        }
+        function doughnutOpts(unitLabel) {
+            return {
+                responsive: true, maintainAspectRatio: false, cutout: '55%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtNum(ctx.parsed)} ${unitLabel || ''}` } }
+                }
+            };
+        }
+        function fmtDate(d) {
+            const m = String(d ?? '').match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (!m) return String(d ?? '');
+            return `${parseInt(m[3], 10)} ${IST_MONTHS[parseInt(m[2], 10) - 1]}`;
+        }
+        // Server timestamps are LocalDateTime in Asia/Kolkata — format the
+        // literal value without browser-timezone conversion.
+        const IST_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        function fmtDateTime(s) {
+            const m = String(s ?? '').match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+            if (!m) return String(s ?? '');
+            let h = parseInt(m[4], 10);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${parseInt(m[3], 10)} ${IST_MONTHS[parseInt(m[2], 10) - 1]}, ${h}:${m[5]} ${ampm}`;
+        }
+        const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => {
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return h12 + (h < 12 ? 'a' : 'p');
+        });
 
         // ---------- Date helpers (Asia/Kolkata reporting) ----------
         function istToday() {
@@ -233,12 +342,22 @@
         const fmtNum = v => v == null ? '—' : Number(v).toLocaleString('en-IN');
         const fmtDur = m => m == null ? '—' : (m >= 60 ? (m / 60).toFixed(1) + 'h' : Math.round(m) + 'm');
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const chartBox = (id, cls) => `<div class="chart-box ${cls || ''}"><canvas id="${id}"></canvas></div>`;
+        const chartCard = (title, id, cls, wide) =>
+            `<div class="chart-card ${wide ? 'wide' : ''}"><h3>${esc(title)}</h3>${chartBox(id, cls)}</div>`;
+        const hasData = arr => Array.isArray(arr) && arr.length > 0;
 
-        function skeleton(html) { return `<div class="chart-placeholder skeleton" style="height:220px;"></div>`; }
+        function destroySectionCharts(prefix) {
+            Object.keys(charts).forEach(k => {
+                if (k.startsWith(prefix)) { try { charts[k].destroy(); } catch (e) {} delete charts[k]; }
+            });
+        }
         function sectionError(elId, msg) {
+            destroySectionCharts(elId);
             document.getElementById(elId).innerHTML = `<div class="error-state"><i class="fas fa-exclamation-triangle"></i>${esc(msg || 'Failed to load this section.')}</div>`;
         }
         function sectionEmpty(elId, msg) {
+            destroySectionCharts(elId);
             document.getElementById(elId).innerHTML = `<div class="empty-state"><i class="fas fa-chart-bar"></i>${esc(msg || 'No data for the selected period.')}</div>`;
         }
         function trendHtml(curr, prev) {
@@ -271,112 +390,393 @@
                 </div>`).join('');
         }
 
+        // ---------- Revenue ----------
+        function revenuePoints(r) {
+            const map = { daily: r.daily, weekly: r.weekly, monthly: r.monthly };
+            return map[state.revenueView] || r.daily || [];
+        }
         function renderRevenue(r) {
+            chartCache.revenue = r;
             const el = document.getElementById('revenueContent');
-            if (!r || !r.daily || r.daily.length === 0) { sectionEmpty('revenueContent', 'No recorded revenue for this period.'); return; }
-            const rows = r.daily.slice(-14).reverse().map(d => `
-                <div class="metric-row"><span class="metric-label">${esc(d.period)}</span>
-                <span class="metric-value">${fmtINR(d.revenue)} <small style="color:var(--text-tertiary);">(${d.sessions} sessions)</small></span></div>`).join('');
-            const methods = (r.byPaymentMethod || []).map(m =>
-                `<div class="metric-row"><span class="metric-label">${esc(m.paymentMethod)}</span><span class="metric-value">${fmtINR(m.revenue)} (${m.sessions})</span></div>`).join('');
-            const floors = (r.byFloor || []).map(f =>
-                `<div class="metric-row"><span class="metric-label">Floor ${f.floor ?? '?'}</span><span class="metric-value">${fmtINR(f.revenue)} (${f.sessions})</span></div>`).join('');
-            el.innerHTML = `
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:var(--space-5);">
-                    <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Daily Revenue (last 14 days)</h3>${rows || '<div class="empty-state">No daily data</div>'}</div>
-                    <div>
-                        <h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">By Payment Method</h3>${methods || '<div class="empty-state">None</div>'}
-                        <h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">By Floor</h3>${floors || '<div class="empty-state">None</div>'}
-                        <div class="metric-row" style="margin-top:var(--space-3);"><span class="metric-label">Highest day</span><span class="metric-value">${r.highestRevenueDay ? esc(r.highestRevenueDay.period) + ' — ' + fmtINR(r.highestRevenueDay.revenue) : '—'}</span></div>
-                        <div class="metric-row"><span class="metric-label">Previous period</span><span class="metric-value">${fmtINR(r.previousPeriodRevenue)}</span></div>
-                    </div>
+            const points = revenuePoints(r);
+            if (!r || !hasData(points) && !hasData(r.byPaymentMethod) && !hasData(r.byFloor)) {
+                sectionEmpty('revenueContent', 'No recorded revenue for this period.');
+                return;
+            }
+            const viewBtns = `
+                <div class="seg-btns" id="revenueViewBtns" style="margin-bottom:var(--space-4);">
+                    <button data-view="daily" class="${state.revenueView === 'daily' ? 'active' : ''}">Daily</button>
+                    <button data-view="weekly" class="${state.revenueView === 'weekly' ? 'active' : ''}">Weekly</button>
+                    <button data-view="monthly" class="${state.revenueView === 'monthly' ? 'active' : ''}">Monthly</button>
                 </div>`;
+            const trendHtmlChart = hasData(points)
+                ? chartCard('Revenue trend (' + state.revenueView + ')', 'revTrendChart', '', true)
+                : `<div class="chart-card wide"><h3>Revenue trend</h3><div class="empty-state" style="padding:var(--space-4);">No ${state.revenueView} data</div></div>`;
+            const methodChart = hasData(r.byPaymentMethod)
+                ? chartCard('Revenue by payment method', 'revMethodChart', 'sm')
+                : `<div class="chart-card"><h3>Revenue by payment method</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const floorChart = hasData(r.byFloor)
+                ? chartCard('Revenue by floor', 'revFloorChart', 'sm')
+                : `<div class="chart-card"><h3>Revenue by floor</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            destroySectionCharts('revenueContent');
+            el.innerHTML = viewBtns + `<div class="chart-grid">${trendHtmlChart}${methodChart}${floorChart}</div>
+                <div class="chart-meta">
+                    ${r.highestRevenueDay ? `<span>Total recorded: <strong>${fmtINR(r.totalRecordedRevenue)}</strong> · Highest ${state.revenueView === 'daily' ? 'day' : 'period'}: <strong>${esc(fmtDate(String(r.highestRevenueDay.period).slice(0,10)))}</strong> — ${fmtINR(r.highestRevenueDay.revenue)}</span>` : `<span>Total recorded: <strong>${fmtINR(r.totalRecordedRevenue)}</strong></span>`}
+                    <span style="margin-left:var(--space-4);">Previous period: ${fmtINR(r.previousPeriodRevenue)}</span>
+                    <span style="margin-left:var(--space-4);">Avg / session: ${fmtINR(r.avgRevenuePerSession)}</span>
+                </div>`;
+
+            // Trend chart
+            if (hasData(points)) {
+                makeChart('revenueContent:revTrend', 'revTrendChart', {
+                    type: 'line',
+                    data: {
+                        labels: points.map(p => fmtDate(String(p.period).slice(0, 10))),
+                        datasets: [{
+                            label: 'Recorded revenue',
+                            data: points.map(p => p.revenue),
+                            borderColor: '#475569', backgroundColor: 'rgba(71,85,105,0.12)',
+                            fill: true, tension: 0.3, pointRadius: 3
+                        }, {
+                            label: 'Sessions',
+                            data: points.map(p => p.sessions),
+                            borderColor: '#94A3B8', borderDash: [4, 4],
+                            yAxisID: 'y1', tension: 0.3, pointRadius: 2
+                        }]
+                    },
+                    options: lineOpts('Revenue (₹)', INR_TICK, {
+                        scales: {
+                            x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } },
+                            y: { beginAtZero: true, title: { display: true, text: 'Revenue (₹)' }, ticks: { callback: INR_TICK } },
+                            y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'Sessions' }, grid: { drawOnChartArea: false }, ticks: { precision: 0 } }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                            tooltip: { mode: 'index', intersect: false, callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: ${ctx.datasetIndex === 0 ? fmtINR(ctx.parsed.y) : fmtNum(ctx.parsed.y)}`
+                            } }
+                        }
+                    })
+                });
+            }
+            // Payment method doughnut
+            if (hasData(r.byPaymentMethod)) {
+                makeChart('revenueContent:revMethod', 'revMethodChart', {
+                    type: 'doughnut',
+                    data: {
+                        labels: r.byPaymentMethod.map(m => m.paymentMethod),
+                        datasets: [{ data: r.byPaymentMethod.map(m => m.revenue), backgroundColor: PALETTE, borderWidth: 1 }]
+                    },
+                    options: doughnutOpts('revenue')
+                });
+            }
+            // Floor bar
+            if (hasData(r.byFloor)) {
+                makeChart('revenueContent:revFloor', 'revFloorChart', {
+                    type: 'bar',
+                    data: {
+                        labels: r.byFloor.map(f => 'Floor ' + (f.floor ?? '?')),
+                        datasets: [{ label: 'Recorded revenue', data: r.byFloor.map(f => f.revenue), backgroundColor: '#475569', borderRadius: 4 }]
+                    },
+                    options: barOpts('Revenue (₹)', INR_TICK, {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtINR(ctx.parsed.y)} (${fmtNum(r.byFloor[ctx.dataIndex].sessions)} sessions)` } }
+                        }
+                    })
+                });
+            }
         }
 
+        // ---------- Occupancy ----------
         function renderOccupancy(o) {
             const el = document.getElementById('occupancyContent');
             if (!o) { sectionError('occupancyContent'); return; }
             const c = o.current || {};
-            let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:var(--space-4); margin-bottom:var(--space-4);">
-                <div class="metric-row"><span class="metric-label">Current Occupied</span><span class="metric-value">${fmtNum(c.occupied)}</span></div>
-                <div class="metric-row"><span class="metric-label">Current Available</span><span class="metric-value">${fmtNum(c.available)}</span></div>
-                <div class="metric-row"><span class="metric-label">Current Locked</span><span class="metric-value">${fmtNum(c.locked)}</span></div>
-                <div class="metric-row"><span class="metric-label">Capacity</span><span class="metric-value">${fmtNum(c.capacity)}</span></div>
-                <div class="metric-row"><span class="metric-label">Utilization</span><span class="metric-value">${(c.utilizationPercent ?? 0).toFixed(1)}%</span></div>
-                <div class="metric-row"><span class="metric-label">Avg utilization (period)</span><span class="metric-value">${o.averageUtilizationPercent != null ? o.averageUtilizationPercent.toFixed(1) + '%' : '—'}</span></div>
-            </div>`;
-            if (o.trackingStart) {
-                html += `<p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-bottom:var(--space-3);">Snapshot tracking started ${esc(String(o.trackingStart).replace('T',' ').slice(0,19))} — earlier periods have no recorded occupancy.</p>`;
-            } else {
-                html += `<p style="font-size:var(--font-size-xs); color:var(--text-tertiary); margin-bottom:var(--space-3);">No occupancy snapshots recorded yet.</p>`;
+            const hasTrend = hasData(o.trend);
+            const hasFloors = hasData(o.byFloor);
+            const hasPeaks = hasData(o.peakPeriods);
+
+            const currentChart = `<div class="chart-card"><h3>Current slots (live)</h3>
+                <div class="chart-box sm"><canvas id="occCurrentChart"></canvas></div></div>`;
+            const trendChart = hasTrend
+                ? `<div class="chart-card wide"><h3>Historical occupancy snapshots — utilization %</h3><div class="chart-box"><canvas id="occTrendChart"></canvas></div></div>`
+                : `<div class="chart-card wide"><h3>Historical occupancy snapshots</h3><div class="empty-state" style="padding:var(--space-4);">${o.trackingStart ? 'No snapshots in this date range.' : 'No occupancy snapshots recorded yet — historical tracking has not begun.'}</div></div>`;
+            const floorChart = hasFloors
+                ? `<div class="chart-card"><h3>Avg utilization by floor</h3><div class="chart-box sm"><canvas id="occFloorChart"></canvas></div></div>`
+                : `<div class="chart-card"><h3>Avg utilization by floor</h3><div class="empty-state" style="padding:var(--space-4);">No snapshot data</div></div>`;
+            const peaksHtml = hasPeaks
+                ? `<div class="chart-card"><h3>Peak occupancy snapshots</h3><div class="chart-box sm" style="height:auto; max-height:260px; overflow-y:auto;">
+                        ${o.peakPeriods.slice(0, 10).map(p => `<div class="metric-row"><span class="metric-label">${esc(fmtDateTime(p.capturedAt))} · Floor ${p.floor ?? '?'}</span><span class="metric-value">${(p.utilizationPercent ?? 0).toFixed(1)}%</span></div>`).join('')}
+                   </div></div>`
+                : `<div class="chart-card"><h3>Peak occupancy snapshots</h3><div class="empty-state" style="padding:var(--space-4);">No snapshots</div></div>`;
+
+            destroySectionCharts('occupancyContent');
+            el.innerHTML = `<div class="chart-grid">
+                    ${currentChart}${floorChart}${trendChart}${peaksHtml}
+                </div>
+                <div class="chart-meta">
+                    <span>Current: <strong>${fmtNum(c.occupied)}</strong> occupied · <strong>${fmtNum(c.available)}</strong> available · <strong>${fmtNum(c.locked)}</strong> locked · capacity <strong>${fmtNum(c.capacity)}</strong></span>
+                    <span style="margin-left:var(--space-4);">Snapshots in range: ${fmtNum(o.snapshotsInRange)}</span>
+                    <span style="margin-left:var(--space-4);">Avg utilization (period): ${o.averageUtilizationPercent != null ? o.averageUtilizationPercent.toFixed(1) + '%' : '—'}</span>
+                    ${o.trackingStart ? `<span class="chart-note" style="display:block; margin-top:var(--space-2);">Historical snapshot tracking started ${esc(fmtDateTime(o.trackingStart))} — earlier periods have no recorded occupancy.</span>` : '<span class="chart-note" style="display:block; margin-top:var(--space-2);">No occupancy snapshots recorded yet.</span>'}
+                </div>`;
+
+            // Current occupancy doughnut (live state)
+            makeChart('occupancyContent:occCurrent', 'occCurrentChart', {
+                type: 'doughnut',
+                data: {
+                    labels: ['Occupied', 'Available', 'Locked'],
+                    datasets: [{ data: [c.occupied || 0, c.available || 0, c.locked || 0], backgroundColor: ['#166534', '#94A3B8', '#B45309'], borderWidth: 1 }]
+                },
+                options: doughnutOpts('slots')
+            });
+            // Historical trend (utilization %)
+            if (hasTrend) {
+                const sorted = [...o.trend].sort((a, b) => new Date(a.capturedAt) - new Date(b.capturedAt));
+                makeChart('occupancyContent:occTrend', 'occTrendChart', {
+                    type: 'line',
+                    data: {
+                        labels: sorted.map(p => fmtDateTime(p.capturedAt)),
+                        datasets: [{
+                            label: 'Utilization %',
+                            data: sorted.map(p => p.utilizationPercent),
+                            borderColor: '#475569', backgroundColor: 'rgba(71,85,105,0.10)',
+                            fill: true, tension: 0.25, pointRadius: 2
+                        }]
+                    },
+                    options: lineOpts('Utilization %', v => v + '%', {
+                        scales: {
+                            x: { ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
+                            y: { beginAtZero: true, max: 100, title: { display: true, text: 'Utilization %' }, ticks: { callback: v => v + '%' } }
+                        }
+                    })
+                });
             }
-            const floors = (o.byFloor || []).map(f =>
-                `<div class="metric-row"><span class="metric-label">Floor ${f.floor ?? '?'}</span><span class="metric-value">${(f.avgUtilizationPercent ?? 0).toFixed(1)}% avg (${fmtNum(f.avgOccupiedSlots)}/${fmtNum(f.avgCapacity)})</span></div>`).join('');
-            const peaks = (o.peakPeriods || []).slice(0, 5).map(p =>
-                `<div class="metric-row"><span class="metric-label">${esc(String(p.capturedAt).replace('T',' ').slice(0,16))} · Floor ${p.floor ?? '?'}</span><span class="metric-value">${(p.utilizationPercent ?? 0).toFixed(1)}%</span></div>`).join('');
-            if (floors) html += `<h3 style="font-size:var(--font-size-sm); margin:var(--space-3) 0 var(--space-2);">Floor Utilization</h3>${floors}`;
-            if (peaks) html += `<h3 style="font-size:var(--font-size-sm); margin:var(--space-3) 0 var(--space-2);">Peak Occupancy Snapshots</h3>${peaks}`;
-            if (!o.trend || o.trend.length === 0) html += `<div class="empty-state" style="padding:var(--space-4);">No historical snapshots in this range.</div>`;
-            el.innerHTML = html;
+            // Floor utilization bar
+            if (hasFloors) {
+                makeChart('occupancyContent:occFloor', 'occFloorChart', {
+                    type: 'bar',
+                    data: {
+                        labels: o.byFloor.map(f => 'Floor ' + (f.floor ?? '?')),
+                        datasets: [{ label: 'Avg utilization %', data: o.byFloor.map(f => f.avgUtilizationPercent), backgroundColor: '#64748B', borderRadius: 4 }]
+                    },
+                    options: barOpts('Avg utilization %', v => v + '%', {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` Avg ${ctx.parsed.y.toFixed(1)}% · ${fmtNum(o.byFloor[ctx.dataIndex].avgOccupiedSlots)}/${fmtNum(o.byFloor[ctx.dataIndex].avgCapacity)} slots` } }
+                        },
+                        scales: {
+                            x: { ticks: { maxRotation: 45, autoSkip: true }, grid: { display: false } },
+                            y: { beginAtZero: true, max: 100, title: { display: true, text: 'Avg utilization %' }, ticks: { callback: v => v + '%' } }
+                        }
+                    })
+                });
+            }
         }
 
+        // ---------- Vehicles ----------
         function renderVehicles(v) {
             const el = document.getElementById('vehiclesContent');
-            if (!v || !v.byType || v.byType.length === 0) { sectionEmpty('vehiclesContent', 'No completed sessions for this period.'); return; }
-            const rows = v.byType.map(t => `
-                <tr><td>${esc(t.vehicleType)}</td><td>${fmtNum(t.sessions)}</td>
-                <td>${(t.percentage ?? 0).toFixed(1)}%</td>
-                <td>${fmtDur(t.avgDurationMinutes)}</td><td>${fmtINR(t.avgRevenue)}</td></tr>`).join('');
-            const trend = (v.entryTrends || []).slice(-14).map(d =>
-                `<div class="metric-row"><span class="metric-label">${esc(d.date)}</span><span class="metric-value">${fmtNum(d.count)} entries</span></div>`).join('');
-            el.innerHTML = `<div class="table-wrap"><table class="data-table"><thead><tr><th>Type</th><th>Sessions</th><th>Share</th><th>Avg Duration</th><th>Avg Revenue</th></tr></thead><tbody>${rows}</tbody></table></div>
-                ${trend ? `<h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Daily Entries</h3>${trend}` : ''}`;
+            if (!v || (!hasData(v.byType) && !hasData(v.entryTrends) && !hasData(v.byFloor))) {
+                sectionEmpty('vehiclesContent', 'No completed sessions for this period.');
+                return;
+            }
+            const typeChart = hasData(v.byType)
+                ? chartCard('Sessions by vehicle type', 'vehTypeChart', 'sm')
+                : `<div class="chart-card"><h3>Sessions by vehicle type</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const shareChart = hasData(v.byType)
+                ? chartCard('Share of sessions', 'vehShareChart', 'sm')
+                : `<div class="chart-card"><h3>Share of sessions</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const durChart = hasData(v.byType)
+                ? chartCard('Avg duration by type', 'vehDurChart', 'sm')
+                : `<div class="chart-card"><h3>Avg duration by type</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const revChart = hasData(v.byType)
+                ? chartCard('Avg recorded revenue by type', 'vehRevChart', 'sm')
+                : `<div class="chart-card"><h3>Avg recorded revenue by type</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const trendChart = hasData(v.entryTrends)
+                ? chartCard('Daily vehicle entries', 'vehTrendChart', '', true)
+                : `<div class="chart-card wide"><h3>Daily vehicle entries</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            const floorChart = hasData(v.byFloor)
+                ? chartCard('Vehicle type by floor', 'vehFloorChart', '', true)
+                : `<div class="chart-card wide"><h3>Vehicle type by floor</h3><div class="empty-state" style="padding:var(--space-4);">None</div></div>`;
+            destroySectionCharts('vehiclesContent');
+            el.innerHTML = `<div class="chart-grid">${typeChart}${shareChart}${durChart}${revChart}${trendChart}${floorChart}</div>`;
+
+            if (hasData(v.byType)) {
+                const labels = v.byType.map(t => t.vehicleType);
+                makeChart('vehiclesContent:vehType', 'vehTypeChart', {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Sessions', data: v.byType.map(t => t.sessions), backgroundColor: PALETTE.slice(0, labels.length), borderRadius: 4 }] },
+                    options: barOpts('Sessions', NUM_TICK, { plugins: { legend: { display: false } } })
+                });
+                makeChart('vehiclesContent:vehShare', 'vehShareChart', {
+                    type: 'doughnut',
+                    data: { labels, datasets: [{ data: v.byType.map(t => t.percentage), backgroundColor: PALETTE.slice(0, labels.length), borderWidth: 1 }] },
+                    options: doughnutOpts('%')
+                });
+                makeChart('vehiclesContent:vehDur', 'vehDurChart', {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Avg minutes', data: v.byType.map(t => t.avgDurationMinutes), backgroundColor: '#64748B', borderRadius: 4 }] },
+                    options: barOpts('Avg minutes', v2 => v2, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtDur(ctx.parsed.y)}` } } } })
+                });
+                makeChart('vehiclesContent:vehRev', 'vehRevChart', {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Avg revenue', data: v.byType.map(t => t.avgRevenue), backgroundColor: '#475569', borderRadius: 4 }] },
+                    options: barOpts('Avg revenue (₹)', INR_TICK, { plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtINR(ctx.parsed.y)}` } } } })
+                });
+            }
+            if (hasData(v.entryTrends)) {
+                makeChart('vehiclesContent:vehTrend', 'vehTrendChart', {
+                    type: 'line',
+                    data: {
+                        labels: v.entryTrends.map(d => fmtDate(d.date)),
+                        datasets: [{ label: 'Entries', data: v.entryTrends.map(d => d.count), borderColor: '#475569', backgroundColor: 'rgba(71,85,105,0.10)', fill: true, tension: 0.3, pointRadius: 3 }]
+                    },
+                    options: lineOpts('Entries / day', NUM_TICK)
+                });
+            }
+            if (hasData(v.byFloor)) {
+                const floors = [...new Set(v.byFloor.map(f => f.floor))].sort((a, b) => a - b);
+                const types = [...new Set(v.byFloor.map(f => f.vehicleType))];
+                const datasets = types.map((t, i) => ({
+                    label: t,
+                    data: floors.map(fl => (v.byFloor.find(f => f.floor === fl && f.vehicleType === t) || {}).sessions || 0),
+                    backgroundColor: PALETTE[i % PALETTE.length],
+                    stack: 'v'
+                }));
+                makeChart('vehiclesContent:vehFloor', 'vehFloorChart', {
+                    type: 'bar',
+                    data: { labels: floors.map(f => 'Floor ' + (f ?? '?')), datasets },
+                    options: barOpts('Sessions', NUM_TICK, {
+                        scales: {
+                            x: { stacked: true, ticks: { maxRotation: 45, autoSkip: true }, grid: { display: false } },
+                            y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Sessions' }, ticks: { precision: 0 } }
+                        }
+                    })
+                });
+            }
         }
 
+        // ---------- Operations ----------
         function renderOperations(o) {
             const el = document.getElementById('operationsContent');
             if (!o) { sectionError('operationsContent'); return; }
-            const pays = Object.entries(o.paymentMethodCounts || {}).map(([k, v]) =>
-                `<div class="metric-row"><span class="metric-label">${esc(k)} payments</span><span class="metric-value">${fmtNum(v)}</span></div>`).join('');
-            const status = Object.entries(o.statusDistribution || {}).map(([k, v]) =>
-                `<div class="metric-row"><span class="metric-label">${esc(k)}</span><span class="metric-value">${fmtNum(v)}</span></div>`).join('');
-            const trend = (o.bookingTrends || []).slice(-14).map(d =>
-                `<div class="metric-row"><span class="metric-label">${esc(d.date)}</span><span class="metric-value">${fmtNum(d.count)} bookings</span></div>`).join('');
-            el.innerHTML = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:var(--space-5);">
-                <div>
-                    <div class="metric-row"><span class="metric-label">Total bookings</span><span class="metric-value">${fmtNum(o.totalBookings)}</span></div>
-                    <div class="metric-row"><span class="metric-label">Active now (in range)</span><span class="metric-value">${fmtNum(o.activeBookings)}</span></div>
-                    <div class="metric-row"><span class="metric-label">Completed</span><span class="metric-value">${fmtNum(o.completedBookings)}</span></div>
-                    <div class="metric-row"><span class="metric-label">Avg duration</span><span class="metric-value">${fmtDur(o.avgDurationMinutes)}</span></div>
-                    <div class="metric-row"><span class="metric-label">Revenue / session</span><span class="metric-value">${fmtINR(o.recordedRevenuePerCompletedSession)}</span></div>
-                    <div class="metric-row"><span class="metric-label">Lifecycle events</span><span class="metric-value">${fmtNum(o.lifecycleEventsInRange)}</span></div>
-                </div>
-                <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Payments</h3>${pays || '<div class="empty-state">None</div>'}
-                    <h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Status Distribution</h3>${status || '<div class="empty-state">None</div>'}</div>
-                <div><h3 style="font-size:var(--font-size-sm); margin-bottom:var(--space-2);">Daily Bookings</h3>${trend || '<div class="empty-state">None</div>'}</div>
-            </div>`;
+            const hasPayments = Object.keys(o.paymentMethodCounts || {}).length > 0;
+            const hasStatus = Object.keys(o.statusDistribution || {}).length > 0;
+            const hasTrend = hasData(o.bookingTrends);
+            const compareChart = `<div class="chart-card"><h3>Bookings: total / active / completed</h3><div class="chart-box sm"><canvas id="opsCompareChart"></canvas></div></div>`;
+            const trendChart = hasTrend
+                ? `<div class="chart-card wide"><h3>Daily booking volume</h3><div class="chart-box"><canvas id="opsTrendChart"></canvas></div></div>`
+                : `<div class="chart-card wide"><h3>Daily booking volume</h3><div class="empty-state" style="padding:var(--space-4);">No booking data</div></div>`;
+            const statusChart = hasStatus
+                ? `<div class="chart-card"><h3>Status distribution</h3><div class="chart-box sm"><canvas id="opsStatusChart"></canvas></div></div>`
+                : `<div class="chart-card"><h3>Status distribution</h3><div class="empty-state" style="padding:var(--space-4);">No data</div></div>`;
+            const payChart = hasPayments
+                ? `<div class="chart-card"><h3>Payment method distribution</h3><div class="chart-box sm"><canvas id="opsPayChart"></canvas></div></div>`
+                : `<div class="chart-card"><h3>Payment method distribution</h3><div class="empty-state" style="padding:var(--space-4);">No data</div></div>`;
+            destroySectionCharts('operationsContent');
+            el.innerHTML = `<div class="chart-grid">${compareChart}${statusChart}${payChart}${trendChart}</div>
+                <div class="chart-meta">
+                    <span>Avg parking duration: <strong>${fmtDur(o.avgDurationMinutes)}</strong></span>
+                    <span style="margin-left:var(--space-4);">Avg recorded revenue / completed session: <strong>${fmtINR(o.recordedRevenuePerCompletedSession)}</strong></span>
+                    <span style="margin-left:var(--space-4);">Lifecycle events in range: <strong>${fmtNum(o.lifecycleEventsInRange)}</strong></span>
+                </div>`;
+
+            makeChart('operationsContent:opsCompare', 'opsCompareChart', {
+                type: 'bar',
+                data: {
+                    labels: ['Total bookings', 'Active', 'Completed'],
+                    datasets: [{ label: 'Bookings', data: [o.totalBookings || 0, o.activeBookings || 0, o.completedBookings || 0], backgroundColor: ['#94A3B8', '#B45309', '#166534'], borderRadius: 4 }]
+                },
+                options: barOpts('Bookings', NUM_TICK, { plugins: { legend: { display: false } } })
+            });
+            if (hasTrend) {
+                makeChart('operationsContent:opsTrend', 'opsTrendChart', {
+                    type: 'line',
+                    data: {
+                        labels: o.bookingTrends.map(d => fmtDate(d.date)),
+                        datasets: [{ label: 'Bookings', data: o.bookingTrends.map(d => d.count), borderColor: '#475569', backgroundColor: 'rgba(71,85,105,0.10)', fill: true, tension: 0.3, pointRadius: 3 }]
+                    },
+                    options: lineOpts('Bookings / day', NUM_TICK)
+                });
+            }
+            if (hasStatus) {
+                const entries = Object.entries(o.statusDistribution);
+                makeChart('operationsContent:opsStatus', 'opsStatusChart', {
+                    type: 'doughnut',
+                    data: { labels: entries.map(e => e[0]), datasets: [{ data: entries.map(e => e[1]), backgroundColor: PALETTE, borderWidth: 1 }] },
+                    options: doughnutOpts('bookings')
+                });
+            }
+            if (hasPayments) {
+                const entries = Object.entries(o.paymentMethodCounts);
+                makeChart('operationsContent:opsPay', 'opsPayChart', {
+                    type: 'doughnut',
+                    data: { labels: entries.map(e => e[0]), datasets: [{ data: entries.map(e => e[1]), backgroundColor: PALETTE, borderWidth: 1 }] },
+                    options: doughnutOpts('payments')
+                });
+            }
         }
 
+        // ---------- Traffic ----------
         function renderTraffic(t) {
             const el = document.getElementById('trafficContent');
             if (!t) { sectionError('trafficContent'); return; }
-            const maxE = Math.max(1, ...(t.entriesByHour || []));
-            const maxR = Math.max(1, ...(t.revenueByHour || []));
-            const bars = (t.entriesByHour || []).map((v, h) => {
-                const h12 = h % 12 === 0 ? 12 : h % 12;
-                const ampm = h < 12 ? 'AM' : 'PM';
-                return `<div style="display:flex; align-items:flex-end; gap:2px; flex:1; min-width:0;" title="${h12}${ampm}: ${v} entries, ${t.exitsByHour[h]} exits, ${fmtINR(t.revenueByHour[h])}">
-                    <div style="flex:1; background:var(--accent-primary); height:${Math.round(v / maxE * 90)}px; border-radius:2px 2px 0 0; opacity:.85;"></div>
-                    <div style="flex:1; background:var(--accent-light); height:${Math.round((t.exitsByHour[h] || 0) / maxE * 90)}px; border-radius:2px 2px 0 0; opacity:.6;"></div>
-                </div>`;
-            }).join('');
-            const peaks = (t.peakHours || []).slice(0, 5).map(p => {
-                const h12 = p.hour % 12 === 0 ? 12 : p.hour % 12;
-                return `<div class="metric-row"><span class="metric-label">${h12}${p.hour < 12 ? 'AM' : 'PM'}</span><span class="metric-value">${p.entries} in / ${p.exits} out / ${fmtINR(p.revenue)}</span></div>`;
-            }).join('');
-            el.innerHTML = `<div style="display:flex; align-items:flex-end; gap:2px; height:120px; overflow-x:auto; padding-bottom:4px;">${bars || '<div class="empty-state">No traffic data</div>'}</div>
-                <div style="display:flex; justify-content:space-between; font-size:var(--font-size-xs); color:var(--text-tertiary); margin-top:4px;"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>
-                ${peaks ? `<h3 style="font-size:var(--font-size-sm); margin:var(--space-4) 0 var(--space-2);">Busiest Hours</h3>${peaks}` : ''}`;
+            const hasEntries = (t.entriesByHour || []).some(v => v > 0);
+            const hasExits = (t.exitsByHour || []).some(v => v > 0);
+            const hasRevenue = (t.revenueByHour || []).some(v => v > 0);
+            const hasAny = hasEntries || hasExits || hasRevenue;
+            const hourlyOpts = extra => ({
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { ticks: { autoSkip: true, maxTicksLimit: 12, maxRotation: 0, font: { size: 10 } }, grid: { display: false } },
+                    y: Object.assign({ beginAtZero: true, ticks: { precision: 0 } }, extra || {})
+                }
+            });
+            const flowChart = hasAny
+                ? `<div class="chart-card wide"><h3>Vehicle entries vs exits by hour</h3><div class="chart-box"><canvas id="trafficFlowChart"></canvas></div></div>`
+                : `<div class="chart-card wide"><h3>Vehicle entries vs exits by hour</h3><div class="empty-state" style="padding:var(--space-4);">No traffic data</div></div>`;
+            const revChart = hasRevenue
+                ? `<div class="chart-card"><h3>Recorded revenue by hour</h3><div class="chart-box sm"><canvas id="trafficRevChart"></canvas></div></div>`
+                : `<div class="chart-card"><h3>Recorded revenue by hour</h3><div class="empty-state" style="padding:var(--space-4);">No revenue data</div></div>`;
+            const peaksHtml = hasData(t.peakHours)
+                ? `<div class="chart-card"><h3>Top busiest hours</h3><div class="chart-box sm" style="height:auto; max-height:280px; overflow-y:auto;">
+                        ${t.peakHours.slice(0, 10).map(p => `<div class="metric-row"><span class="metric-label">${(() => { const h12 = p.hour % 12 === 0 ? 12 : p.hour % 12; return h12 + (p.hour < 12 ? 'AM' : 'PM'); })()}</span><span class="metric-value">${p.entries} in / ${p.exits} out · ${fmtINR(p.revenue)}</span></div>`).join('')}
+                   </div></div>`
+                : `<div class="chart-card"><h3>Top busiest hours</h3><div class="empty-state" style="padding:var(--space-4);">No data</div></div>`;
+            destroySectionCharts('trafficContent');
+            el.innerHTML = `<div class="chart-grid">${flowChart}${revChart}${peaksHtml}</div>
+                <div class="chart-meta">Timezone: <strong>${esc(t.timezone || 'Asia/Kolkata')}</strong> — hourly buckets are server-local time.</div>`;
+
+            if (hasAny) {
+                makeChart('trafficContent:trafficFlow', 'trafficFlowChart', {
+                    type: 'line',
+                    data: {
+                        labels: HOUR_LABELS,
+                        datasets: [
+                            { label: 'Entries', data: t.entriesByHour || [], borderColor: '#166534', backgroundColor: 'rgba(22,101,52,0.08)', fill: true, tension: 0.3, pointRadius: 2 },
+                            { label: 'Exits', data: t.exitsByHour || [], borderColor: '#B45309', backgroundColor: 'rgba(180,83,9,0.06)', fill: true, tension: 0.3, pointRadius: 2 }
+                        ]
+                    },
+                    options: hourlyOpts()
+                });
+            }
+            if (hasRevenue) {
+                makeChart('trafficContent:trafficRev', 'trafficRevChart', {
+                    type: 'bar',
+                    data: {
+                        labels: HOUR_LABELS,
+                        datasets: [{ label: 'Revenue', data: t.revenueByHour || [], backgroundColor: '#475569', borderRadius: 2 }]
+                    },
+                    options: hourlyOpts({ title: { display: true, text: 'Revenue (₹)' }, ticks: { callback: INR_TICK } })
+                });
+            }
         }
 
         async function renderTransactions() {
@@ -415,7 +815,7 @@
         }
         async function loadAll() {
             document.getElementById('lastUpdated').textContent = 'Updating…';
-            const base = `${API}?${qs()}`;
+            destroyAllCharts();
             const jobs = [
                 ['overview', fetchJson(`${API}/overview?${qs()}`).then(renderKpis).catch(() => sectionError('kpiGrid', 'Overview unavailable.'))],
                 ['revenue', fetchJson(`${API}/revenue?${qs()}`).then(renderRevenue).catch(() => sectionError('revenueContent'))],
@@ -438,6 +838,14 @@
             const custom = e.target.value === 'custom';
             document.getElementById('customFromGroup').style.display = custom ? 'flex' : 'none';
             document.getElementById('customToGroup').style.display = custom ? 'flex' : 'none';
+        });
+        // Revenue view switcher (re-renders from cached response; no extra API call)
+        document.addEventListener('click', e => {
+            const btn = e.target.closest('#revenueViewBtns button');
+            if (!btn) return;
+            state.revenueView = btn.dataset.view;
+            document.querySelectorAll('#revenueViewBtns button').forEach(b => b.classList.toggle('active', b === btn));
+            if (chartCache.revenue) renderRevenue(chartCache.revenue);
         });
         document.getElementById('applyFilters').addEventListener('click', () => {
             state.floor = document.getElementById('floorFilter').value;
