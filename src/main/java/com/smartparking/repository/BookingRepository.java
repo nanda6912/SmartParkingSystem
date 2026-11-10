@@ -107,4 +107,136 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("paymentMethod") String paymentMethod,
             @Param("isActive") Boolean isActive,
             Pageable pageable);
+
+    // ==================== ANALYTICS QUERIES ====================
+
+    /**
+     * Completed-session aggregates for bookings whose exit_time falls in
+     * [from, to): count, recorded fee sum, average duration (minutes).
+     */
+    @Query("""
+                SELECT COUNT(b), COALESCE(SUM(b.parkingFee), 0), COALESCE(AVG(b.durationMinutes), 0)
+                FROM Booking b
+                WHERE b.exitTime IS NOT NULL AND b.exitTime >= :from AND b.exitTime < :to
+            """)
+    List<Object[]> completedBookingStats(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * Recorded-revenue aggregates keyed on payment_time (only bookings with
+     * a recorded payment method and fee). Returns
+     * [day, paymentMethod, revenue, sessions].
+     */
+    @Query(value = """
+                SELECT DATE(payment_time) AS d, payment_method,
+                       COALESCE(SUM(parking_fee), 0) AS revenue, COUNT(*) AS sessions
+                FROM bookings
+                WHERE payment_time IS NOT NULL
+                  AND payment_time >= :from AND payment_time < :to
+                  AND payment_method IS NOT NULL
+                  AND parking_fee IS NOT NULL
+                GROUP BY DATE(payment_time), payment_method
+                ORDER BY d
+            """, nativeQuery = true)
+    List<Object[]> recordedRevenueByDayAndMethod(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Recorded revenue by floor: [floor, revenue, sessions]. */
+    @Query(value = """
+                SELECT ps.floor, COALESCE(SUM(b.parking_fee), 0), COUNT(*)
+                FROM bookings b
+                JOIN parking_slots ps ON b.parking_slot_id = ps.id
+                WHERE b.payment_time IS NOT NULL
+                  AND b.payment_time >= :from AND b.payment_time < :to
+                  AND b.payment_method IS NOT NULL
+                  AND b.parking_fee IS NOT NULL
+                GROUP BY ps.floor
+                ORDER BY ps.floor
+            """, nativeQuery = true)
+    List<Object[]> recordedRevenueByFloor(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Hourly entry counts: [hourOfDay, count] by booking_time. */
+    @Query(value = """
+                SELECT EXTRACT(HOUR FROM booking_time)::int AS h, COUNT(*)
+                FROM bookings
+                WHERE booking_time >= :from AND booking_time < :to
+                GROUP BY h ORDER BY h
+            """, nativeQuery = true)
+    List<Object[]> entriesByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Hourly exit counts: [hourOfDay, count] by exit_time. */
+    @Query(value = """
+                SELECT EXTRACT(HOUR FROM exit_time)::int AS h, COUNT(*)
+                FROM bookings
+                WHERE exit_time IS NOT NULL
+                  AND exit_time >= :from AND exit_time < :to
+                GROUP BY h ORDER BY h
+            """, nativeQuery = true)
+    List<Object[]> exitsByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Hourly recorded revenue: [hourOfDay, revenue] by payment_time. */
+    @Query(value = """
+                SELECT EXTRACT(HOUR FROM payment_time)::int AS h, COALESCE(SUM(parking_fee), 0)
+                FROM bookings
+                WHERE payment_time IS NOT NULL
+                  AND payment_time >= :from AND payment_time < :to
+                  AND payment_method IS NOT NULL
+                  AND parking_fee IS NOT NULL
+                GROUP BY h ORDER BY h
+            """, nativeQuery = true)
+    List<Object[]> revenueByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Vehicle-type stats for completed sessions: [type, sessions, avgDurationMin, avgFee]. */
+    @Query("""
+                SELECT b.vehicleType, COUNT(b), AVG(b.durationMinutes), AVG(b.parkingFee)
+                FROM Booking b
+                WHERE b.exitTime IS NOT NULL AND b.exitTime >= :from AND b.exitTime < :to
+                GROUP BY b.vehicleType
+            """)
+    List<Object[]> vehicleTypeStats(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Vehicle-type x floor sessions: [floor, type, sessions]. */
+    @Query("""
+                SELECT ps.floor, b.vehicleType, COUNT(b)
+                FROM Booking b
+                JOIN b.parkingSlot ps
+                WHERE b.exitTime IS NOT NULL AND b.exitTime >= :from AND b.exitTime < :to
+                GROUP BY ps.floor, b.vehicleType
+            """)
+    List<Object[]> vehicleTypeByFloor(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Daily entry trend: [date, entries]. */
+    @Query(value = """
+                SELECT DATE(booking_time) AS d, COUNT(*)
+                FROM bookings
+                WHERE booking_time >= :from AND booking_time < :to
+                GROUP BY d ORDER BY d
+            """, nativeQuery = true)
+    List<Object[]> dailyEntryTrend(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Status distribution for bookings created in range: [status, count]. */
+    @Query("""
+                SELECT b.status, COUNT(b)
+                FROM Booking b
+                WHERE b.bookingTime >= :from AND b.bookingTime < :to
+                GROUP BY b.status
+            """)
+    List<Object[]> statusDistribution(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Recorded payment counts by method: [method, count]. */
+    @Query("""
+                SELECT b.paymentMethod, COUNT(b)
+                FROM Booking b
+                WHERE b.paymentTime IS NOT NULL AND b.paymentTime >= :from AND b.paymentTime < :to
+                  AND b.paymentMethod IS NOT NULL
+                GROUP BY b.paymentMethod
+            """)
+    List<Object[]> paymentMethodCounts(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Total bookings created in [from, to): count, active count. */
+    @Query("""
+                SELECT COUNT(b),
+                       SUM(CASE WHEN b.isActive = true AND b.exitTime IS NULL THEN 1 ELSE 0 END)
+                FROM Booking b
+                WHERE b.bookingTime >= :from AND b.bookingTime < :to
+            """)
+    List<Object[]> bookingActivityStats(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

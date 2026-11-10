@@ -15,4 +15,6 @@ public interface BookingEventRepository extends JpaRepository<BookingEvent, Long
     boolean existsByBookingIdAndEventType(Long bookingId, BookingEventType eventType);
 
     boolean existsByBookingId(Long bookingId);
+
+    long countByEventTimestampBetween(java.time.LocalDateTime from, java.time.LocalDateTime to);
 }

@@ -22,6 +22,34 @@ public interface OccupancySnapshotRepository extends JpaRepository<OccupancySnap
 
     OccupancySnapshot findTopByOrderByCapturedAtDesc();
 
+    OccupancySnapshot findTopByOrderByCapturedAtAsc();
+
+    /** Average utilization percent and count over [from, to): [avgUtil, snapshots]. */
+    @Query("""
+                SELECT AVG(s.occupiedSlots * 100.0 / s.totalCapacity), COUNT(s)
+                FROM OccupancySnapshot s
+                WHERE s.capturedAt >= :from AND s.capturedAt < :to
+            """)
+    List<Object[]> averageUtilizationBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Per-floor average utilization over [from, to): [floor, avgUtil, avgOccupied, avgCapacity, snapshots]. */
+    @Query("""
+                SELECT s.floor,
+                       AVG(s.occupiedSlots * 100.0 / s.totalCapacity),
+                       AVG(s.occupiedSlots),
+                       AVG(s.totalCapacity),
+                       COUNT(s)
+                FROM OccupancySnapshot s
+                WHERE s.capturedAt >= :from AND s.capturedAt < :to
+                GROUP BY s.floor
+                ORDER BY s.floor
+            """)
+    List<Object[]> utilizationByFloorBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /** Highest-occupancy snapshots in range (peak periods). */
+    List<OccupancySnapshot> findTop10ByCapturedAtBetweenOrderByOccupiedSlotsDescCapturedAtAsc(
+            LocalDateTime from, LocalDateTime to);
+
     /**
      * PostgreSQL transaction-scoped advisory lock used to coordinate
      * snapshot collection across multiple application instances.
