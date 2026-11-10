@@ -128,7 +128,7 @@ Notes:
   `DataSyncService`. Event-history `additionalDetails.vehicleNumber` is
   masked at serialization time; stored audit rows keep full data.
 - CSV cells are neutralized against spreadsheet formula injection
-  (`=`, `+`, `-`, `@`, tab, CR prefixed with `'`).
+  (`=`, `+`, `-`, `@`, tab, CR, LF prefixed with `'`).
 
 ## 6. Occupancy snapshots — operations
 
@@ -230,7 +230,17 @@ ensure local PostgreSQL is running if such tests are added.
 - `/api/analytics/**` requires an authenticated session (same
   `AuthInterceptor` mechanism as `/api/exit/**`); unauthenticated calls
   get `401 {"success":false,...}`.
-- All analytics API responses carry `Cache-Control: no-store`.
+- All analytics API responses carry `Cache-Control: no-store` and
+  `Pragma: no-cache`, set in `AuthInterceptor.preHandle` — so the headers
+  are present on successful, error and CSV responses, including
+  unauthenticated `401`s. Static assets are unaffected.
+- Input validation: `from`/`to` must satisfy `from <= to` (else `400`),
+  `floor` must be a positive integer, `page`/`size` are clamped
+  (`size` max 200), enums (`status`, `vehicleType`, `BookingStatus`)
+  reject unknown values with `400` via Spring conversion, and unknown
+  booking IDs return `404`. Error bodies contain only a generic
+  `{"success":false,"error":...}` message — no stack traces or SQL
+  details.
 - PII is masked in `booking-history`, CSV export and event-history
   details (see §5).
 - No role restrictions are enforced on analytics endpoints — any

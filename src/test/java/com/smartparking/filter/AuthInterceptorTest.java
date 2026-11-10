@@ -52,6 +52,19 @@ class AuthInterceptorTest {
     }
 
     @Test
+    void analyticsEndpoints_setNoStoreBeforeAuth() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/analytics/overview");
+        when(request.getSession(false)).thenReturn(null);
+        when(response.getWriter()).thenReturn(new java.io.PrintWriter(new java.io.StringWriter()));
+
+        authInterceptor.preHandle(request, response, new Object());
+
+        // Cache headers are applied even to unauthenticated responses
+        verify(response).setHeader("Cache-Control", "no-store");
+        verify(response).setHeader("Pragma", "no-cache");
+    }
+
+    @Test
     void nonProtectedEndpoints_passThrough() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/parking-slots");
 

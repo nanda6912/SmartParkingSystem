@@ -184,6 +184,65 @@ class AnalyticsControllerTest {
     }
 
     @Test
+    void reversedDateRange_returns400() {
+        ResponseEntity<?> response = analyticsController.getOverview(
+                LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 1));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(((Map<?, ?>) response.getBody()).get("success")).isEqualTo(false);
+    }
+
+    @Test
+    void reversedDateRange_bookingHistory_returns400() {
+        ResponseEntity<?> response = analyticsController.getBookingHistory(
+                LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 1),
+                null, null, null, null, 0, 20);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void negativeFloor_returns400() {
+        ResponseEntity<?> response = analyticsController.getOccupancy(
+                null, null, -1);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void exportTransactionsCsv_neutralizesFormulaInjection() {
+        ParkingSlot slot = new ParkingSlot(3, 1);
+        Booking booking = new Booking();
+        booking.setId(1L);
+        booking.setBookingCode("AB12C");
+        booking.setVehicleNumber("KA01AB1234");
+        booking.setCustomerName("John Doe");
+        booking.setPhoneNumber("9876543210");
+        booking.setVehicleType(VehicleType.CAR);
+        booking.setParkingSlot(slot);
+        booking.setBookingTime(LocalDateTime.of(2026, 1, 1, 10, 0));
+        booking.setStatus(BookingStatus.COMPLETED);
+        booking.setIsActive(false);
+        booking.setPaymentMethod("=HYPERLINK(\"http://evil\")");
+        booking.setPaymentTime(LocalDateTime.of(2026, 1, 1, 11, 0));
+
+        when(bookingRepository.searchBookingHistory(
+                any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(booking), PageRequest.of(0, 50000), 1));
+
+        ResponseEntity<?> response = analyticsController.exportTransactionsCsv(
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), null, null);
+
+        String csv = (String) response.getBody();
+        // Formula-leading payment method must be prefixed with '
+        assertThat(csv).contains("'=HYPERLINK");
+        assertThat(csv).doesNotContain(",=HYPERLINK");
+        // PII still masked
+        assertThat(csv).contains("***234");
+        assertThat(csv).doesNotContain("KA01AB1234");
+    }
+
+    @Test
     void getBookingHistory_capsPageSize() {
         when(bookingRepository.searchBookingHistory(
                 isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))

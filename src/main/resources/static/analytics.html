@@ -915,7 +915,7 @@
             el.innerHTML = `<div class="chart-placeholder skeleton" style="height:220px;"><span class="chart-note">Loading transaction report…</span></div>`;
             try {
                 const res = await fetch(`${API}/booking-history?${txQuery()}`, { credentials: 'same-origin' });
-                if (res.status === 401) { window.location.href = '/login.html'; return; }
+                if (res.status === 401 || res.status === 403) { window.location.href = '/login.html'; return; }
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 const rows = (data.content || []).map(b => `<tr>

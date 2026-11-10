@@ -72,6 +72,9 @@ public class AnalyticsController {
     public ResponseEntity<?> getOverview(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getOverview(toFrom(from), toTo(to)));
         } catch (Exception e) {
@@ -85,6 +88,9 @@ public class AnalyticsController {
     public ResponseEntity<?> getRevenue(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getRevenue(toFrom(from), toTo(to)));
         } catch (Exception e) {
@@ -99,6 +105,12 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) Integer floor) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
+        if (floor != null && floor < 1) {
+            return badRequest("'floor' must be a positive integer");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getOccupancy(toFrom(from), toTo(to), floor));
         } catch (Exception e) {
@@ -128,6 +140,9 @@ public class AnalyticsController {
     public ResponseEntity<?> getVehicles(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getVehicles(toFrom(from), toTo(to)));
         } catch (Exception e) {
@@ -141,6 +156,9 @@ public class AnalyticsController {
     public ResponseEntity<?> getOperations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getOperations(toFrom(from), toTo(to)));
         } catch (Exception e) {
@@ -154,6 +172,9 @@ public class AnalyticsController {
     public ResponseEntity<?> getHourlyTraffic(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             return ResponseEntity.ok(analyticsService.getHourlyTraffic(toFrom(from), toTo(to)));
         } catch (Exception e) {
@@ -172,6 +193,9 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) VehicleType vehicleType,
             @RequestParam(required = false) String paymentMethod) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             LocalDateTime fromDt = toFrom(from);
             LocalDateTime toDt = toTo(to);
@@ -232,13 +256,21 @@ public class AnalyticsController {
         return null;
     }
 
+    private static boolean invalidRange(LocalDate from, LocalDate to) {
+        return from != null && to != null && from.isAfter(to);
+    }
+
+    private static ResponseEntity<?> badRequest(String message) {
+        return ResponseEntity.badRequest().body(Map.of("success", false, "error", message));
+    }
+
     private static String csv(Object value) {
         if (value == null) {
             return "";
         }
         String s = value.toString();
         // Neutralize spreadsheet formula injection for untrusted text fields
-        if (!s.isEmpty() && "=+-@\t\r".indexOf(s.charAt(0)) >= 0) {
+        if (!s.isEmpty() && "=+-@\t\r\n".indexOf(s.charAt(0)) >= 0) {
             s = "'" + s;
         }
         if (s.contains(",") || s.contains("\"") || s.contains("\n") || s.contains("\r")) {
@@ -308,6 +340,9 @@ public class AnalyticsController {
             @RequestParam(required = false) Boolean active,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        if (invalidRange(from, to)) {
+            return badRequest("'from' must not be after 'to'");
+        }
         try {
             int safePage = Math.max(page, 0);
             int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
