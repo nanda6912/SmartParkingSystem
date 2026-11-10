@@ -123,6 +123,54 @@ class AnalyticsControllerTest {
     }
 
     @Test
+    void exportTransactionsCsv_fallsBackToComputedDurationForLegacyBookings() {
+        ParkingSlot slot = new ParkingSlot(3, 1);
+        Booking legacy = new Booking();
+        legacy.setId(7L);
+        legacy.setBookingCode("XY9ZZ");
+        legacy.setVehicleNumber("KA01AB1234");
+        legacy.setCustomerName("John Doe");
+        legacy.setPhoneNumber("9876543210");
+        legacy.setVehicleType(VehicleType.CAR);
+        legacy.setParkingSlot(slot);
+        legacy.setBookingTime(LocalDateTime.of(2026, 1, 1, 10, 0));
+        legacy.setExitTime(LocalDateTime.of(2026, 1, 1, 11, 30));
+        legacy.setDurationMinutes(null); // pre-V5 legacy row
+        legacy.setParkingFee(40);
+        legacy.setStatus(BookingStatus.COMPLETED);
+        legacy.setIsActive(false);
+
+        Booking corrupted = new Booking();
+        corrupted.setId(8L);
+        corrupted.setBookingCode("AB12C");
+        corrupted.setVehicleNumber("KA02CD5678");
+        corrupted.setCustomerName("Jane Doe");
+        corrupted.setPhoneNumber("9123456789");
+        corrupted.setVehicleType(VehicleType.BIKE);
+        corrupted.setParkingSlot(slot);
+        corrupted.setBookingTime(LocalDateTime.of(2026, 1, 2, 10, 0));
+        corrupted.setExitTime(LocalDateTime.of(2026, 1, 2, 9, 0)); // exit before entry
+        corrupted.setDurationMinutes(-5L); // invalid stored value
+        corrupted.setStatus(BookingStatus.COMPLETED);
+        corrupted.setIsActive(false);
+
+        when(bookingRepository.searchBookingHistory(
+                any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(legacy, corrupted), PageRequest.of(0, 50000), 2));
+
+        ResponseEntity<?> response = analyticsController.exportTransactionsCsv(
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String csv = (String) response.getBody();
+        assertThat(csv).contains("duration_minutes");
+        // legacy row: fallback computes 90 minutes from timestamps
+        assertThat(csv).contains(",90,");
+        // corrupted row: negative stored value ignored, negative interval clamped to 0
+        assertThat(csv).contains(",0,");
+    }
+
+    @Test
     void getBookingHistory_capsPageSize() {
         when(bookingRepository.searchBookingHistory(
                 isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))

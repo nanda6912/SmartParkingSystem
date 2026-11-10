@@ -162,7 +162,8 @@ public class AnalyticsController {
                         .append(csv(b.getParkingSlot() != null ? String.valueOf(b.getParkingSlot().getFloor()) : "")).append(',')
                         .append(csv(b.getBookingTime() != null ? b.getBookingTime().format(FORMATTER) : "")).append(',')
                         .append(csv(b.getExitTime() != null ? b.getExitTime().format(FORMATTER) : "")).append(',')
-                        .append(csv(b.getDurationMinutes() != null ? String.valueOf(b.getDurationMinutes()) : "")).append(',')
+                        .append(csv(effectiveDurationMinutes(b) != null
+                                ? String.valueOf(effectiveDurationMinutes(b)) : "")).append(',')
                         .append(csv(b.getParkingFee() != null ? String.valueOf(b.getParkingFee()) : "")).append(',')
                         .append(csv(b.getStatus() != null ? b.getStatus().name() : "")).append(',')
                         .append(csv(b.getPaymentMethod())).append(',')
@@ -183,6 +184,20 @@ public class AnalyticsController {
             log.error("Error exporting transaction CSV: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("success", false, "error", "Failed to export transactions"));
         }
+    }
+
+    /**
+     * Duration for completed bookings: stored duration_minutes when valid,
+     * otherwise exit_time - booking_time clamped at zero (legacy rows).
+     */
+    private static Long effectiveDurationMinutes(Booking b) {
+        if (b.getDurationMinutes() != null && b.getDurationMinutes() >= 0) {
+            return b.getDurationMinutes();
+        }
+        if (b.getBookingTime() != null && b.getExitTime() != null) {
+            return Math.max(0, java.time.Duration.between(b.getBookingTime(), b.getExitTime()).toMinutes());
+        }
+        return null;
     }
 
     private static String csv(Object value) {

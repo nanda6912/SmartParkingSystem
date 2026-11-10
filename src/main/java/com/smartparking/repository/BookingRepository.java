@@ -113,12 +113,22 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     /**
      * Completed-session aggregates for bookings whose exit_time falls in
      * [from, to): count, recorded fee sum, average duration (minutes).
+     * Duration uses the stored duration_minutes when present and valid;
+     * otherwise it falls back to exit_time - booking_time so legacy rows
+     * with NULL/zero duration are still measured. Negative intervals are
+     * clamped to zero.
      */
-    @Query("""
-                SELECT COUNT(b), COALESCE(SUM(b.parkingFee), 0), COALESCE(AVG(b.durationMinutes), 0)
-                FROM Booking b
-                WHERE b.exitTime IS NOT NULL AND b.exitTime >= :from AND b.exitTime < :to
-            """)
+    @Query(value = """
+                SELECT COUNT(*),
+                       COALESCE(SUM(parking_fee), 0),
+                       COALESCE(AVG(CASE
+                           WHEN duration_minutes IS NOT NULL AND duration_minutes >= 0
+                               THEN duration_minutes
+                           ELSE GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (exit_time - booking_time)) / 60))
+                       END), 0)
+                FROM bookings
+                WHERE exit_time IS NOT NULL AND exit_time >= :from AND exit_time < :to
+            """, nativeQuery = true)
     List<Object[]> completedBookingStats(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /**
@@ -184,13 +194,24 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """, nativeQuery = true)
     List<Object[]> revenueByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    /** Vehicle-type stats for completed sessions: [type, sessions, avgDurationMin, avgFee]. */
-    @Query("""
-                SELECT b.vehicleType, COUNT(b), AVG(b.durationMinutes), AVG(b.parkingFee)
-                FROM Booking b
-                WHERE b.exitTime IS NOT NULL AND b.exitTime >= :from AND b.exitTime < :to
-                GROUP BY b.vehicleType
-            """)
+    /**
+     * Vehicle-type stats for completed sessions:
+     * [type, sessions, avgDurationMin, avgFee]. Duration uses the stored
+     * duration_minutes when valid, else exit_time - booking_time, clamped
+     * at zero — same rule as {@link #completedBookingStats}.
+     */
+    @Query(value = """
+                SELECT vehicle_type, COUNT(*),
+                       AVG(CASE
+                           WHEN duration_minutes IS NOT NULL AND duration_minutes >= 0
+                               THEN duration_minutes
+                           ELSE GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (exit_time - booking_time)) / 60))
+                       END),
+                       AVG(parking_fee)
+                FROM bookings
+                WHERE exit_time IS NOT NULL AND exit_time >= :from AND exit_time < :to
+                GROUP BY vehicle_type
+            """, nativeQuery = true)
     List<Object[]> vehicleTypeStats(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /** Vehicle-type x floor sessions: [floor, type, sessions]. */
