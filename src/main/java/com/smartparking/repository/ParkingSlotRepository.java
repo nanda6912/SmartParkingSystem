@@ -35,4 +35,11 @@ public interface ParkingSlotRepository extends JpaRepository<ParkingSlot, Long> 
     
     @Query("SELECT ps FROM ParkingSlot ps WHERE ps.slotNumber = :slotNumber AND ps.floor = :floor")
     Optional<ParkingSlot> findBySlotNumberAndFloor(@Param("slotNumber") Integer slotNumber, @Param("floor") Integer floor);
+
+    /**
+     * Single grouped query returning [floor, status, count] rows used by
+     * occupancy snapshot collection.
+     */
+    @Query("SELECT ps.floor, ps.status, COUNT(ps) FROM ParkingSlot ps GROUP BY ps.floor, ps.status")
+    List<Object[]> countByFloorAndStatus();
 }
