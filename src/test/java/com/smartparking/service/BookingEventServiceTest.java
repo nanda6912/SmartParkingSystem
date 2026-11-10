@@ -140,6 +140,18 @@ class BookingEventServiceTest {
     }
 
     @Test
+    void recordVehicleExited_propagatesConstraintViolationForRollback() {
+        org.springframework.dao.DataIntegrityViolationException duplicate =
+                new org.springframework.dao.DataIntegrityViolationException(
+                        "duplicate key value violates unique constraint uq_booking_events_idempotent_types");
+        org.mockito.Mockito.doThrow(duplicate).when(bookingEventRepository).save(any(BookingEvent.class));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> bookingEventService.recordVehicleExited(booking, "ACTIVE"))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
     void recordStatusChanged_recordsTransition() {
         bookingEventService.recordStatusChanged(booking, "ACTIVE", "COMPLETED");
 

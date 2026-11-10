@@ -67,6 +67,10 @@ class ExitServiceTest {
         activeBooking.setBookingTime(LocalDateTime.now().minusMinutes(90));
         activeBooking.setStatus(BookingStatus.ACTIVE);
         activeBooking.setIsActive(true);
+
+        // Wire the self-injection used by processExitWithPayment's
+        // transactional split (no Spring proxy in unit tests)
+        org.springframework.test.util.ReflectionTestUtils.setField(exitService, "self", exitService);
     }
 
     private void stubActiveBookingLookup() {
@@ -139,6 +143,21 @@ class ExitServiceTest {
     }
 
     @Test
+    void processExitWithPayment_eventFailureReturnsErrorContract() {
+        stubActiveBookingLookup();
+        when(upiPaymentService.validateTransactionId("12345")).thenReturn(true);
+        doThrow(new RuntimeException("duplicate key value violates unique constraint"))
+                .when(bookingEventService).recordVehicleExited(any(Booking.class), anyString());
+
+        Map<String, Object> result = exitService.processExitWithPayment(42L, "UPI", "12345");
+
+        // Error-map contract preserved; exception did not propagate to caller
+        assertThat(result).containsKey("error");
+        assertThat(result.get("error")).isEqualTo("Failed to process exit with payment");
+        assertThat(result).doesNotContainKey("success");
+    }
+
+    @Test
     void processExitWithPayment_rejectsAlreadyExitedBooking() {
         activeBooking.setExitTime(LocalDateTime.now().minusMinutes(5));
         when(bookingRepository.findById(42L)).thenReturn(Optional.of(activeBooking));
@@ -186,6 +205,30 @@ class ExitServiceTest {
         verify(bookingRepository).delete(temp);
         assertThat(tempSlot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
         assertThat(completedSlot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
+    }
+
+    @Test
+    void cleanupOldBookings_preservesBookingsWithEventHistory() {
+        // Active legacy booking with invalid code but existing event history
+        // must be retained (events imply audit trail exists)
+        ParkingSlot eventSlot = new ParkingSlot(6, 1);
+        eventSlot.setId(13L);
+        eventSlot.setStatus(SlotStatus.OCCUPIED);
+        Booking withEvents = new Booking();
+        withEvents.setId(3L);
+        withEvents.setBookingCode("99");
+        withEvents.setParkingSlot(eventSlot);
+        withEvents.setStatus(BookingStatus.ACTIVE);
+        withEvents.setIsActive(true);
+
+        when(bookingRepository.findAll()).thenReturn(List.of(withEvents));
+        when(bookingEventService.bookingHasEvents(3L)).thenReturn(true);
+
+        Map<String, Object> result = exitService.cleanupOldBookings();
+
+        assertThat(result.get("removedCount")).isEqualTo(0);
+        verify(bookingRepository, never()).delete(any(Booking.class));
+        assertThat(eventSlot.getStatus()).isEqualTo(SlotStatus.OCCUPIED);
     }
 
     @Test

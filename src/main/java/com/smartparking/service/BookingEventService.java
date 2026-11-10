@@ -82,6 +82,11 @@ public class BookingEventService {
                 booking.getId(), previousStatus, newStatus);
     }
 
+    @Transactional(readOnly = true)
+    public boolean bookingHasEvents(Long bookingId) {
+        return bookingId != null && bookingEventRepository.existsByBookingId(bookingId);
+    }
+
     private BookingEvent baseEvent(Booking booking, BookingEventType type) {
         BookingEvent event = new BookingEvent();
         event.setBookingId(booking.getId());

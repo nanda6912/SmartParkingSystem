@@ -13,4 +13,6 @@ public interface BookingEventRepository extends JpaRepository<BookingEvent, Long
     List<BookingEvent> findByBookingIdOrderByEventTimestampAscIdAsc(Long bookingId);
 
     boolean existsByBookingIdAndEventType(Long bookingId, BookingEventType eventType);
+
+    boolean existsByBookingId(Long bookingId);
 }

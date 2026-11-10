@@ -9,7 +9,9 @@ import com.smartparking.service.UPIPaymentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -40,6 +42,10 @@ public class ExitService {
 
     @Autowired
     private BookingEventService bookingEventService;
+
+    @Lazy
+    @Autowired
+    private ExitService self;
 
     /**
      * Get all active bookings for exit management
@@ -389,7 +395,7 @@ public class ExitService {
                             || Boolean.FALSE.equals(booking.getIsActive())
                             || booking.getStatus() == com.smartparking.enums.BookingStatus.COMPLETED
                             || booking.getStatus() == com.smartparking.enums.BookingStatus.CANCELLED;
-                    if (isPermanentRecord) {
+                    if (isPermanentRecord || bookingEventService.bookingHasEvents(booking.getId())) {
                         continue;
                     }
 
@@ -481,9 +487,35 @@ public class ExitService {
     }
 
     /**
-     * Process exit with payment details
+     * Process exit with payment details.
+     * Non-transactional wrapper: delegates to
+     * {@link #processExitWithPaymentTransactional} so that any failure inside
+     * the unit of work (booking update, slot release, event inserts) rolls
+     * back completely instead of producing a partial commit, while this
+     * method keeps returning the existing error-map contract.
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Map<String, Object> processExitWithPayment(Long bookingId, String paymentMethod, String transactionId) {
+        try {
+            return self.processExitWithPaymentTransactional(bookingId, paymentMethod, transactionId);
+        } catch (Exception e) {
+            log.error("Error processing exit with payment for booking ID {}: {}", bookingId, e.getMessage(), e);
+            return Map.of(
+                    "error", "Failed to process exit with payment",
+                    "message", e.getMessage());
+        }
+    }
+
+    /**
+     * Transactional core of {@link #processExitWithPayment}. All writes
+     * (booking fields, slot release, booking events) commit or roll back
+     * together. Validation failures still return error maps before any
+     * write occurs; unexpected failures propagate so the transaction
+     * rolls back.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Map<String, Object> processExitWithPaymentTransactional(Long bookingId, String paymentMethod,
+            String transactionId) {
         try {
             log.info("Processing exit with payment for booking ID: {}, method: {}, transactionId: {}",
                     bookingId, paymentMethod, transactionId);
@@ -582,11 +614,12 @@ public class ExitService {
             log.info("Successfully processed exit for booking {} with payment method: {}", bookingId, paymentMethod);
             return response;
 
+        } catch (RuntimeException e) {
+            log.error("Error processing exit with payment for booking ID {}: {}", bookingId, e.getMessage(), e);
+            throw e;
         } catch (Exception e) {
             log.error("Error processing exit with payment for booking ID {}: {}", bookingId, e.getMessage(), e);
-            return Map.of(
-                    "error", "Failed to process exit with payment",
-                    "message", e.getMessage());
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 }
