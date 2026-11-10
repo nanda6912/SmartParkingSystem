@@ -116,11 +116,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * Duration uses the stored duration_minutes when present and valid;
      * otherwise it falls back to exit_time - booking_time so legacy rows
      * with NULL/zero duration are still measured. Negative intervals are
-     * clamped to zero.
+     * clamped to zero. The revenue sum only includes bookings with a
+     * recorded payment method and payment timestamp ("recorded revenue");
+     * unpaid exits contribute their session count and duration but no fee.
      */
     @Query(value = """
                 SELECT COUNT(*),
-                       COALESCE(SUM(parking_fee), 0),
+                       COALESCE(SUM(CASE
+                           WHEN payment_time IS NOT NULL
+                            AND payment_method IS NOT NULL
+                            AND parking_fee IS NOT NULL
+                           THEN parking_fee ELSE 0 END), 0),
                        COALESCE(AVG(CASE
                            WHEN duration_minutes IS NOT NULL AND duration_minutes >= 0
                                THEN duration_minutes

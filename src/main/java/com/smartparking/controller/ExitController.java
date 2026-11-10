@@ -486,6 +486,12 @@ public class ExitController {
             Map<String, Object> exitDetails = exitService.processExitWithPayment(bookingId, paymentMethod,
                     transactionId);
 
+            // The service signals validation and lookup failures by returning
+            // an error map; surface them instead of a false success response.
+            if (exitDetails.containsKey("error")) {
+                return ResponseEntity.badRequest().body(exitDetails);
+            }
+
             // Try to sync data but don't fail the entire operation if sync fails
             String syncStatus = "success";
             String syncError = null;
